@@ -52,7 +52,7 @@ export default function MealLogPage() {
   // Main chat send handler
   const handleSend = async () => {
     if (!input.trim() || loading || chatEnded) return
-    const userMessage = { text: input.trim(), sender: 'user' }
+    const userMessage: Message = { text: input.trim(), sender: 'user' }
 
     // Save answer per meal stage
     if (mealStage === 0) setAnswers(a => ({ ...a, breakfast: input.trim() }))
