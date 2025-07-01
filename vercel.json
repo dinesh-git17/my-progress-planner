@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/breakfast",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/lunch",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/dinner",
+      "schedule": "0 22 * * *"
+    }
+  ]
+}
