@@ -1,5 +1,6 @@
 'use client'
 
+import { PushSubscriptionButton } from '@/components/PushSubscriptionButton'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -68,6 +69,7 @@ export default function Home() {
 
         {/* Meal Selection Buttons */}
         <div className="w-full flex flex-col gap-3 mt-2">
+          <PushSubscriptionButton />
           {mealLabels.map(({ meal, emoji, label }) => (
             <motion.button
               key={meal}
