@@ -24,7 +24,7 @@ export function PushSubscriptionButton() {
       const perm = await Notification.requestPermission()
       if (perm !== 'granted') throw new Error('Notification permission denied')
 
-      const vapidPublicKey = 'YOUR_REAL_VAPID_PUBLIC_KEY'
+      const vapidPublicKey = 'BAEWVqKa9ASTlGbc7Oo_BJGAsYBtlYAS1IkI1gKMz5Ot6WnNQuP-WQ2u3sDRDV4Ca5kZQwo8aKOshT3wOrUugxk'
 
       // Subscribe for push
       const sub = await reg.pushManager.subscribe({
