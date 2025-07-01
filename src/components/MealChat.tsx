@@ -1,4 +1,5 @@
 'use client'
+
 import { getOrCreateUserId, upsertMealLog } from '@/utils/mealLog'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
@@ -15,7 +16,7 @@ type Props = {
 const FIRST_PROMPT: Record<string, string> = {
   breakfast: "Good morning, love! ☀️ What did you have for breakfast today? ♥️",
   lunch: "Hey cutie! 🍱 What yummy thing did you eat for lunch? 🤭",
-  dinner: "Hey love! 🍽️ What did you have for dinner tonight? 🥺"
+  dinner: "Hey love! 🍽️ What did you have for dinner tonight? 🥺",
 }
 
 export default function MealChat({
@@ -26,28 +27,29 @@ export default function MealChat({
   onComplete,
 }: Props) {
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState([
-    { sender: 'bot', text: FIRST_PROMPT[meal] }
-  ])
+  const [messages, setMessages] = useState([{ sender: 'bot', text: FIRST_PROMPT[meal] }])
   const [chatEnded, setChatEnded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showClosing, setShowClosing] = useState(false)
   const answers = useRef<string[]>([])
+  const gptReplies = useRef<string[]>([]) // ✅ new ref to track all GPT responses
   const router = useRouter()
 
-  // End after this many user messages
   const MAX_TURNS = 3
 
   async function finishChat() {
     setLoading(true)
-    const today = new Date().toISOString().slice(0,10)
+    const today = new Date().toISOString().slice(0, 10)
     const user_id = getOrCreateUserId()
+
     await upsertMealLog({
       user_id,
       date: today,
       meal,
-      answers: answers.current
+      answers: answers.current,
+      gpt_response: gptReplies.current, // ✅ fix: pass array, not ref object
     })
+
     setTimeout(() => {
       setChatEnded(true)
       setLoading(false)
@@ -56,42 +58,39 @@ export default function MealChat({
 
   async function handleSend() {
     if (!input) return
-    setMessages(msgs => [...msgs, { sender: 'user', text: input }])
+
+    setMessages((msgs) => [...msgs, { sender: 'user', text: input }])
     answers.current.push(input)
     setInput('')
     setLoading(true)
 
-    // Prepare message history
-    const msgHistory = [
-      ...messages,
-      { sender: 'user', text: input }
-    ]
+    const msgHistory = [...messages, { sender: 'user', text: input }]
+    const userMsgs = msgHistory.filter((m) => m.sender === 'user').length
 
-    const userMsgs = msgHistory.filter(m => m.sender === 'user').length
     if (userMsgs >= MAX_TURNS) {
-      // Show closing message from GPT
       setShowClosing(true)
       const res = await fetch('/api/gpt/meal-chat', {
         method: 'POST',
         body: JSON.stringify({ meal, messages: msgHistory, closing: true }),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       })
       const data = await res.json()
-      setMessages(msgs => [...msgs, { sender: 'bot', text: data.reply }])
+      setMessages((msgs) => [...msgs, { sender: 'bot', text: data.reply }])
+      gptReplies.current.push(data.reply) // ✅ log GPT message
       setLoading(false)
-      // Wait a bit, then save and show CTA
-      setTimeout(finishChat, 1400)
+
+      setTimeout(() => finishChat(), 1400)
       return
     }
 
-    // Otherwise, continue normal chat
     const res = await fetch('/api/gpt/meal-chat', {
       method: 'POST',
       body: JSON.stringify({ meal, messages: msgHistory }),
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     })
     const data = await res.json()
-    setMessages(msgs => [...msgs, { sender: 'bot', text: data.reply }])
+    setMessages((msgs) => [...msgs, { sender: 'bot', text: data.reply }])
+    gptReplies.current.push(data.reply) // ✅ log GPT message
     setLoading(false)
   }
 
@@ -112,16 +111,12 @@ export default function MealChat({
                 }`}
               >
                 <div
-                  className={`px-3 py-1.5 mb-1 rounded-xl shadow-sm leading-snug break-words text-[1rem] font-medium
-                  ${
+                  className={`px-3 py-1.5 mb-1 rounded-xl shadow-sm leading-snug break-words text-[1rem] font-medium ${
                     msg.sender === 'user'
                       ? 'bg-gradient-to-r from-pink-400 to-yellow-400 text-white self-end'
                       : 'bg-white/95 border border-orange-50 text-gray-800 self-start'
                   }`}
-                  style={{
-                    maxWidth: '78%',
-                    fontSize: '1rem',
-                  }}
+                  style={{ maxWidth: '78%', fontSize: '1rem' }}
                 >
                   {msg.text}
                 </div>
@@ -142,7 +137,7 @@ export default function MealChat({
             )}
           </AnimatePresence>
         </div>
-        {/* Chat input bar, hidden when closing or ended */}
+
         {!chatEnded && !showClosing && (
           <form
             className="flex gap-2 items-center p-2 bg-white/90 backdrop-blur-md border-t border-orange-100 transition-all"
@@ -154,7 +149,7 @@ export default function MealChat({
               bottom: 0,
               zIndex: 10,
             }}
-            onSubmit={e => {
+            onSubmit={(e) => {
               e.preventDefault()
               if (!loading && !chatEnded && !showClosing) handleSend()
             }}
@@ -163,9 +158,9 @@ export default function MealChat({
               disabled={loading}
               className="flex-1 px-3 py-2 rounded-xl border border-orange-200 bg-white placeholder-gray-400 text-gray-700 text-[1rem] shadow-inner focus:ring-2 focus:ring-orange-200 outline-none transition"
               type="text"
-              placeholder={loading ? "Wait for my reply…" : "Type your answer…"}
+              placeholder={loading ? 'Wait for my reply…' : 'Type your answer…'}
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={(e) => setInput(e.target.value)}
               autoFocus
               autoComplete="off"
               inputMode="text"
@@ -179,7 +174,7 @@ export default function MealChat({
             </button>
           </form>
         )}
-        {/* Chat ended: show CTA */}
+
         {chatEnded && (
           <div className="flex flex-col items-center pb-5 gap-2">
             <motion.div
@@ -189,11 +184,12 @@ export default function MealChat({
               className="text-center mb-2 text-lg text-pink-600 font-semibold"
             >
               {meal === 'dinner'
-                ? "All done for today! You did amazing 💖"
-                : `Yay! Ready for ${meal === 'breakfast' ? 'lunch' : 'dinner'}?`}
+                ? 'All done for today! You did amazing 💖'
+                : `Yay! Ready for ${
+                    meal === 'breakfast' ? 'lunch' : 'dinner'
+                  }?`}
             </motion.div>
             <div className="flex gap-2 w-full justify-center">
-              {/* Next Meal / Finish Day */}
               {showNextMeal && nextMealHref && (
                 <button
                   onClick={() => onComplete()}
@@ -202,7 +198,6 @@ export default function MealChat({
                   {nextMealLabel}
                 </button>
               )}
-              {/* Return Home */}
               <button
                 type="button"
                 onClick={() => router.push('/')}

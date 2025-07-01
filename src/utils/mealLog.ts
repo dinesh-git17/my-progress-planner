@@ -1,13 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Initialize Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Safe user ID generator (never fails, see previous advice)
+// Generate or retrieve persistent user ID (stored in localStorage)
 export function getOrCreateUserId() {
   if (typeof window === 'undefined') return ''
+
   let id = localStorage.getItem('user_id')
   if (!id) {
     let uuid
@@ -15,33 +17,45 @@ export function getOrCreateUserId() {
       uuid = crypto.randomUUID()
     } else {
       uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = (Math.random() * 16) | 0,
-          v = c === 'x' ? r : (r & 0x3) | 0x8
+        const r = (Math.random() * 16) | 0
+        const v = c === 'x' ? r : (r & 0x3) | 0x8
         return v.toString(16)
       })
     }
     localStorage.setItem('user_id', uuid)
     id = uuid
   }
+
   return id
 }
 
-// This upserts (insert or update) the meal log for the right meal, user, and date
+// Save meal log and GPT response to Supabase
 export async function upsertMealLog({
   user_id,
   date,
-  meal, // 'breakfast', 'lunch', or 'dinner'
+  meal,
   answers,
+  gpt_response,
 }: {
   user_id: string
   date: string
   meal: 'breakfast' | 'lunch' | 'dinner'
   answers: any
+  gpt_response: string[]
 }) {
-  // The upsert will only overwrite the specific meal field, leave others intact
+  const gptField = `${meal}_gpt` // e.g. "breakfast_gpt"
+
+  const payload = {
+    user_id,
+    date,
+    [meal]: answers, // e.g. { foods: ['1 burger', '1 yogurt'] }
+    [gptField]: gpt_response, // e.g. "You're amazing for eating today 💖"
+  }
+
   const { error } = await supabase
     .from('meal_logs')
-    .upsert([{ user_id, date, [meal]: answers }], { onConflict: 'user_id,date' })
+    .upsert([payload], { onConflict: 'user_id,date' })
+
   if (error) {
     console.error('Supabase upsert error:', error)
   }

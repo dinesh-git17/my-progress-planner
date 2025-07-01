@@ -14,6 +14,7 @@ const mealLabels = [
 export default function Home() {
   const [quote, setQuote] = useState('')
   const [loading, setLoading] = useState(true)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false) // ✅ New state
   const router = useRouter()
 
   useEffect(() => {
@@ -22,6 +23,11 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => setQuote(data.quote))
       .finally(() => setLoading(false))
+
+    // ✅ Check push permission
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      setNotificationsEnabled(true)
+    }
   }, [])
 
   return (
@@ -64,12 +70,10 @@ export default function Home() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Ask for push notification permission (optional) */}
-        {/* <AskForPushPermission /> */}
-
         {/* Meal Selection Buttons */}
         <div className="w-full flex flex-col gap-3 mt-2">
-          <PushSubscriptionButton />
+          {/* ✅ Only show button if permission is not already granted */}
+          {!notificationsEnabled && <PushSubscriptionButton />}
           {mealLabels.map(({ meal, emoji, label }) => (
             <motion.button
               key={meal}
