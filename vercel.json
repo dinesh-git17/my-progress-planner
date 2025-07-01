@@ -2,13 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/lunch",
-      "schedule": "0 22 * * *",
-      "timezone": "America/Toronto"
+      "schedule": "0 22 * * *"
     },
     {
       "path": "/api/cron/dinner",
-      "schedule": "0 14 * * *",
-      "timezone": "America/Toronto"
+      "schedule": "0 14 * * *"
     }
   ]
 }
