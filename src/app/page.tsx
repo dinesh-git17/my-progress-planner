@@ -1,16 +1,23 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+// import AskForPushPermission from '@/components/AskForPushPermission'
+
+const mealLabels = [
+  { meal: 'breakfast', emoji: '🍳', label: 'Log Breakfast' },
+  { meal: 'lunch', emoji: '🥪', label: 'Log Lunch' },
+  { meal: 'dinner', emoji: '🍜', label: 'Log Dinner' }
+]
 
 export default function Home() {
   const [quote, setQuote] = useState('')
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     setLoading(true)
-    // Add cache-busting parameter to always fetch a new quote
     fetch('/api/gpt/quote?ts=' + Date.now())
       .then((res) => res.json())
       .then((data) => setQuote(data.quote))
@@ -57,20 +64,25 @@ export default function Home() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Ask for push permission */}
+        {/* Ask for push notification permission (optional) */}
+        {/* <AskForPushPermission /> */}
 
-        {/* Animated CTA Button */}
-        <Link href="/log" className="w-11/12 mx-auto">
-          <motion.button
-            whileHover={{ scale: 1.025 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 17 }}
-            className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 text-white text-base font-semibold shadow-lg focus:outline-none focus:ring-2 focus:ring-pink-300/40 transition-all duration-200 mt-2"
-            type="button"
-          >
-            Log your meal&nbsp;🍽️
-          </motion.button>
-        </Link>
+        {/* Meal Selection Buttons */}
+        <div className="w-full flex flex-col gap-3 mt-2">
+          {mealLabels.map(({ meal, emoji, label }) => (
+            <motion.button
+              key={meal}
+              whileHover={{ scale: 1.025 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 17 }}
+              className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 text-white text-base font-semibold shadow-lg focus:outline-none focus:ring-2 focus:ring-pink-300/40 transition-all duration-200"
+              type="button"
+              onClick={() => router.push(`/${meal}`)}
+            >
+              {emoji} {label}
+            </motion.button>
+          ))}
+        </div>
       </motion.section>
     </main>
   )
