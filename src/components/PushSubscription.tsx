@@ -1,6 +1,5 @@
-// src/components/PushSubscription.tsx
+// src/components/PushSubscriptionButton.tsx
 'use client'
-
 import { useState } from 'react'
 
 export function PushSubscriptionButton() {
@@ -13,20 +12,16 @@ export function PushSubscriptionButton() {
       const reg = await navigator.serviceWorker.register('/service-worker.js')
       await navigator.serviceWorker.ready
 
-      // Ask for notification permission
       const perm = await Notification.requestPermission()
       if (perm !== 'granted') throw new Error('Notification permission denied')
 
-      // Get public VAPID key (serve from env or hardcode for now)
       const vapidPublicKey = 'BAEWVqKa9ASTlGbc7Oo_BJGAsYBtlYAS1IkI1gKMz5Ot6WnNQuP-WQ2u3sDRDV4Ca5kZQwo8aKOshT3wOrUugxk'
 
-      // Subscribe for push
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
       })
 
-      // Send subscription object to your backend to save
       await fetch('/api/push/save-subscription', {
         method: 'POST',
         body: JSON.stringify(sub),
@@ -41,7 +36,6 @@ export function PushSubscriptionButton() {
     }
   }
 
-  // VAPID utility
   function urlBase64ToUint8Array(base64String: string) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4)
     const base64 = (base64String + padding)
