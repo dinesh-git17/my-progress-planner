@@ -1,4 +1,3 @@
-// src/components/OneSignalInit.tsx
 'use client'
 import { useEffect } from "react"
 import OneSignal from "react-onesignal"
@@ -27,10 +26,9 @@ export default function OneSignalInit() {
           'dialog.blocked.title': "Unblock Notifications",
           'dialog.blocked.message': "Follow these steps to allow notifications:"
         }
-      },
-      allowLocalhostAsSecureOrigin: true // for local testing, remove on prod
+      }
+      // No allowLocalhostAsSecureOrigin on production!
     })
   }, [])
-
   return null
 }

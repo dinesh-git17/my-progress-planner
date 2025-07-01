@@ -1,5 +1,6 @@
 'use client'
 
+import AskForPushPermission from '@/components/AskForPushPermission'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -56,6 +57,9 @@ export default function Home() {
             )}
           </AnimatePresence>
         </motion.div>
+
+        {/* Ask for push permission */}
+        <AskForPushPermission />
 
         {/* Animated CTA Button */}
         <Link href="/log" className="w-11/12 mx-auto">
