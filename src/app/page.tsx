@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-// import AskForPushPermission from '@/components/AskForPushPermission'
 
 const mealLabels = [
   { meal: 'breakfast', emoji: '🍳', label: 'Log Breakfast' },

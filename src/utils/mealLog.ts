@@ -41,7 +41,7 @@ export async function upsertMealLog({
   // The upsert will only overwrite the specific meal field, leave others intact
   const { error } = await supabase
     .from('meal_logs')
-    .upsert([{ user_id, date, [meal]: answers }], { onConflict: ['user_id', 'date'] })
+    .upsert([{ user_id, date, [meal]: answers }], { onConflict: 'user_id,date' })
   if (error) {
     console.error('Supabase upsert error:', error)
   }
