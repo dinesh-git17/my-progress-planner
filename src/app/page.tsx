@@ -11,23 +11,58 @@ const mealLabels = [
   { meal: 'dinner', emoji: '🍜', label: 'Log Dinner' }
 ]
 
+function getOrCreateUserId(): string {
+  if (typeof window === 'undefined') return ''
+  let id = localStorage.getItem('user_id')
+  if (!id) {
+    const uuid = crypto?.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0
+      const v = c === 'x' ? r : (r & 0x3) | 0x8
+      return v.toString(16)
+    })
+    localStorage.setItem('user_id', uuid)
+    id = uuid
+  }
+  return id
+}
+
 export default function Home() {
   const [quote, setQuote] = useState('')
   const [loading, setLoading] = useState(true)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false) // ✅ New state
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+  const [loggedMeals, setLoggedMeals] = useState({
+    breakfast: false,
+    lunch: false,
+    dinner: false
+  })
+
   const router = useRouter()
 
   useEffect(() => {
     setLoading(true)
     fetch('/api/gpt/quote?ts=' + Date.now())
-      .then((res) => res.json())
-      .then((data) => setQuote(data.quote))
+      .then(res => res.json())
+      .then(data => setQuote(data.quote))
       .finally(() => setLoading(false))
 
-    // ✅ Check push permission
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    if (Notification?.permission === 'granted') {
       setNotificationsEnabled(true)
     }
+
+    const user_id = getOrCreateUserId()
+    const today = new Date().toISOString().slice(0, 10)
+
+    fetch(`/api/meals/check?user_id=${user_id}&date=${today}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.mealLog) {
+          setLoggedMeals({
+            breakfast: !!data.mealLog.breakfast,
+            lunch: !!data.mealLog.lunch,
+            dinner: !!data.mealLog.dinner
+          })
+        }
+      })
   }, [])
 
   return (
@@ -72,21 +107,28 @@ export default function Home() {
 
         {/* Meal Selection Buttons */}
         <div className="w-full flex flex-col gap-3 mt-2">
-          {/* ✅ Only show button if permission is not already granted */}
           {!notificationsEnabled && <PushSubscriptionButton />}
-          {mealLabels.map(({ meal, emoji, label }) => (
-            <motion.button
-              key={meal}
-              whileHover={{ scale: 1.025 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 17 }}
-              className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 text-white text-base font-semibold shadow-lg focus:outline-none focus:ring-2 focus:ring-pink-300/40 transition-all duration-200"
-              type="button"
-              onClick={() => router.push(`/${meal}`)}
-            >
-              {emoji} {label}
-            </motion.button>
-          ))}
+          {mealLabels.map(({ meal, emoji, label }) => {
+            const isLogged = loggedMeals[meal as 'breakfast' | 'lunch' | 'dinner']
+            return (
+              <motion.button
+                key={meal}
+                whileHover={{ scale: isLogged ? 1 : 1.025 }}
+                whileTap={{ scale: isLogged ? 1 : 0.98 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 17 }}
+                disabled={isLogged}
+                className={`w-full py-2.5 px-4 rounded-full shadow-lg transition-all duration-200 font-semibold text-base ${
+                  isLogged
+                    ? 'bg-green-100 text-green-800 cursor-default'
+                    : 'bg-gradient-to-r from-pink-400 to-yellow-400 text-white hover:scale-105'
+                }`}
+                type="button"
+                onClick={() => router.push(`/${meal}`)}
+              >
+                {isLogged ? `✅ ${emoji} ${meal.charAt(0).toUpperCase() + meal.slice(1)} Logged` : `${emoji} ${label}`}
+              </motion.button>
+            )
+          })}
         </div>
       </motion.section>
     </main>
