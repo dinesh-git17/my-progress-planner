@@ -137,16 +137,22 @@ export default function MealChat({
       <div 
         className="flex-shrink-0 h-11 flex items-center justify-center relative z-20 sticky top-0"
         style={{
-          background: 'rgba(255, 255, 255, 0.72)',
-          backdropFilter: 'saturate(180%) blur(20px)',
-          WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-          borderBottom: '0.5px solid rgba(0, 0, 0, 0.04)',
+          background: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'saturate(180%) blur(30px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(30px)',
+          borderBottom: '0.5px solid rgba(232, 164, 201, 0.15)',
           fontFamily: systemFont,
+          boxShadow: '0 1px 10px rgba(232, 164, 201, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02)',
         }}
       >
-        <h1 className="text-[17px] font-semibold text-gray-900 tracking-[-0.41px] leading-[22px]">
-          {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
-        </h1>
+        <div className="flex items-center gap-2.5">
+          <span className="text-lg">
+            {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🥪' : '🍜'}
+          </span>
+          <h1 className="text-[17px] font-semibold text-gray-800 tracking-[-0.41px] leading-[22px]">
+            {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
+          </h1>
+        </div>
       </div>
 
       {/* Chat Messages */}
