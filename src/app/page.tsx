@@ -178,7 +178,7 @@ export default function Home() {
   }
 
   const fetchLoggedMeals = async (user_id: string): Promise<void> => {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = new Date().toLocaleString("en-US", { timeZone: "America/New_York" }).slice(0, 10)
     const res = await fetch(`/api/meals/check?user_id=${user_id}&date=${today}`)
     const data: MealLogResponse = await res.json()
     if (data?.mealLog) {
