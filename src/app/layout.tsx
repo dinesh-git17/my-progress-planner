@@ -1,6 +1,8 @@
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister"
+import { Inter } from 'next/font/google'
 import type { ReactNode } from "react"
 import "./globals.css"
+const inter = Inter({ subsets: ['latin'], weight: ['600', '700'] })
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
