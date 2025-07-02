@@ -56,13 +56,11 @@ export default function MealChat({
     }
   }, [])
 
-  // Scroll to bottom ONLY when new message, if overflow
+  // Scroll to bottom when new message
   useEffect(() => {
     if (!chatBodyRef.current) return
     const el = chatBodyRef.current
-    if (el.scrollHeight > el.clientHeight) {
-      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-    }
+    el.scrollTop = el.scrollHeight
   }, [messages, loading])
 
   async function finishChat() {
@@ -116,21 +114,19 @@ export default function MealChat({
   }
 
   const fontFamily = `-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif`
-
-  // Height constants: header = 44px, input bar = 64px + safe-area
   const HEADER_HEIGHT = 44
-  const INPUT_HEIGHT = 64 // adjust if your bar is taller/shorter
 
   return (
     <div
-      className="relative w-full overflow-hidden"
+      className="flex flex-col w-full max-w-2xl mx-auto bg-[#fdf6e3] shadow-lg"
       style={{
         fontFamily,
-        height: windowHeight || '100dvh', // fallback for SSR
+        height: windowHeight || '100dvh', // Always matches the visual viewport
+        minHeight: 0,
         background: '#fdf6e3',
       }}
     >
-      {/* FIXED GRADIENT BG */}
+      {/* BG */}
       <div
         className="fixed inset-0 z-0 pointer-events-none"
         aria-hidden="true"
@@ -139,27 +135,17 @@ export default function MealChat({
         }}
       />
       {/* Header */}
-      <div
-        className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center bg-white/60 border-b border-white/30 text-[1.08rem] font-semibold text-gray-700 select-none backdrop-blur-md"
-        style={{
-          height: HEADER_HEIGHT,
-          fontFamily,
-        }}
-      >
+      <div className="flex-shrink-0 h-[44px] flex items-center justify-center bg-white/60 border-b border-white/30 text-[1.08rem] font-semibold text-gray-700 z-20 select-none backdrop-blur-md" style={{ fontFamily }}>
         {meal.charAt(0).toUpperCase() + meal.slice(1)} Chat
       </div>
-      {/* Chat Messages */}
+      {/* Chat Area */}
       <div
         ref={chatBodyRef}
-        className="absolute left-0 right-0 w-full mx-auto py-4 flex flex-col justify-start overflow-y-auto"
+        className="flex-1 w-full px-0 py-4 flex flex-col justify-start overflow-y-auto"
         style={{
-          top: HEADER_HEIGHT,
-          bottom: `calc(${INPUT_HEIGHT}px + env(safe-area-inset-bottom))`,
           minHeight: 0,
           WebkitOverflowScrolling: 'touch',
           background: 'transparent',
-          maxWidth: '40rem',
-          margin: '0 auto',
         }}
       >
         <AnimatePresence initial={false}>
@@ -220,10 +206,9 @@ export default function MealChat({
       {/* Input Bar */}
       {!chatEnded && (
         <form
-          className="fixed left-0 right-0 bottom-0 z-30 w-full flex items-center gap-2 px-3 pt-1 pb-[env(safe-area-inset-bottom)] bg-transparent max-w-2xl mx-auto"
+          className="flex-shrink-0 w-full flex items-center gap-2 px-3 pt-1 pb-[env(safe-area-inset-bottom)] mb-4 bg-transparent"
           style={{
             fontFamily,
-            height: INPUT_HEIGHT,
             background: 'transparent',
           }}
           onSubmit={e => {
