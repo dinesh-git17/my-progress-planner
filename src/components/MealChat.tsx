@@ -113,35 +113,46 @@ export default function MealChat({
     setLoading(false)
   }
 
-  const fontFamily = `-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif`
-  const HEADER_HEIGHT = 44
+  const systemFont = `-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif`
 
   return (
     <div
-      className="flex flex-col w-full max-w-2xl mx-auto bg-[#fdf6e3] shadow-lg"
+      className="flex flex-col w-full max-w-md mx-auto shadow-xl"
       style={{
-        fontFamily,
-        height: windowHeight || '100dvh', // Always matches the visual viewport
+        fontFamily: systemFont,
+        height: windowHeight || '100dvh',
         minHeight: 0,
         background: '#fdf6e3',
       }}
     >
-      {/* BG */}
+      {/* Background Gradient */}
       <div
         className="fixed inset-0 z-0 pointer-events-none"
-        aria-hidden="true"
         style={{
           background: 'linear-gradient(135deg, #fdf6e3 0%, #fff5fa 54%, #e6e6fa 100%)',
         }}
       />
+
       {/* Header */}
-      <div className="flex-shrink-0 h-[44px] flex items-center justify-center bg-white/60 border-b border-white/30 text-[1.08rem] font-semibold text-gray-700 z-20 select-none backdrop-blur-md" style={{ fontFamily }}>
-        {meal.charAt(0).toUpperCase() + meal.slice(1)} Chat
+      <div 
+        className="flex-shrink-0 h-11 flex items-center justify-center relative z-20 sticky top-0"
+        style={{
+          background: 'rgba(255, 255, 255, 0.72)',
+          backdropFilter: 'saturate(180%) blur(20px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+          borderBottom: '0.5px solid rgba(0, 0, 0, 0.04)',
+          fontFamily: systemFont,
+        }}
+      >
+        <h1 className="text-[17px] font-semibold text-gray-900 tracking-[-0.41px] leading-[22px]">
+          {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
+        </h1>
       </div>
-      {/* Chat Area */}
+
+      {/* Chat Messages */}
       <div
         ref={chatBodyRef}
-        className="flex-1 w-full px-0 py-4 flex flex-col justify-start overflow-y-auto"
+        className="flex-1 w-full px-4 py-6 flex flex-col justify-start overflow-y-auto"
         style={{
           minHeight: 0,
           WebkitOverflowScrolling: 'touch',
@@ -152,143 +163,225 @@ export default function MealChat({
           {messages.map((msg, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 28 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -22 }}
-              transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-              className={`
-                flex w-full relative
-                ${msg.sender === 'user'
-                  ? 'justify-end pr-[3vw]'
-                  : 'justify-start pl-[3vw]'
-                }
-              `}
-              style={{
-                marginBottom: i < messages.length - 1 ? '0.20rem' : 0,
-                marginTop: 0,
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ 
+                duration: 0.35, 
+                ease: [0.25, 0.46, 0.45, 0.94],
+                type: "spring",
+                stiffness: 400,
+                damping: 30
               }}
+              className={`
+                flex w-full mb-1.5 relative
+                ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}
+              `}
             >
               <div
                 className={`
-                  relative px-4 py-2 rounded-[1.1rem] text-[1.07rem] leading-snug shadow
-                  max-w-[80vw] sm:max-w-[355px] break-words select-text
+                  relative px-4 py-2.5 max-w-[75%] break-words select-text
                   ${msg.sender === 'user'
-                    ? 'bg-gradient-to-tr from-pink-400 to-pink-300 text-white font-semibold'
-                    : 'bg-white/95 text-gray-900 font-medium'}
+                    ? 'rounded-[22px] rounded-br-[8px] text-white'
+                    : 'rounded-[22px] rounded-bl-[8px] text-black'
+                  }
                 `}
                 style={{
+                  fontFamily: systemFont,
+                  fontSize: '17px',
+                  lineHeight: '22px',
+                  letterSpacing: '-0.41px',
+                  fontWeight: msg.sender === 'user' ? '400' : '400',
+                  background: msg.sender === 'user' 
+                    ? 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)'
+                    : 'rgba(255, 255, 255, 0.75)',
                   boxShadow: msg.sender === 'user'
-                    ? '0 1.5px 7px 0 rgba(240,60,130,0.10)'
-                    : '0 1.5px 7px 0 rgba(140,140,140,0.08)',
-                  borderTopRightRadius: msg.sender === 'user' ? '1.6rem' : undefined,
-                  borderTopLeftRadius: msg.sender === 'bot' ? '1.6rem' : undefined,
+                    ? '0 1px 3px rgba(232, 164, 201, 0.15), 0 1px 2px rgba(232, 164, 201, 0.1)'
+                    : '0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+                  border: msg.sender === 'bot' ? '0.5px solid rgba(0, 0, 0, 0.04)' : 'none',
                 }}
               >
                 {msg.text}
               </div>
             </motion.div>
           ))}
+          
           {loading && (
             <motion.div
               key="typing"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex justify-start pl-[3vw] relative"
+              initial={{ opacity: 0, y: 10, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -5, scale: 0.9 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="flex justify-start mb-1.5"
             >
-              <div className="px-4 py-2 rounded-[1.2rem] bg-white/70 text-gray-400 italic shadow-sm max-w-[54vw]">
-                typing…
+              <div 
+                className="px-4 py-2.5 rounded-[22px] rounded-bl-[8px] max-w-[75%]"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.7)',
+                  border: '0.5px solid rgba(0, 0, 0, 0.04)',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+                }}
+              >
+                <div className="flex items-center gap-1">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
       {/* Input Bar */}
       {!chatEnded && (
-        <form
-          className="flex-shrink-0 w-full flex items-center gap-2 px-3 pt-1 pb-[env(safe-area-inset-bottom)] mb-4 bg-transparent"
+        <div 
+          className="flex-shrink-0 w-full px-4 pb-[env(safe-area-inset-bottom)] mb-6 sticky bottom-0"
           style={{
-            fontFamily,
-            background: 'transparent',
-          }}
-          onSubmit={e => {
-            e.preventDefault()
-            if (!loading && !chatEnded && !showClosing) handleSend()
+            paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
           }}
         >
-          <div className="relative flex-1 flex items-center">
-            <input
-              disabled={loading}
-              className="
-                w-full px-4 py-3 rounded-full bg-white/80
-                text-gray-800 placeholder-gray-400 text-[1.07rem] shadow
-                focus:ring-2 focus:ring-pink-200 outline-none transition
-                border-none
-              "
-              style={{
-                fontFamily,
-                backdropFilter: 'blur(6px)',
-                WebkitBackdropFilter: 'blur(6px)',
-                boxShadow: '0 1px 12px 0 rgba(255,182,193,0.12)',
-                border: 'none'
-              }}
-              type="text"
-              placeholder={loading ? 'Wait for my reply…' : 'Type your answer…'}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              autoFocus
-              autoComplete="off"
-              inputMode="text"
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="
-                absolute right-1 top-1 bottom-1 my-auto flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-pink-400 to-pink-300 shadow
-                text-white font-bold text-xl transition hover:scale-110 active:scale-95 disabled:opacity-60
-                border-none outline-none
-              "
-              aria-label="Send"
-              style={{ zIndex: 3 }}
-            >
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M4 20L20 12L4 4V10L16 12L4 14V20Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-          </div>
-        </form>
-      )}
-      {/* Overlay for Chat Complete */}
-      {chatEnded && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[2.5px]">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98, y: 24 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.33, type: "spring", stiffness: 160, damping: 18 }}
-            className="bg-white/95 rounded-3xl shadow-2xl max-w-xs w-full px-6 py-8 flex flex-col items-center"
-            style={{ fontFamily }}
+          <form
+            className="flex items-center gap-3"
+            onSubmit={e => {
+              e.preventDefault()
+              if (!loading && !chatEnded && !showClosing) handleSend()
+            }}
           >
-            <div className="text-center mb-4 text-lg font-semibold text-pink-500">
+            <div className="relative flex-1">
+              <input
+                disabled={loading}
+                className="
+                  w-full px-5 py-3 text-black placeholder-gray-500 outline-none transition-all duration-200
+                  disabled:opacity-60
+                "
+                style={{
+                  fontFamily: systemFont,
+                  fontSize: '17px',
+                  lineHeight: '22px',
+                  letterSpacing: '-0.41px',
+                  borderRadius: '24px',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  border: '0.5px solid rgba(0, 0, 0, 0.04)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
+                  backdropFilter: 'saturate(180%) blur(20px)',
+                  WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+                  paddingRight: '52px', // Make room for send button
+                }}
+                type="text"
+                placeholder={loading ? 'Wait for my reply…' : 'Message'}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                autoFocus
+                autoComplete="off"
+                inputMode="text"
+              />
+              
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                className="
+                  absolute right-1.5 top-1/2 -translate-y-1/2
+                  flex items-center justify-center w-8 h-8 transition-all duration-200
+                  disabled:opacity-40 disabled:scale-95
+                  hover:scale-105 active:scale-95
+                "
+                style={{
+                  borderRadius: '20px',
+                  background: input.trim() && !loading 
+                    ? 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)'
+                    : 'rgba(142, 142, 147, 0.6)',
+                  boxShadow: input.trim() && !loading
+                    ? '0 2px 8px rgba(232, 164, 201, 0.25), 0 1px 3px rgba(232, 164, 201, 0.15)'
+                    : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                }}
+                aria-label="Send message"
+              >
+                <svg 
+                  width="16" 
+                  height="16" 
+                  fill="none" 
+                  viewBox="0 0 24 24"
+                  className="text-white"
+                >
+                  <path
+                    d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Chat Complete Overlay */}
+      {chatEnded && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ 
+              duration: 0.4, 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 25 
+            }}
+            className="mx-4 max-w-sm w-full px-8 py-10 flex flex-col items-center text-center"
+            style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'saturate(180%) blur(20px)',
+              WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+              borderRadius: '24px',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15), 0 10px 25px rgba(0, 0, 0, 0.1)',
+              border: '0.5px solid rgba(255, 255, 255, 0.8)',
+              fontFamily: systemFont,
+            }}
+          >
+            <div 
+              className="mb-6 text-pink-500"
+              style={{
+                fontSize: '19px',
+                lineHeight: '25px',
+                letterSpacing: '-0.45px',
+                fontWeight: '600',
+              }}
+            >
               {meal === 'dinner'
                 ? 'All done for today! You did amazing 💖'
                 : `Yay! Ready for ${meal === 'breakfast' ? 'lunch' : 'dinner'}?`}
             </div>
-            <div className="flex gap-2 w-full justify-center mt-2">
+            
+            <div className="flex flex-col gap-3 w-full">
               {showNextMeal && nextMealHref && (
                 <button
                   onClick={() => onComplete()}
-                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-400 to-pink-300 text-white font-bold text-base shadow transition hover:scale-105"
+                  className="w-full py-3.5 text-white font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    background: 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)',
+                    borderRadius: '14px',
+                    fontSize: '17px',
+                    letterSpacing: '-0.41px',
+                    boxShadow: '0 4px 12px rgba(232, 164, 201, 0.25), 0 2px 4px rgba(232, 164, 201, 0.15)',
+                  }}
                 >
                   {nextMealLabel}
                 </button>
               )}
+              
               <button
-                type="button"
                 onClick={() => router.push('/')}
-                className="px-6 py-2.5 rounded-full bg-gray-100 text-gray-700 font-semibold text-base shadow transition hover:scale-105"
+                className="w-full py-3.5 text-gray-700 font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                style={{
+                  background: 'rgba(142, 142, 147, 0.12)',
+                  borderRadius: '14px',
+                  fontSize: '17px',
+                  letterSpacing: '-0.41px',
+                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+                }}
               >
                 Home
               </button>
