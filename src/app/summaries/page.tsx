@@ -1,7 +1,9 @@
 'use client'
 
 import { getOrCreateUserId } from '@/utils/mealLog'
+import { motion } from 'framer-motion'
 import { DM_Sans, Dancing_Script } from 'next/font/google'
+import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 const dmSans = DM_Sans({ subsets: ['latin'], weight: ['500', '700'] })
@@ -127,6 +129,7 @@ export default function SummariesPage() {
   const [activeStoryIdx, setActiveStoryIdx] = useState(0)
   const [storyAutoKey, setStoryAutoKey] = useState(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchSummaries = async () => {
@@ -190,6 +193,22 @@ export default function SummariesPage() {
         aria-hidden="true"
         style={{ background: BG_GRADIENT }}
       />
+      {/* Back Button */}
+      <motion.button
+        onClick={() => router.push('/')}
+        className="absolute left-4 top-4 z-40 p-3 bg-white/80 text-gray-900 rounded-full shadow-md hover:bg-purple-100/70 focus:ring-2 focus:ring-purple-300 transition-all"
+        aria-label="Go Back"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5"></path>
+          <path d="M12 19l-7-7 7-7"></path>
+        </svg>
+      </motion.button>
+
       {/* Banner fixed above */}
       <SummariesHeader dancingScriptClass={dancingScript.className} />
 
@@ -319,8 +338,8 @@ export default function SummariesPage() {
                 style={{ backdropFilter: 'blur(3px)' }}
               >
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-                  <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M19 12H5"></path>
+                  <path d="M12 19l-7-7 7-7"></path>
                 </svg>
               </button>
             </div>

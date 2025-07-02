@@ -17,10 +17,24 @@ export default function AdminSummariesPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/admin/summaries')
-      .then((res) => res.json())
-      .then((data) => setSummaries(data.summaries || []))
-      .finally(() => setLoading(false))
+    const fetchSummaries = () => {
+      const timestamp = new Date().getTime() // Add a unique timestamp to the URL for cache-busting
+
+      // Fetch fresh data with a cache-busting query parameter
+      fetch(`/api/admin/summaries?timestamp=${timestamp}`)
+        .then((res) => res.json())
+        .then((data) => setSummaries(data.summaries || []))
+        .finally(() => setLoading(false))
+    }
+
+    // Initial fetch
+    fetchSummaries()
+
+    // Fetch data every 30 seconds
+    const intervalId = setInterval(fetchSummaries, 30000)
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId)
   }, [])
 
   return (
