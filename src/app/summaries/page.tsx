@@ -344,14 +344,18 @@ export default function SummariesPage() {
               {/* Close Button */}
               <button
                 onClick={e => { e.stopPropagation(); setActiveSummary(null) }}
-                className="absolute right-2 top-1 text-gray-400 bg-white/70 hover:bg-purple-100/70 rounded-full p-2 shadow-sm z-20 border border-purple-100"
+                className="absolute right-2 top-1 text-gray-400 bg-transparent hover:bg-purple-100/70 rounded-none p-2 shadow-sm z-20"
                 aria-label="Close"
-                style={{ backdropFilter: 'blur(3px)' }}
+                style={{
+                  backdropFilter: 'blur(3px)',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold',
+                  color: '#444',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
               >
-                <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-                  <path d="M19 12H5"></path>
-                  <path d="M12 19l-7-7 7-7"></path>
-                </svg>
+                X
               </button>
             </div>
             <style>
