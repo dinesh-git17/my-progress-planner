@@ -39,6 +39,23 @@ export default function MealChat({
   // Ref for scroll
   const chatBodyRef = useRef<HTMLDivElement>(null)
 
+  // Dynamically track window height for keyboard gap fix
+  const [windowHeight, setWindowHeight] = useState(
+    typeof window !== 'undefined' ? window.innerHeight : 0
+  )
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowHeight(window.innerHeight)
+    }
+    window.addEventListener('resize', handleResize)
+    window.addEventListener('focus', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('focus', handleResize)
+    }
+  }, [])
+
   // Scroll to bottom ONLY when new message, if overflow
   useEffect(() => {
     if (!chatBodyRef.current) return
@@ -105,7 +122,14 @@ export default function MealChat({
   const INPUT_HEIGHT = 64 // adjust if your bar is taller/shorter
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden" style={{ fontFamily }}>
+    <div
+      className="relative w-full overflow-hidden"
+      style={{
+        fontFamily,
+        height: windowHeight || '100dvh', // fallback for SSR
+        background: '#fdf6e3',
+      }}
+    >
       {/* FIXED GRADIENT BG */}
       <div
         className="fixed inset-0 z-0 pointer-events-none"
