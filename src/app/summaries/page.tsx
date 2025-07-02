@@ -194,20 +194,31 @@ export default function SummariesPage() {
         style={{ background: BG_GRADIENT }}
       />
       {/* Back Button */}
-      <motion.button
-        onClick={() => router.push('/')}
-        className="absolute left-4 top-4 z-40 p-3 bg-white/80 text-gray-900 rounded-full shadow-md hover:bg-purple-100/70 focus:ring-2 focus:ring-purple-300 transition-all"
-        aria-label="Go Back"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.5 }}
+      <motion.div
+        className="absolute left-4 top-4 z-40"
+        initial={{ opacity: 0, x: -10 }}  // Starts slightly off-screen to the left
+        animate={{ opacity: 1, x: 0 }}   // Moves to the normal position
+        exit={{ opacity: 0, x: -10 }}    // Moves off-screen to the left on exit
+        transition={{ duration: 0.3 }}   // Smooth transition time
+        style={{
+          position: 'fixed',  // Make sure it's fixed
+          zIndex: 40,         // Ensure it's above other content
+          top: '16px',        // Keep it fixed from the top
+          left: '16px',       // Keep it fixed from the left
+          willChange: 'opacity'  // Optimize rendering for opacity change
+        }}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 12H5"></path>
-          <path d="M12 19l-7-7 7-7"></path>
-        </svg>
-      </motion.button>
+        <button
+          onClick={() => router.push('/')}
+          className="p-3 bg-white/80 text-gray-900 rounded-full shadow-md hover:bg-purple-100/70 focus:ring-2 focus:ring-purple-300 transition-all"
+          aria-label="Go Back"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5"></path>
+            <path d="M12 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+      </motion.div>
 
       {/* Banner fixed above */}
       <SummariesHeader dancingScriptClass={dancingScript.className} />
