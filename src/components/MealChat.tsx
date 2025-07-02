@@ -113,7 +113,7 @@ export default function MealChat({
     setLoading(false)
   }
 
-  const systemFont = `-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif`
+  const systemFont = `-apple-system, BlinkMacSystemFont, 'SF Pro Rounded', 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif`
 
   return (
     <div
@@ -320,7 +320,7 @@ export default function MealChat({
 
       {/* Chat Complete Overlay */}
       {chatEnded && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-md">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -332,22 +332,28 @@ export default function MealChat({
             }}
             className="mx-4 max-w-sm w-full px-8 py-10 flex flex-col items-center text-center"
             style={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'saturate(180%) blur(20px)',
-              WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-              borderRadius: '24px',
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15), 0 10px 25px rgba(0, 0, 0, 0.1)',
-              border: '0.5px solid rgba(255, 255, 255, 0.8)',
+              background: 'rgba(255, 255, 255, 0.18)',
+              backdropFilter: 'saturate(180%) blur(40px)',
+              WebkitBackdropFilter: 'saturate(180%) blur(40px)',
+              borderRadius: '20px',
+              boxShadow: `
+                0 32px 64px rgba(0, 0, 0, 0.08),
+                0 16px 32px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.02)
+              `,
+              border: '0.5px solid rgba(255, 255, 255, 0.25)',
               fontFamily: systemFont,
             }}
           >
             <div 
-              className="mb-6 text-pink-500"
+              className="mb-8 text-gray-700"
               style={{
-                fontSize: '19px',
-                lineHeight: '25px',
-                letterSpacing: '-0.45px',
-                fontWeight: '600',
+                fontSize: '18px',
+                lineHeight: '23px',
+                letterSpacing: '-0.24px',
+                fontWeight: '500',
+                textShadow: '0 0.5px 1px rgba(255, 255, 255, 0.9)',
               }}
             >
               {meal === 'dinner'
@@ -355,35 +361,64 @@ export default function MealChat({
                 : `Yay! Ready for ${meal === 'breakfast' ? 'lunch' : 'dinner'}?`}
             </div>
             
-            <div className="flex flex-col gap-3 w-full">
+            <div className="flex flex-col gap-4 w-full">
               {showNextMeal && nextMealHref && (
                 <button
                   onClick={() => onComplete()}
-                  className="w-full py-3.5 text-white font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full py-3.5 text-white font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
                   style={{
                     background: 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)',
                     borderRadius: '14px',
-                    fontSize: '17px',
-                    letterSpacing: '-0.41px',
-                    boxShadow: '0 4px 12px rgba(232, 164, 201, 0.25), 0 2px 4px rgba(232, 164, 201, 0.15)',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    letterSpacing: '-0.24px',
+                    boxShadow: `
+                      0 4px 20px rgba(232, 164, 201, 0.25),
+                      0 2px 8px rgba(232, 164, 201, 0.15),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.2)
+                    `,
+                    border: '0.5px solid rgba(255, 255, 255, 0.1)',
                   }}
                 >
-                  {nextMealLabel}
+                  <span className="relative z-10">{nextMealLabel}</span>
+                  <div 
+                    className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
+                      borderRadius: '16px',
+                    }}
+                  />
                 </button>
               )}
               
               <button
                 onClick={() => router.push('/')}
-                className="w-full py-3.5 text-gray-700 font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full py-3.5 text-gray-600 font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
                 style={{
-                  background: 'rgba(142, 142, 147, 0.12)',
+                  background: 'rgba(120, 120, 128, 0.12)',
                   borderRadius: '14px',
-                  fontSize: '17px',
-                  letterSpacing: '-0.41px',
-                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  letterSpacing: '-0.24px',
+                  boxShadow: `
+                    0 2px 10px rgba(0, 0, 0, 0.04),
+                    0 1px 4px rgba(0, 0, 0, 0.02),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                    inset 0 -0.5px 0 rgba(0, 0, 0, 0.04)
+                  `,
+                  border: '0.5px solid rgba(255, 255, 255, 0.2)',
+                  backdropFilter: 'saturate(180%) blur(20px)',
+                  WebkitBackdropFilter: 'saturate(180%) blur(20px)',
                 }}
               >
-                Home
+                <span className="relative z-10">Home</span>
+                <div 
+                  className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '16px',
+                  }}
+                />
               </button>
             </div>
           </motion.div>
