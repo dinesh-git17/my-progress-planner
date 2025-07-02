@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 type MealLog = {
   id: string
@@ -57,22 +57,58 @@ function renderGptResponse(responses: string[] | null | undefined) {
 
 export default function AdminPage() {
   const [logs, setLogs] = useState<MealLog[]>([])
+  const [filteredLogs, setFilteredLogs] = useState<MealLog[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedName, setSelectedName] = useState('')
 
   useEffect(() => {
     fetch('/api/admin/log-meal')
       .then(res => res.json())
-      .then(data => setLogs(data.logs || []))
+      .then(data => {
+        setLogs(data.logs || [])
+        setFilteredLogs(data.logs || [])
+      })
       .finally(() => setLoading(false))
   }, [])
+
+  const uniqueNames = Array.from(new Set(logs.map(log => log.name).filter(Boolean)))
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const name = e.target.value
+    setSelectedName(name)
+
+    if (name === '') {
+      setFilteredLogs(logs)
+    } else {
+      setFilteredLogs(logs.filter(log => log.name === name))
+    }
+  }
 
   return (
     <main className="w-full min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-[#f6d365] to-[#fda085] p-4">
       <section className="w-full max-w-6xl mt-10 bg-white/90 rounded-3xl shadow-lg backdrop-blur-md p-6">
         <h1 className="text-2xl font-bold mb-6 text-pink-600 text-center">🍽️ Meal Logs + GPT Responses</h1>
+
+        {uniqueNames.length > 0 && (
+          <div className="mb-4 flex justify-center">
+            <select
+              value={selectedName}
+              onChange={handleFilterChange}
+              className="px-4 py-2 rounded-xl border border-orange-300 shadow text-gray-700 focus:ring-2 focus:ring-orange-300"
+            >
+              <option value="">🌸 Show All Users</option>
+              {uniqueNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center text-gray-400">Loading logs…</div>
-        ) : logs.length === 0 ? (
+        ) : filteredLogs.length === 0 ? (
           <div className="text-center text-gray-400">No logs yet.</div>
         ) : (
           <div className="overflow-x-auto">
@@ -87,7 +123,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log, i) => (
+                {filteredLogs.map((log, i) => (
                   <tr key={log.id} className={i % 2 ? 'bg-orange-50/40' : 'bg-transparent'}>
                     <td className="py-2 pr-3 font-mono text-gray-700 whitespace-nowrap align-top">
                       {new Date(log.created_at).toLocaleDateString()}

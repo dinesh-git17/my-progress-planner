@@ -1,12 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Generate or retrieve persistent user ID (stored in localStorage)
 export function getOrCreateUserId() {
   if (typeof window === 'undefined') return ''
 
@@ -29,7 +27,6 @@ export function getOrCreateUserId() {
   return id
 }
 
-// Save meal log and GPT response to Supabase
 export async function upsertMealLog({
   user_id,
   date,
@@ -43,20 +40,114 @@ export async function upsertMealLog({
   answers: any
   gpt_response: string[]
 }) {
-  const gptField = `${meal}_gpt` // e.g. "breakfast_gpt"
+  const gptField = `${meal}_gpt`
 
-  const payload = {
-    user_id,
-    date,
-    [meal]: answers, // e.g. { foods: ['1 burger', '1 yogurt'] }
-    [gptField]: gpt_response, // e.g. "You're amazing for eating today 💖"
+  // Save to `meal_logs` table
+  const { error: upsertError } = await supabase
+    .from('meal_logs')
+    .upsert([{ user_id, date, [meal]: answers, [gptField]: gpt_response }], {
+      onConflict: 'user_id,date',
+    })
+
+  if (upsertError) {
+    console.error('Supabase meal_logs upsert error:', upsertError)
+    return
   }
 
-  const { error } = await supabase
-    .from('meal_logs')
-    .upsert([payload], { onConflict: 'user_id,date' })
+  // Get user name from `users` table
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('name')
+    .eq('user_id', user_id)
+    .maybeSingle()
 
-  if (error) {
-    console.error('Supabase upsert error:', error)
+  if (userError || !userData?.name) {
+    console.warn('Could not fetch user name for summary:', userError)
+    return
+  }
+
+  const name = userData.name
+
+  // 🧠 Generate GPT summary for this meal
+  try {
+    const res = await fetch('/api/gpt/summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        meal,
+        answers,
+        gpt_response,
+      }),
+    })
+
+    const data = await res.json()
+    const summaryText = data?.summary || null
+
+    if (!summaryText) {
+      console.warn('No GPT summary returned')
+      return
+    }
+
+    // 🔒 Upsert into `daily_summaries`
+    const { error: summaryError } = await supabase.from('daily_summaries').upsert(
+      [
+        {
+          user_id,
+          name,
+          date,
+          [`${meal}_summary`]: summaryText,
+        },
+      ],
+      { onConflict: 'user_id,date' }
+    )
+
+    if (summaryError) {
+      console.error('Supabase daily_summaries upsert error:', summaryError)
+      return
+    }
+
+    // 🍽 Check if all 3 meals are now logged
+    const { data: allMealsData, error: mealCheckError } = await supabase
+      .from('meal_logs')
+      .select('breakfast, lunch, dinner')
+      .eq('user_id', user_id)
+      .eq('date', date)
+      .maybeSingle()
+
+    if (mealCheckError) {
+      console.warn('Error checking full day meal log:', mealCheckError)
+      return
+    }
+
+    if (allMealsData?.breakfast && allMealsData?.lunch && allMealsData?.dinner) {
+      const fullDayPrompt = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          meal: 'day',
+          answers: [
+            ...(allMealsData.breakfast || []),
+            ...(allMealsData.lunch || []),
+            ...(allMealsData.dinner || []),
+          ],
+        }),
+      }
+
+      const fullDayRes = await fetch('/api/gpt/summary', fullDayPrompt)
+      const fullDayData = await fullDayRes.json()
+      const fullSummary = fullDayData?.summary
+
+      if (fullSummary) {
+        await supabase
+          .from('daily_summaries')
+          .update({ full_day_summary: fullSummary })
+          .eq('user_id', user_id)
+          .eq('date', date)
+      }
+    }
+  } catch (err) {
+    console.error('GPT summary generation error:', err)
   }
 }

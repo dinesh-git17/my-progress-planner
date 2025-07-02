@@ -38,7 +38,7 @@ export default function Home() {
         setAskName(true)
       } else {
         setName(existingName)
-        fetchQuote(existingName) // ✅ pass name correctly
+        fetchQuote(existingName)
         fetchLoggedMeals(user_id)
       }
     }
@@ -75,7 +75,7 @@ export default function Home() {
       setShowNameSaved(true)
       setTimeout(() => {
         setAskName(false)
-        fetchQuote(tempName.trim()) // ✅ now passes correct name
+        fetchQuote(tempName.trim())
         fetchLoggedMeals(user_id)
       }, 3000)
     }
@@ -179,6 +179,16 @@ export default function Home() {
                   </motion.button>
                 )
               })}
+
+              {/* ✅ View Summaries Button */}
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => router.push('/summaries')}
+                className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 text-white font-semibold shadow-md mt-4 transition hover:scale-105"
+              >
+                📋 View My Summaries
+              </motion.button>
             </div>
           </>
         )}
