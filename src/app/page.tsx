@@ -17,10 +17,47 @@ function getInitials(name = '') {
   return name.split(' ').map(w => w[0]?.toUpperCase()).join('').slice(0, 2)
 }
 
-// NEW: Helper to highlight keywords in the quote
 interface HighlightedWord {
   regex: RegExp
   className: string
+}
+
+function calculateStreak(dates: string[]): number {
+  if (!dates.length) return 0
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  let streak = 0
+  let compare = new Date(today)
+  for (const dateStr of dates) {
+    const logDate = new Date(dateStr + 'T00:00:00Z')
+    if (logDate.getTime() === compare.getTime()) {
+      streak += 1
+      compare.setUTCDate(compare.getUTCDate() - 1)
+    } else if (logDate.getTime() < compare.getTime()) {
+      break
+    }
+  }
+  return streak
+}
+
+// --- Stable user_id! ---
+function useUserStreak(user_id?: string) {
+  const [streak, setStreak] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user_id) return
+    setLoading(true)
+    fetch(`/api/streak?user_id=${user_id}`)
+      .then(res => res.json())
+      .then(({ dates }) => setStreak(calculateStreak(dates ?? [])))
+      .catch((err) => {
+        setStreak(0)
+      })
+      .finally(() => setLoading(false))
+  }, [user_id])
+
+  return { streak, loading }
 }
 
 function highlightQuote(quote: string): string {
@@ -33,7 +70,6 @@ function highlightQuote(quote: string): string {
     { regex: /motivation/gi, className: 'text-blue-500 font-semibold' },
     { regex: /healthy/gi, className: 'text-teal-500 font-semibold' },
     { regex: /victory/gi, className: 'text-teal-500 font-semibold' },
-    
   ]
   let highlighted = quote
   for (const { regex, className } of highlights) {
@@ -54,31 +90,34 @@ export default function Home() {
   const [showNameSaved, setShowNameSaved] = useState(false)
   const [loggedMeals, setLoggedMeals] = useState<string[]>([])
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
-  const [streak, setStreak] = useState(4) // Example streak
-
+  const [userId, setUserId] = useState<string | null>(null)
+  const { streak, loading: streakLoading } = useUserStreak(userId ?? undefined)
   const router = useRouter()
+
+  useEffect(() => {
+    const uid = getOrCreateUserId()
+    setUserId(uid)
+  }, [])
 
   useEffect(() => {
     if (typeof Notification !== 'undefined') {
       setNotificationsEnabled(Notification.permission === 'granted')
     }
-    // Fake streak fetch (replace with real logic)
-    setStreak(4)
+    if (!userId) return
     const init = async () => {
-      const user_id = getOrCreateUserId()
-      const existingName = await getUserName(user_id)
-
+      const existingName = await getUserName(userId)
       if (!existingName) {
         setAskName(true)
       } else {
         setName(existingName)
         fetchQuote(existingName)
-        fetchLoggedMeals(user_id)
+        fetchLoggedMeals(userId)
       }
     }
     init()
     // eslint-disable-next-line
-  }, [])
+  }, [userId])
+
 
   interface QuoteResponse {
     quote?: string
@@ -128,19 +167,19 @@ export default function Home() {
   }
 
   const handleSaveName = async () => {
-    if (!tempName.trim()) return
-    const user_id = getOrCreateUserId()
-    const success = await saveUserName(user_id, tempName.trim())
+    if (!tempName.trim() || !userId) return
+    const success = await saveUserName(userId, tempName.trim())
     if (success) {
       setName(tempName.trim())
       setShowNameSaved(true)
       setTimeout(() => {
         setAskName(false)
         fetchQuote(tempName.trim())
-        fetchLoggedMeals(user_id)
+        fetchLoggedMeals(userId)
       }, 1200)
     }
   }
+
 
   // Apple Health colors for streak badge
   const streakColors = [
@@ -150,6 +189,11 @@ export default function Home() {
     "from-[#fceabb] to-[#f8b500]",
   ]
   const streakColor = streakColors[streak % streakColors.length]
+
+console.log('userId:', userId)
+console.log('streak:', streak)
+console.log('streakLoading:', streakLoading)
+
 
   return (
       <main className="
@@ -163,12 +207,19 @@ export default function Home() {
           <span className="text-[1.5rem] font-bold text-gray-900 leading-snug flex items-center gap-1">
             {name ? <>Hello, {name.split(' ')[0]} <span className="ml-1">👋</span></> : "Hello! 👋"}
           </span>
-          {streak > 0 && (
-            <span className="flex items-center mt-1 text-[1rem] font-medium text-gray-700">
+          {!streakLoading && streak > 0 && (
+            <motion.span
+              key={streak}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1.1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 18 }}
+              className="flex items-center mt-1 text-[1rem] font-medium text-gray-700"
+            >
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400 mr-2" />
               <span>{streak} day{streak > 1 && 's'} streak!</span>
-            </span>
-          )}
+            </motion.span>
+)}
+
         </div>
         <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg select-none uppercase">
           {getInitials(name) || "🍽️"}
