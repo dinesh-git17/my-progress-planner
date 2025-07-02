@@ -27,7 +27,7 @@ export default function MealChat({
   onComplete,
 }: Props) {
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState([{ sender: 'bot', text: FIRST_PROMPT[meal] }])
+  const [messages, setMessages] = useState<Array<{ sender: string; text: string }>>([])
   const [chatEnded, setChatEnded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showClosing, setShowClosing] = useState(false)
@@ -56,11 +56,29 @@ export default function MealChat({
     }
   }, [])
 
-  // Scroll to bottom when new message
+  // Add initial message with animation delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMessages([{ sender: 'bot', text: FIRST_PROMPT[meal] }])
+    }, 300) // Small delay for smooth entry
+
+    return () => clearTimeout(timer)
+  }, [meal])
+
+  // Scroll to bottom when new message - smooth coordination
   useEffect(() => {
     if (!chatBodyRef.current) return
     const el = chatBodyRef.current
-    el.scrollTop = el.scrollHeight
+    
+    // Use requestAnimationFrame for smooth scrolling
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: 'smooth'
+        })
+      })
+    })
   }, [messages, loading])
 
   async function finishChat() {
@@ -145,13 +163,33 @@ export default function MealChat({
           boxShadow: '0 1px 10px rgba(232, 164, 201, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02)',
         }}
       >
-        <div className="flex items-center gap-2.5">
-          <span className="text-lg">
-            {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🥪' : '🍜'}
-          </span>
-          <h1 className="text-[17px] font-semibold text-gray-800 tracking-[-0.41px] leading-[22px]">
-            {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
-          </h1>
+        <div className="flex items-center justify-between w-full px-4">
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center justify-center w-8 h-8 transition-all duration-200 hover:scale-110 active:scale-95"
+            aria-label="Go back"
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-gray-600">
+              <path
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 12H5m0 0l7 7m-7-7l7-7"
+              />
+            </svg>
+          </button>
+          
+          <div className="flex items-center gap-2.5">
+            <span className="text-lg">
+              {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🥪' : '🍜'}
+            </span>
+            <h1 className="text-[17px] font-semibold text-gray-800 tracking-[-0.41px] leading-[22px]">
+              {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
+            </h1>
+          </div>
+          
+          <div className="w-8 h-8"></div>
         </div>
       </div>
 
@@ -168,16 +206,14 @@ export default function MealChat({
         <AnimatePresence initial={false}>
           {messages.map((msg, i) => (
             <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              key={`${msg.sender}-${i}`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
               transition={{ 
-                duration: 0.35, 
-                ease: [0.25, 0.46, 0.45, 0.94],
-                type: "spring",
-                stiffness: 400,
-                damping: 30
+                duration: 0.2, 
+                ease: "easeOut",
+                delay: i === 0 ? 0.05 : 0
               }}
               className={`
                 flex w-full mb-1.5 relative
@@ -215,10 +251,10 @@ export default function MealChat({
           {loading && (
             <motion.div
               key="typing"
-              initial={{ opacity: 0, y: 10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -5, scale: 0.9 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="flex justify-start mb-1.5"
             >
               <div 
