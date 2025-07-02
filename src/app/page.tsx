@@ -403,22 +403,42 @@ console.log('streakLoading:', streakLoading)
             <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
               Progress
             </span>
-            <div className="flex">
-              <button
+            <div className="flex flex-col gap-6">
+              <motion.div
+                whileTap={{ scale: 0.98 }}
+                className={`
+                  flex items-center px-6 py-5 rounded-2xl transition
+                  bg-white/95 border border-gray-100 shadow-sm
+                  hover:bg-pink-50 hover:shadow-lg
+                  cursor-pointer
+                `}
                 onClick={() => router.push('/summaries')}
-                className="
-                  flex-1 py-4 rounded-full
-                  bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300
-                  text-white text-lg font-bold shadow-xl
-                  transition hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-purple-300/20
-                  tracking-wide drop-shadow-xl
-                "
-                type="button"
+                tabIndex={0}
+                role="button"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    router.push('/summaries')
+                  }
+                }}
               >
-                📋 View My Summaries
-              </button>
+                <span className="text-2xl">📋</span>
+                <div className="flex-1 flex flex-col ml-4">
+                  <span className="text-base font-semibold text-gray-900">
+                    View My Summaries
+                  </span>
+                  <span className="text-xs text-gray-400 mt-1">
+                    See your AI-powered meal recaps!
+                  </span>
+                </div>
+                <span className="ml-2 text-gray-300 group-hover:text-pink-400 transition">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                    <path fillRule="evenodd" d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z" clipRule="evenodd" />
+                  </svg>
+                </span>
+              </motion.div>
             </div>
           </div>
+
         </>
       )}
     </main>
