@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 type MealLog = {
   id: string
   created_at: string
+  user_id: string
+  name?: string
   breakfast: any
   lunch: any
   dinner: any
@@ -66,7 +68,7 @@ export default function AdminPage() {
 
   return (
     <main className="w-full min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-[#f6d365] to-[#fda085] p-4">
-      <section className="w-full max-w-5xl mt-10 bg-white/90 rounded-3xl shadow-lg backdrop-blur-md p-6">
+      <section className="w-full max-w-6xl mt-10 bg-white/90 rounded-3xl shadow-lg backdrop-blur-md p-6">
         <h1 className="text-2xl font-bold mb-6 text-pink-600 text-center">🍽️ Meal Logs + GPT Responses</h1>
         {loading ? (
           <div className="text-center text-gray-400">Loading logs…</div>
@@ -78,6 +80,7 @@ export default function AdminPage() {
               <thead>
                 <tr className="text-left text-gray-600 border-b font-semibold">
                   <th className="py-2 pr-3">Date</th>
+                  <th className="py-2 pr-3">Name</th>
                   <th className="py-2 pr-3">Breakfast</th>
                   <th className="py-2 pr-3">Lunch</th>
                   <th className="py-2">Dinner</th>
@@ -89,6 +92,7 @@ export default function AdminPage() {
                     <td className="py-2 pr-3 font-mono text-gray-700 whitespace-nowrap align-top">
                       {new Date(log.created_at).toLocaleDateString()}
                     </td>
+                    <td className="py-2 pr-3 text-pink-700 font-semibold align-top">{log.name || '—'}</td>
 
                     {/* Breakfast */}
                     <td className="py-2 pr-3 align-top">

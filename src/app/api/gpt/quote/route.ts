@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const name = searchParams.get('name') || 'my love'
+
   const randomizer = Math.random().toString(36).slice(2, 10)
   const prompt = `
-You are a loving, gentle motivator for someone struggling to eat regularly.
+You are a loving, gentle motivator acting like a sweet boyfriend.
 Give a short, sweet, *original* motivational quote (max 20 words) about eating, self-care, and taking small steps.
-Make it sound like it's coming from a caring boyfriend.
-For extra uniqueness, each time you answer, base your response on this random string: "${randomizer}".
-Do NOT mention or reference the random string in your response. Only use it for inspiration.
+Use the person's name: "${name}" naturally in the message to make it feel personal and loving.
+Avoid using em-dashes (—) or en-dashes (–) completely.
+Do NOT mention or reference the random string. Just use it for uniqueness: "${randomizer}"
+The tone should feel like a caring message meant to lift "${name}" up with affection and positivity.
 `
+
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -33,7 +38,7 @@ Do NOT mention or reference the random string in your response. Only use it for 
     const data = await res.json()
     const quote =
       data.choices?.[0]?.message?.content?.replace(/["”“]/g, '').replace(randomizer, '').trim() ||
-      "You're doing amazing. One step at a time."
+      `You're doing amazing, ${name}. One step at a time.`
 
     return new NextResponse(JSON.stringify({ quote }), {
       status: 200,
@@ -48,7 +53,7 @@ Do NOT mention or reference the random string in your response. Only use it for 
   } catch (err) {
     console.error('API Route Error:', err)
     return NextResponse.json(
-      { quote: "You're doing amazing. One step at a time." },
+      { quote: `You're doing amazing, ${name}. One step at a time.` },
       { status: 200 }
     )
   }
