@@ -1,9 +1,11 @@
 'use client'
 
 import { getOrCreateUserId } from '@/utils/mealLog'
-import { Inter } from 'next/font/google'
+import { DM_Sans, Dancing_Script } from 'next/font/google'
 import { useEffect, useRef, useState } from 'react'
-const inter = Inter({ subsets: ['latin'], weight: ['600', '700'] })
+
+const dmSans = DM_Sans({ subsets: ['latin'], weight: ['500', '700'] })
+const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' })
 
 type Summary = {
   date: string
@@ -13,13 +15,6 @@ type Summary = {
   full_day_summary: string | null
 }
 
-const cardGradients = [
-  "from-[#f9f9fc] via-[#fff3f7] to-[#f0f5ff]",
-  "from-[#fcf6ff] via-[#f7fbff] to-[#f5f5f7]",
-  "from-[#fdf7fa] via-[#f9fbfa] to-[#f1f1ff]",
-  "from-[#fafbfd] via-[#f6f0ff] to-[#f6faff]",
-]
-
 const storyTabs = [
   { key: "breakfast_summary", label: "Breakfast", emoji: "🍳" },
   { key: "lunch_summary", label: "Lunch", emoji: "🥪" },
@@ -27,15 +22,17 @@ const storyTabs = [
   { key: "full_day_summary", label: "Day Summary", emoji: "💖" }
 ]
 
-function formatPrettyDate(dateString: string) {
+function formatPrettyDateStacked(dateString: string) {
   const date = new Date(dateString)
-  if (isNaN(date.getTime())) return dateString
-  return date.toLocaleDateString(undefined, {
-    year: 'numeric',
+  if (isNaN(date.getTime())) return { monthDay: dateString, year: '' }
+  const monthDay = date.toLocaleDateString(undefined, {
     month: 'long',
-    day: 'numeric',
-  }).replace(/,/g, '')
+    day: 'numeric'
+  })
+  const year = date.getFullYear()
+  return { monthDay, year }
 }
+
 function prettifyText(str: string | null) {
   if (!str) return ''
   let s = str.trim()
@@ -44,7 +41,84 @@ function prettifyText(str: string | null) {
   return s
 }
 
-const STORY_DURATION = 18000 // ms
+const STORY_DURATION = 20000 // ms
+const BANNER_CURVE_HEIGHT = 44
+const BANNER_TOP_PADDING = 32
+const BANNER_BOTTOM_PADDING = 22
+const BANNER_TEXT_HEIGHT = 74
+const BANNER_TOTAL_HEIGHT = BANNER_CURVE_HEIGHT + BANNER_TOP_PADDING + BANNER_BOTTOM_PADDING + BANNER_TEXT_HEIGHT
+
+function SummariesHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
+  return (
+    <header
+      className="fixed top-0 left-0 w-full z-30"
+      style={{
+        height: BANNER_TOTAL_HEIGHT,
+        minHeight: BANNER_TOTAL_HEIGHT,
+        pointerEvents: 'none',
+        background: 'transparent',
+        border: 'none',
+        boxShadow: 'none',
+      }}
+    >
+      <div
+        className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #fdf6e3 0%, #fff5fa 54%, #e6e6fa 100%)',
+          height: '100%',
+        }}
+      >
+        <div
+          className="flex flex-col items-center w-full px-4 z-10"
+          style={{
+            pointerEvents: 'auto',
+            paddingTop: BANNER_TOP_PADDING,
+            paddingBottom: BANNER_BOTTOM_PADDING,
+          }}
+        >
+          <div
+            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-gray-900 text-center drop-shadow-sm ${dancingScriptClass}`}
+            style={{
+              lineHeight: 1.15,
+              letterSpacing: '-0.02em',
+              fontWeight: 700,
+            }}>
+            Summaries
+          </div>
+          <div className="text-lg sm:text-xl text-purple-700/80 font-medium text-center max-w-lg mx-auto mt-2 px-2 leading-tight" style={{ fontFamily: "inherit" }}>
+            A gentle way to track your meal journey and celebrate your daily wins ✨
+          </div>
+        </div>
+        {/* SVG flush at the bottom, curve is the mask */}
+        <svg
+          className="absolute left-0 bottom-0 w-full"
+          viewBox="0 0 500 44"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+          style={{
+            display: 'block',
+            zIndex: 11,
+            pointerEvents: 'none',
+            height: BANNER_CURVE_HEIGHT,
+          }}
+        >
+          <defs>
+            <linearGradient id="curveGradient" x1="0" y1="0" x2="500" y2="44" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#fdf6e3" />
+              <stop offset="0.54" stopColor="#fff5fa" />
+              <stop offset="1" stopColor="#e6e6fa" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M0 0C82 40 418 40 500 0V44H0V0Z"
+            fill="url(#curveGradient)"
+          />
+        </svg>
+      </div>
+    </header>
+  )
+}
 
 export default function SummariesPage() {
   const [summaries, setSummaries] = useState<Summary[]>([])
@@ -69,7 +143,6 @@ export default function SummariesPage() {
     if (activeSummary) setActiveStoryIdx(0)
   }, [activeSummary])
 
-  // --- Timer/auto-advance ---
   useEffect(() => {
     if (!activeSummary) return
 
@@ -107,52 +180,88 @@ export default function SummariesPage() {
     setStoryAutoKey(prev => prev + 1)
   }
 
+  const BG_GRADIENT = "linear-gradient(135deg, #fdf6e3 0%, #fff5fa 54%, #e6e6fa 100%)"
+
   return (
-    <div className={`relative h-[100dvh] min-h-0 w-full flex flex-col ${inter.className}`} style={{ background: '#fafbfc' }}>
-      {/* Fixed BG */}
-      <div className="fixed inset-0 z-0 pointer-events-none"
+    <div className={`relative min-h-screen w-full flex flex-col overflow-hidden ${dmSans.className}`}>
+      {/* Fixed gradient background */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
         aria-hidden="true"
+        style={{ background: BG_GRADIENT }}
+      />
+      {/* Banner fixed above */}
+      <SummariesHeader dancingScriptClass={dancingScript.className} />
+
+      {/* Cards area - only this scrolls, fully transparent, hides under banner */}
+      <div
+        className="flex-1 w-full max-w-2xl mx-auto flex flex-col relative z-10"
         style={{
-          background: 'linear-gradient(135deg, #f9f9fc 0%, #f8f6ff 54%, #f1f7ff 100%)',
-        }} />
-
-      {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 flex-shrink-0 h-[54px] flex items-center justify-center bg-white/50 border-b border-white/20 text-[1.13rem] font-semibold text-gray-700 select-none backdrop-blur-md z-20 shadow-none">
-        📝 Your Meal Summaries
-      </div>
-
-      {/* Scrollable Cards Area */}
-      <div className="flex-1 min-h-0 pt-[54px] w-full max-w-2xl mx-auto z-10 flex flex-col">
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 pt-6 pb-8">
+          paddingTop: `${BANNER_TOTAL_HEIGHT - BANNER_CURVE_HEIGHT}px`,
+          minHeight: 0,
+          height: `calc(100dvh - 0px)`,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          className="flex-1 overflow-y-auto px-3 pt-14 pb-8"
+          style={{
+            borderRadius: 0,
+            WebkitOverflowScrolling: 'touch',
+            minHeight: 0,
+            height: '100%',
+            zIndex: 10,
+            background: 'transparent'
+          }}
+        >
           {loading ? (
             <div className="mt-14 text-center text-gray-400/80 text-base font-medium animate-pulse">Loading summaries…</div>
           ) : summaries.length === 0 ? (
             <div className="mt-14 text-center text-gray-400/80 text-lg font-normal">No summaries yet. Start logging your meals 💖</div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 gap-8">
               {summaries.map((summary, idx) => (
                 <button
                   key={summary.date}
                   className={`
-                    flex items-center justify-center w-full h-[150px] sm:h-[168px] rounded-2xl
-                    bg-gradient-to-br ${cardGradients[idx % cardGradients.length]}
-                    shadow-md border-[1.5px] border-white/30 
-                    transition-all hover:scale-[1.018] active:scale-[0.98] focus:ring-2 focus:ring-blue-100
+                    flex items-center justify-center w-full h-[230px] sm:h-[260px] rounded-3xl
+                    bg-gradient-to-br from-[#fdf6e3] via-[#f8e1f7] to-[#e9e6fa]
+                    shadow-xl border-[1.5px] border-white/20
+                    transition-all hover:scale-[1.02] active:scale-95 focus:ring-2 focus:ring-purple-100
                     cursor-pointer
                   `}
                   onClick={() => setActiveSummary(summary)}
                   style={{
-                    boxShadow: '0 4px 16px 0 rgba(220,80,150,0.10)',
+                    boxShadow: '0 6px 24px 0 rgba(180,120,220,0.08)',
                   }}
                 >
-                  <span
-                    className="text-[1.23rem] sm:text-[1.62rem] tracking-tight text-center w-full text-gray-700"
-                    style={{
-                      letterSpacing: '0.012em',
-                    }}
-                  >
-                    {formatPrettyDate(summary.date)}
-                  </span>
+                  {(() => {
+                    const { monthDay, year } = formatPrettyDateStacked(summary.date)
+                    return (
+                      <span className="flex flex-col items-center justify-center w-full">
+                        <span
+                          className={`text-[2.05rem] sm:text-[2.4rem] text-center text-gray-700 ${dancingScript.className}`}
+                          style={{
+                            letterSpacing: '0.008em',
+                            fontWeight: 600,
+                            lineHeight: 1.08,
+                            textShadow: '0 2px 18px rgba(210,140,200,0.08)',
+                          }}
+                        >
+                          {monthDay}
+                        </span>
+                        <span
+                          className={`text-[1.16rem] sm:text-[1.32rem] text-center text-gray-500 ${dancingScript.className}`}
+                          style={{
+                            fontWeight: 500,
+                            marginTop: '0.13em',
+                          }}
+                        >
+                          {year}
+                        </span>
+                      </span>
+                    )
+                  })()}
                 </button>
               ))}
             </div>
@@ -160,53 +269,39 @@ export default function SummariesPage() {
         </div>
       </div>
 
-      {/* Modal with Fullscreen Story Player */}
+      {/* IG-Style Story Modal */}
       {activeSummary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] flex items-center justify-center">
           <div
             className={`
-              relative w-full h-full max-h-[100dvh] px-0 py-0 flex flex-col items-center animate-fadein overflow-hidden
-              bg-gradient-to-br from-white/85 via-[#f4f6fc]/80 to-[#f8fafd]/90
-              shadow-lg
+              w-full h-[100dvh] max-h-[100dvh] flex flex-col animate-fadein overflow-hidden
+              bg-gradient-to-br from-white/85 via-[#f6e7fc]/80 to-[#fdf6fa]/90
               select-none
-              ${inter.className}
+              ${dmSans.className}
             `}
             onClick={handleStoryAreaClick}
             style={{
-              borderRadius: '0', // True fullscreen, no visible border
-              boxShadow: '0 12px 48px 0 rgba(80,110,140,0.07)',
+              borderRadius: 0,
+              boxShadow: '0 12px 48px 0 rgba(120,80,140,0.08)',
+              minHeight: '100dvh',
+              maxHeight: '100dvh'
             }}
           >
-            {/* Close Button */}
-            <button
-              onClick={e => { e.stopPropagation(); setActiveSummary(null) }}
-              className="absolute top-4 right-5 text-gray-400 bg-white/70 hover:bg-gray-200/80 rounded-full p-2 shadow-sm z-20 border border-gray-200"
-              aria-label="Close"
-              style={{ backdropFilter: 'blur(3px)' }}
-            >
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-                <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
-            {/* Progress Bar IG style */}
-            <div className="w-full flex gap-2 px-7 pt-9 pb-4">
-              {(() => {
-                const availableStories = getAvailableStories(activeSummary)
-                return availableStories.map((tab, i) => (
+            {/* Modal Top: Progress bar & Close */}
+            <div className="relative flex items-center w-full pt-10 pb-2 px-6">
+              <div className="flex-1 flex gap-2">
+                {getAvailableStories(activeSummary).map((tab, i) => (
                   <div
                     key={tab.key}
-                    className="flex-1 h-[3px] rounded-full bg-gray-200/80 overflow-hidden relative"
+                    className="flex-1 h-[3px] rounded-full bg-purple-200/60 overflow-hidden relative"
                   >
-                    {/* Completed */}
                     {i < activeStoryIdx && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-200 via-blue-300 to-blue-400 transition-all duration-300" style={{ width: '100%' }} />
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 transition-all duration-300" style={{ width: '100%' }} />
                     )}
-                    {/* Current story: animate width */}
                     {i === activeStoryIdx && (
                       <div
                         key={storyAutoKey}
-                        className="absolute inset-0 bg-gradient-to-r from-blue-300 via-pink-300 to-blue-400"
+                        className="absolute inset-0 bg-gradient-to-r from-purple-300 via-pink-200 to-purple-400"
                         style={{
                           width: '0%',
                           animation: `fillBar ${STORY_DURATION}ms linear forwards`
@@ -214,10 +309,21 @@ export default function SummariesPage() {
                       />
                     )}
                   </div>
-                ))
-              })()}
+                ))}
+              </div>
+              {/* Close Button */}
+              <button
+                onClick={e => { e.stopPropagation(); setActiveSummary(null) }}
+                className="absolute right-2 top-1 text-gray-400 bg-white/70 hover:bg-purple-100/70 rounded-full p-2 shadow-sm z-20 border border-purple-100"
+                aria-label="Close"
+                style={{ backdropFilter: 'blur(3px)' }}
+              >
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+                  <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
             </div>
-            {/* Keyframes for fillBar */}
             <style>
               {`
                 @keyframes fillBar {
@@ -226,38 +332,69 @@ export default function SummariesPage() {
                 }
               `}
             </style>
-            {/* Story Content */}
-            <div className="flex-1 w-full flex flex-col items-center justify-center px-5 pb-10 select-none">
-              {(() => {
-                const availableStories = getAvailableStories(activeSummary)
-                const tab = availableStories[activeStoryIdx]
-                const storyContent = prettifyText(activeSummary[tab.key as keyof Summary] as string)
-                if (!storyContent) return null
-                return (
-                  <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto">
-                    <div className="text-center text-gray-600 font-medium mb-4 uppercase tracking-widest text-[1rem] select-none">
-                      {formatPrettyDate(activeSummary.date)}
-                    </div>
-                    <div className="text-center text-gray-800 text-[2.1rem] sm:text-[2.7rem] font-semibold leading-tight mb-5" style={{ letterSpacing: '-0.02em' }}>
-                      {tab.emoji} {tab.label}
-                    </div>
-                    <div className="text-center text-gray-700/90 text-[1.23rem] leading-relaxed font-normal w-full max-w-xl mx-auto px-1 select-text">
-                      {storyContent}
-                    </div>
-                  </div>
-                )
-              })()}
-            </div>
-            {/* Dot navigation (optional, for touch nav) */}
-            <div className="flex items-center justify-center gap-1 pb-4">
-              {getAvailableStories(activeSummary).map((tab, i) => (
-                <button
-                  key={tab.key}
-                  className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${i === activeStoryIdx ? 'bg-blue-400/80' : 'bg-gray-300/80'}`}
-                  onClick={e => { e.stopPropagation(); handleDotClick(i) }}
-                  aria-label={tab.label}
-                />
-              ))}
+            {/* Modal Content, fills page */}
+            <div className="flex flex-col flex-1 min-h-0 w-full px-6 pb-3 justify-start">
+              {/* Date */}
+              <div className="w-full pt-8 pb-2 flex flex-col items-center">
+                <div className="text-center text-purple-600/80 font-medium uppercase tracking-widest text-[1.15rem] sm:text-[1.25rem] select-none mb-1">
+                  {(() => {
+                    const { monthDay, year } = formatPrettyDateStacked(activeSummary.date)
+                    return (
+                      <>
+                        {monthDay} <span className="block">{year}</span>
+                      </>
+                    )
+                  })()}
+                </div>
+              </div>
+              {/* Label */}
+              <div className="text-center text-purple-700 text-[2.2rem] sm:text-[2.7rem] font-semibold leading-tight mt-1 mb-6" style={{ letterSpacing: '-0.02em' }}>
+                {(() => {
+                  const availableStories = getAvailableStories(activeSummary)
+                  const tab = availableStories[activeStoryIdx]
+                  return `${tab.emoji} ${tab.label}`
+                })()}
+              </div>
+              {/* Story text: fills rest */}
+                <div
+                  className={`
+                    w-full max-w-xl mx-auto px-1
+                    text-gray-600/90
+                    text-[1.01rem] sm:text-[1.09rem]
+                    leading-[1.8] select-text
+                    rounded-xl
+                    flex-1 flex items-start
+                    antialiased
+                    font-[500]
+                    tracking-wide
+                    italic
+                  `}
+                  style={{
+                    alignItems: 'flex-start',
+                    justifyContent: 'flex-start',
+                    fontFamily: `'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif`
+                  }}
+                >
+                  {(() => {
+                    const availableStories = getAvailableStories(activeSummary)
+                    const tab = availableStories[activeStoryIdx]
+                    const storyContent = prettifyText(activeSummary[tab.key as keyof Summary] as string)
+                    return storyContent
+                  })()}
+                </div>
+
+
+              {/* Dots at the bottom */}
+              <div className="flex items-center justify-center gap-1 pt-3 pb-2">
+                {getAvailableStories(activeSummary).map((tab, i) => (
+                  <button
+                    key={tab.key}
+                    className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${i === activeStoryIdx ? 'bg-purple-400/80' : 'bg-purple-100/80'}`}
+                    onClick={e => { e.stopPropagation(); handleDotClick(i) }}
+                    aria-label={tab.label}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>

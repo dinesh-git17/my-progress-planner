@@ -45,7 +45,7 @@ ${
     : ''
 }
 
-Now, write a cute and kind summary for her.
+Now, write a cute and kind summary for her. make it 100 words or less, and keep it light and positive.
       `
     }
 
