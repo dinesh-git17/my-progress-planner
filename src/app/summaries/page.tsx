@@ -2,12 +2,13 @@
 
 import { getOrCreateUserId } from '@/utils/mealLog'
 import { motion } from 'framer-motion'
-import { DM_Sans, Dancing_Script } from 'next/font/google'
+import { DM_Sans, Dancing_Script, Inter } from 'next/font/google'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 const dmSans = DM_Sans({ subsets: ['latin'], weight: ['500', '700'] })
 const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' })
+const inter = Inter({ subsets: ['latin'], weight: '400', style: 'normal' })
 
 type Summary = {
   date: string
@@ -344,13 +345,12 @@ export default function SummariesPage() {
               {/* Close Button */}
               <button
                 onClick={e => { e.stopPropagation(); setActiveSummary(null) }}
-                className="absolute right-2 top-1 text-gray-400 bg-transparent hover:bg-purple-100/70 rounded-none p-2 shadow-sm z-20"
+                className="absolute right-2 top-3 text-gray-400 hover:text-gray-600 bg-transparent rounded-none p-2 z-20"
                 aria-label="Close"
                 style={{
-                  backdropFilter: 'blur(3px)',
-                  fontSize: '1.5rem',
-                  fontWeight: 'bold',
-                  color: '#444',
+                  fontSize: '1.1rem',  // Smaller font size
+                  fontWeight: '600',   // Slightly bolder for visibility
+                  color: '#888',       // Softer, subtle color
                   transition: 'all 0.3s ease',
                   cursor: 'pointer'
                 }}
