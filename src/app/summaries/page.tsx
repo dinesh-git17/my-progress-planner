@@ -255,7 +255,7 @@ export default function SummariesPage() {
                 className="grid grid-cols-2 gap-8"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, staggerChildren: 0.3 }} // Add staggered children for smooth animation
+                transition={{ duration: 0.3 }}
               >
                 {summaries.map((summary, idx) => (
                   <motion.button
@@ -264,18 +264,21 @@ export default function SummariesPage() {
                       flex items-center justify-center w-full h-[230px] sm:h-[260px] rounded-3xl
                       bg-gradient-to-br from-[#fdf6e3] via-[#f8e1f7] to-[#e9e6fa]
                       shadow-xl border-[1.5px] border-white/20
-                      transition-all hover:scale-[1.02] active:scale-95 focus:ring-2 focus:ring-purple-100
+                      focus:ring-2 focus:ring-purple-100
                       cursor-pointer
                     `}
                     onClick={() => setActiveSummary(summary)}
-                    style={{
-                      boxShadow: '0 6px 24px 0 rgba(180,120,220,0.08)',
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ 
+                      duration: 0.4, 
+                      ease: "easeOut",
+                      delay: idx * 0.1
                     }}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.95 }}
+                    style={{ willChange: 'auto' }}
                   >
                     {(() => {
                       const { monthDay, year } = formatPrettyDateStacked(summary.date)
