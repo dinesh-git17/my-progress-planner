@@ -152,11 +152,11 @@ export default function Home() {
   const streakColor = streakColors[streak % streakColors.length]
 
   return (
-    <main className="
-      min-h-[100dvh] w-full h-[100dvh] overflow-y-auto
-      bg-gradient-to-br from-[#fdf6e3] via-[#fff5fa] to-[#e6e6fa]
-      pt-8 md:pt-12 pb-32 flex flex-col
-    ">
+      <main className="
+        min-h-[100dvh] w-full h-[100dvh] overflow-y-auto overflow-x-hidden
+        bg-gradient-to-br from-[#fdf6e3] via-[#fff5fa] to-[#e6e6fa]
+        pt-8 md:pt-12 pb-32 flex flex-col
+      ">
       {/* Top Profile Bar */}
       <div className="w-full max-w-lg mx-auto px-4 flex flex-row items-center justify-between mb-8">
         <div className="flex flex-col">
@@ -176,23 +176,23 @@ export default function Home() {
       </div>
 
       {/* Motivational Quote */}
-      <div className="w-full max-w-lg mx-auto px-4 mb-8 relative">
-        {/* Glow effect */}
-        <div className="absolute -inset-1.5 z-0 blur-2xl rounded-2xl bg-gradient-to-tr from-pink-200/40 via-purple-100/40 to-yellow-100/40" />
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12, duration: 0.5 }}
-          className="
-            relative flex items-start px-6 py-5 rounded-2xl shadow-xl shadow-pink-100/40
-            bg-gradient-to-tr from-[#fff3fc] via-[#f9f3fd] to-[#e7ffe7] border border-white/60
-            min-h-[72px] z-10
-          "
-        >
-          <div className="absolute left-0 top-4 bottom-4 w-1.5 rounded-full bg-gradient-to-b from-pink-300 via-pink-200 to-yellow-200" />
-          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-pink-50 text-xl mr-4 ml-0">
-            💡
-          </span>
+<div className="w-full max-w-lg mx-auto px-4 mb-8">
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.12, duration: 0.5 }}
+    className="
+      relative flex items-start px-6 py-5 rounded-2xl shadow-xl shadow-pink-100/40
+      bg-gradient-to-tr from-[#fff3fc] via-[#f9f3fd] to-[#e7ffe7] border border-white/60
+      min-h-[72px] z-10 w-full
+      before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-2xl
+      before:bg-gradient-to-tr before:from-pink-200/40 before:via-purple-100/40 before:to-yellow-100/40
+      before:blur-2xl
+    "
+  >
+    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-pink-50 text-xl mr-4 ml-0">
+      💡
+    </span>
           {loading || !quote ? (
             <span className="animate-pulse text-base font-normal italic text-gray-400">
               Loading motivation…
