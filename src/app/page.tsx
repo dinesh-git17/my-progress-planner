@@ -81,6 +81,19 @@ function highlightQuote(quote: string): string {
   return highlighted
 }
 
+function getMsUntilNextESTMidnight() {
+  // Handles daylight savings too!
+  const now = new Date()
+  // Get current NY time
+  const nowNY = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }))
+  // Set next midnight in NY
+  const nextMidnightNY = new Date(nowNY)
+  nextMidnightNY.setHours(24, 0, 0, 0)
+  // How many ms until next midnight in NY?
+  return nextMidnightNY.getTime() - nowNY.getTime()
+}
+
+
 export default function Home() {
   const [quote, setQuote] = useState('')
   const [loading, setLoading] = useState(true)
@@ -93,6 +106,17 @@ export default function Home() {
   const [userId, setUserId] = useState<string | null>(null)
   const { streak, loading: streakLoading } = useUserStreak(userId ?? undefined)
   const router = useRouter()
+
+  useEffect(() => {
+  // Auto-refresh at next EST midnight (America/New_York)
+  const msUntilMidnight = getMsUntilNextESTMidnight()
+  const timeout = setTimeout(() => {
+    window.location.reload()
+  }, msUntilMidnight + 2000) // 2s buffer to be safe
+
+  return () => clearTimeout(timeout)
+}, [])
+
 
   useEffect(() => {
     const uid = getOrCreateUserId()
