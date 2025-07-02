@@ -36,9 +36,18 @@ The tone should feel like a caring message meant to lift "${name}" up with affec
     }
 
     const data = await res.json()
-    const quote =
-      data.choices?.[0]?.message?.content?.replace(/["”“]/g, '').replace(randomizer, '').trim() ||
-      `You're doing amazing, ${name}. One step at a time.`
+    // Defensive: safely extract quote as a string
+    let quote =
+      typeof data?.choices?.[0]?.message?.content === 'string'
+        ? data.choices[0].message.content
+        : ''
+
+    // Remove the randomizer and any bad chars
+    quote = quote.replace(/["”“]/g, '').replace(new RegExp(randomizer, 'g'), '').trim()
+
+    if (!quote || quote.toLowerCase().includes('undefined')) {
+      quote = `You're doing amazing, ${name}. One step at a time.`
+    }
 
     return new NextResponse(JSON.stringify({ quote }), {
       status: 200,
