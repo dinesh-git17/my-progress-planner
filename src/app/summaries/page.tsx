@@ -1,7 +1,7 @@
 'use client'
 
 import { getOrCreateUserId } from '@/utils/mealLog'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { DM_Sans, Dancing_Script, Inter } from 'next/font/google'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -250,52 +250,64 @@ export default function SummariesPage() {
           ) : summaries.length === 0 ? (
             <div className="mt-14 text-center text-gray-400/80 text-lg font-normal">No summaries yet. Start logging your meals 💖</div>
           ) : (
-            <div className="grid grid-cols-2 gap-8">
-              {summaries.map((summary, idx) => (
-                <button
-                  key={summary.date}
-                  className={`
-                    flex items-center justify-center w-full h-[230px] sm:h-[260px] rounded-3xl
-                    bg-gradient-to-br from-[#fdf6e3] via-[#f8e1f7] to-[#e9e6fa]
-                    shadow-xl border-[1.5px] border-white/20
-                    transition-all hover:scale-[1.02] active:scale-95 focus:ring-2 focus:ring-purple-100
-                    cursor-pointer
-                  `}
-                  onClick={() => setActiveSummary(summary)}
-                  style={{
-                    boxShadow: '0 6px 24px 0 rgba(180,120,220,0.08)',
-                  }}
-                >
-                  {(() => {
-                    const { monthDay, year } = formatPrettyDateStacked(summary.date)
-                    return (
-                      <span className="flex flex-col items-center justify-center w-full">
-                        <span
-                          className={`text-[2.05rem] sm:text-[2.4rem] text-center text-gray-700 ${dancingScript.className}`}
-                          style={{
-                            letterSpacing: '0.008em',
-                            fontWeight: 600,
-                            lineHeight: 1.08,
-                            textShadow: '0 2px 18px rgba(210,140,200,0.08)',
-                          }}
-                        >
-                          {monthDay}
+            <AnimatePresence mode="wait">
+              <motion.div
+                className="grid grid-cols-2 gap-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, staggerChildren: 0.3 }} // Add staggered children for smooth animation
+              >
+                {summaries.map((summary, idx) => (
+                  <motion.button
+                    key={summary.date}
+                    className={`
+                      flex items-center justify-center w-full h-[230px] sm:h-[260px] rounded-3xl
+                      bg-gradient-to-br from-[#fdf6e3] via-[#f8e1f7] to-[#e9e6fa]
+                      shadow-xl border-[1.5px] border-white/20
+                      transition-all hover:scale-[1.02] active:scale-95 focus:ring-2 focus:ring-purple-100
+                      cursor-pointer
+                    `}
+                    onClick={() => setActiveSummary(summary)}
+                    style={{
+                      boxShadow: '0 6px 24px 0 rgba(180,120,220,0.08)',
+                    }}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                  >
+                    {(() => {
+                      const { monthDay, year } = formatPrettyDateStacked(summary.date)
+                      return (
+                        <span className="flex flex-col items-center justify-center w-full">
+                          <span
+                            className={`text-[2.05rem] sm:text-[2.4rem] text-center text-gray-700 ${dancingScript.className}`}
+                            style={{
+                              letterSpacing: '0.008em',
+                              fontWeight: 600,
+                              lineHeight: 1.08,
+                              textShadow: '0 2px 18px rgba(210,140,200,0.08)',
+                            }}
+                          >
+                            {monthDay}
+                          </span>
+                          <span
+                            className={`text-[1.16rem] sm:text-[1.32rem] text-center text-gray-500 ${dancingScript.className}`}
+                            style={{
+                              fontWeight: 500,
+                              marginTop: '0.13em',
+                            }}
+                          >
+                            {year}
+                          </span>
                         </span>
-                        <span
-                          className={`text-[1.16rem] sm:text-[1.32rem] text-center text-gray-500 ${dancingScript.className}`}
-                          style={{
-                            fontWeight: 500,
-                            marginTop: '0.13em',
-                          }}
-                        >
-                          {year}
-                        </span>
-                      </span>
-                    )
-                  })()}
-                </button>
-              ))}
-            </div>
+                      )
+                    })()}
+                  </motion.button>
+                ))}
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
       </div>
