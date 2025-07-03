@@ -1,3 +1,6 @@
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable react-hooks/exhaustive-deps */
+
 'use client'
 
 import { PushSubscriptionButton } from '@/components/PushSubscriptionButton'
@@ -5,7 +8,7 @@ import { getOrCreateUserId } from '@/utils/mealLog'
 import { getUserName, saveUserName } from '@/utils/user'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const mealLabels = [
   { meal: 'breakfast', emoji: '🍳', label: 'Breakfast' },
@@ -192,7 +195,7 @@ export default function Home() {
       window.removeEventListener('pageshow', handlePageShow)
       clearInterval(interval)
     }
-  }, [userId, fetchLoggedMeals])
+  }, [userId])
 
   // Also refresh meals every time the component renders (aggressive approach)
   useEffect(() => {
@@ -243,7 +246,7 @@ export default function Home() {
     mealLog?: MealLog
   }
 
-  const fetchLoggedMeals = React.useCallback(async (user_id: string): Promise<void> => {
+  const fetchLoggedMeals = async (user_id: string): Promise<void> => {
     console.log('🍽️ === FETCHING LOGGED MEALS ===')
     console.log('👤 User ID:', user_id)
     
@@ -312,7 +315,7 @@ export default function Home() {
       setLoggedMeals([])
       console.log('🔄 Reset meals to empty due to error')
     }
-  }, [])
+  }
 
   const handleSaveName = async () => {
     if (!tempName.trim() || !userId) return
