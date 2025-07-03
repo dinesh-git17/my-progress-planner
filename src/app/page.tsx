@@ -3,7 +3,6 @@
 
 'use client'
 
-import { PushSubscriptionButton } from '@/components/PushSubscriptionButton'
 import { getOrCreateUserId } from '@/utils/mealLog'
 import { getUserName, saveUserName } from '@/utils/user'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -168,6 +167,7 @@ export default function Home() {
   const [userId, setUserId] = useState<string | null>(null)
   const [showLoadingScreen, setShowLoadingScreen] = useState(true)
   const [contentReady, setContentReady] = useState(false)
+  const [activeTab, setActiveTab] = useState<'meals' | 'progress'>('meals')
   const { streak, loading: streakLoading } = useUserStreak(userId ?? undefined)
   const router = useRouter()
   const hasFetchedMeals = useRef(false)
@@ -422,6 +422,15 @@ useEffect(() => {
 
   return (
     <>
+      {/* Font Awesome CDN */}
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossOrigin="anonymous"
+        referrerPolicy="no-referrer"
+      />
+
       {/* Loading Screen */}
       <LoadingScreen isVisible={showLoadingScreen} />
 
@@ -433,8 +442,8 @@ useEffect(() => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
             className="
-              min-h-[100dvh] w-full h-[100dvh] overflow-y-auto overflow-x-hidden
-              relative pt-8 md:pt-12 pb-32 flex flex-col
+              min-h-[100dvh] w-full h-[100dvh] overflow-hidden
+              relative pt-8 md:pt-12 flex flex-col
             "
           >
             {/* Dynamic Animated Gradient Background */}
@@ -576,13 +585,50 @@ useEffect(() => {
                       </motion.span>
                     )}
                   </div>
-                  <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg select-none uppercase">
-                    {getInitials(name) || "🍽️"}
+                  
+                  <div className="flex items-center gap-3">
+                    {/* Notification Bell */}
+                    {!notificationsEnabled && (
+                      <button
+                        onClick={async () => {
+                          console.log('🔔 Bell button clicked!')
+                          
+                          try {
+                            if ('Notification' in window) {
+                              console.log('📱 Requesting notification permission...')
+                              const permission = await Notification.requestPermission()
+                              console.log('✅ Permission result:', permission)
+                              
+                              if (permission === 'granted') {
+                                console.log('🎉 Setting notifications enabled to true')
+                                setNotificationsEnabled(true)
+                              }
+                            }
+                          } catch (error) {
+                            console.error('❌ Error:', error)
+                          }
+                        }}
+                        className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 flex items-center justify-center shadow-lg cursor-pointer z-50 relative"
+                        style={{ 
+                          position: 'relative',
+                          zIndex: 9999,
+                          border: 'none',
+                          outline: 'none'
+                        }}
+                      >
+                        <i className="fas fa-bell text-white text-xs"></i>
+                      </button>
+                    )}
+                    
+                    {/* Profile Initial */}
+                    <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg select-none uppercase">
+                      {getInitials(name) || "🍽️"}
+                    </div>
                   </div>
                 </div>
 
                 {/* Motivational Quote */}
-                <div className="w-full max-w-lg mx-auto px-4 mb-8">
+                <div className="w-full max-w-lg mx-auto px-4 mb-6">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -612,112 +658,169 @@ useEffect(() => {
                   </motion.div>
                 </div>
 
-                {/* Enable Notifications Section */}
-                {!notificationsEnabled && (
-                  <div className="w-full max-w-lg mx-auto px-4 mb-6">
-                    <PushSubscriptionButton />
-                  </div>
-                )}
+                {/* Tab Content */}
+                <div className="w-full max-w-lg mx-auto px-4 flex-1 overflow-y-auto">
+                  <AnimatePresence mode="wait">
+                    {activeTab === 'meals' && (
+                      <motion.div
+                        key="meals"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="pb-24"
+                      >
+                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                          Meals Today
+                        </span>
+                        <div className="flex flex-col gap-6">
+                          {mealLabels.map(({ meal, emoji, label }) => {
+                            const isLogged = loggedMeals.includes(meal)
+                            return (
+                              <motion.div
+                                key={meal}
+                                whileTap={{ scale: isLogged ? 1 : 0.98 }}
+                                className={`
+                                  flex items-center px-6 py-5 rounded-2xl transition
+                                  bg-white/95 border border-gray-100 shadow-sm
+                                  ${isLogged
+                                    ? 'opacity-60 pointer-events-none'
+                                    : 'hover:bg-pink-50 hover:shadow-lg'}
+                                  cursor-pointer
+                                `}
+                                onClick={() => !isLogged && router.push(`/${meal}`)}
+                                tabIndex={isLogged ? -1 : 0}
+                                aria-disabled={isLogged}
+                                role="button"
+                                onKeyDown={e => {
+                                  if (!isLogged && (e.key === "Enter" || e.key === " ")) {
+                                    router.push(`/${meal}`)
+                                  }
+                                }}
+                              >
+                                <span className="text-2xl">{emoji}</span>
+                                <div className="flex-1 flex flex-col ml-4">
+                                  <span className="text-base font-semibold text-gray-900">
+                                    {label}
+                                  </span>
+                                  <span className="text-xs text-gray-400 mt-1">
+                                    {isLogged
+                                      ? `Logged!`
+                                      : `Tap to log your ${label.toLowerCase()}`}
+                                  </span>
+                                </div>
+                                {isLogged ? (
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold shadow-sm">
+                                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 mr-1">
+                                      <path fillRule="evenodd" d="M16.707 6.293a1 1 0 010 1.414l-6.364 6.364a1 1 0 01-1.414 0l-3.182-3.182a1 1 0 011.414-1.414l2.475 2.475 5.657-5.657a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Logged
+                                  </span>
+                                ) : (
+                                  <span className="ml-2 text-gray-300 group-hover:text-pink-400 transition">
+                                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                                      <path fillRule="evenodd" d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z" clipRule="evenodd" />
+                                    </svg>
+                                  </span>
+                                )}
+                              </motion.div>
+                            )
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
 
-                {/* Meals Section */}
-                <div className="w-full max-w-lg mx-auto px-4 mb-10">
-                  <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
-                    Meals Today
-                  </span>
-                  <div className="flex flex-col gap-6">
-                    {mealLabels.map(({ meal, emoji, label }) => {
-                      const isLogged = loggedMeals.includes(meal)
-                      return (
-                        <motion.div
-                          key={meal}
-                          whileTap={{ scale: isLogged ? 1 : 0.98 }}
-                          className={`
-                            flex items-center px-6 py-5 rounded-2xl transition
-                            bg-white/95 border border-gray-100 shadow-sm
-                            ${isLogged
-                              ? 'opacity-60 pointer-events-none'
-                              : 'hover:bg-pink-50 hover:shadow-lg'}
-                            cursor-pointer
-                          `}
-                          onClick={() => !isLogged && router.push(`/${meal}`)}
-                          tabIndex={isLogged ? -1 : 0}
-                          aria-disabled={isLogged}
-                          role="button"
-                          onKeyDown={e => {
-                            if (!isLogged && (e.key === "Enter" || e.key === " ")) {
-                              router.push(`/${meal}`)
-                            }
-                          }}
-                        >
-                          <span className="text-2xl">{emoji}</span>
-                          <div className="flex-1 flex flex-col ml-4">
-                            <span className="text-base font-semibold text-gray-900">
-                              {label}
-                            </span>
-                            <span className="text-xs text-gray-400 mt-1">
-                              {isLogged
-                                ? `Logged!`
-                                : `Tap to log your ${label.toLowerCase()}`}
-                            </span>
-                          </div>
-                          {isLogged ? (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold shadow-sm">
-                              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 mr-1">
-                                <path fillRule="evenodd" d="M16.707 6.293a1 1 0 010 1.414l-6.364 6.364a1 1 0 01-1.414 0l-3.182-3.182a1 1 0 011.414-1.414l2.475 2.475 5.657-5.657a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              Logged
-                            </span>
-                          ) : (
+                    {activeTab === 'progress' && (
+                      <motion.div
+                        key="progress"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.3 }}
+                        className="pb-24"
+                      >
+                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                          Progress
+                        </span>
+                        <div className="flex flex-col gap-6">
+                          <motion.div
+                            whileTap={{ scale: 0.98 }}
+                            className={`
+                              flex items-center px-6 py-5 rounded-2xl transition
+                              bg-white/95 border border-gray-100 shadow-sm
+                              hover:bg-pink-50 hover:shadow-lg
+                              cursor-pointer
+                            `}
+                            onClick={() => router.push('/summaries')}
+                            tabIndex={0}
+                            role="button"
+                            onKeyDown={e => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                router.push('/summaries')
+                              }
+                            }}
+                          >
+                            <span className="text-2xl">📋</span>
+                            <div className="flex-1 flex flex-col ml-4">
+                              <span className="text-base font-semibold text-gray-900">
+                                View My Summaries
+                              </span>
+                              <span className="text-xs text-gray-400 mt-1">
+                                See your AI-powered meal recaps!
+                              </span>
+                            </div>
                             <span className="ml-2 text-gray-300 group-hover:text-pink-400 transition">
                               <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
                                 <path fillRule="evenodd" d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z" clipRule="evenodd" />
                               </svg>
                             </span>
-                          )}
-                        </motion.div>
-                      )
-                    })}
-                  </div>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                {/* Progress/Summaries Section */}
-                <div className="w-full max-w-lg mx-auto px-4 mt-10">
-                  <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
-                    Progress
-                  </span>
-                  <div className="flex flex-col gap-6">
-                    <motion.div
-                      whileTap={{ scale: 0.98 }}
-                      className={`
-                        flex items-center px-6 py-5 rounded-2xl transition
-                        bg-white/95 border border-gray-100 shadow-sm
-                        hover:bg-pink-50 hover:shadow-lg
-                        cursor-pointer
-                      `}
-                      onClick={() => router.push('/summaries')}
-                      tabIndex={0}
-                      role="button"
-                      onKeyDown={e => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          router.push('/summaries')
-                        }
-                      }}
-                    >
-                      <span className="text-2xl">📋</span>
-                      <div className="flex-1 flex flex-col ml-4">
-                        <span className="text-base font-semibold text-gray-900">
-                          View My Summaries
+                {/* Bottom Tab Navigation */}
+                <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-2 safe-area-pb">
+                  <div className="w-full max-w-lg mx-auto">
+                    <div className="flex items-center justify-around">
+                      {/* Meals Tab */}
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setActiveTab('meals')}
+                        className={`
+                          flex flex-col items-center justify-center py-3 px-6 rounded-2xl transition-all duration-300
+                          ${activeTab === 'meals' 
+                            ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg' 
+                            : 'text-gray-400 hover:text-gray-600'
+                          }
+                        `}
+                      >
+                        <i className={`fas fa-utensils text-xl mb-1 ${activeTab === 'meals' ? 'text-white' : 'text-gray-400'}`}></i>
+                        <span className={`text-xs font-medium ${activeTab === 'meals' ? 'text-white' : 'text-gray-400'}`}>
+                          Meals
                         </span>
-                        <span className="text-xs text-gray-400 mt-1">
-                          See your AI-powered meal recaps!
+                      </motion.button>
+
+                      {/* Progress Tab */}
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setActiveTab('progress')}
+                        className={`
+                          flex flex-col items-center justify-center py-3 px-6 rounded-2xl transition-all duration-300
+                          ${activeTab === 'progress' 
+                            ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg' 
+                            : 'text-gray-400 hover:text-gray-600'
+                          }
+                        `}
+                      >
+                        <i className={`fas fa-chart-line text-xl mb-1 ${activeTab === 'progress' ? 'text-white' : 'text-gray-400'}`}></i>
+                        <span className={`text-xs font-medium ${activeTab === 'progress' ? 'text-white' : 'text-gray-400'}`}>
+                          Progress
                         </span>
-                      </div>
-                      <span className="ml-2 text-gray-300 group-hover:text-pink-400 transition">
-                        <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                          <path fillRule="evenodd" d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z" clipRule="evenodd" />
-                        </svg>
-                      </span>
-                    </motion.div>
+                      </motion.button>
+                    </div>
                   </div>
                 </div>
               </>
