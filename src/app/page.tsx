@@ -569,7 +569,7 @@ useEffect(() => {
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1.1, opacity: 1 }}
                         transition={{ type: 'spring', stiffness: 320, damping: 18 }}
-                        className="flex items-center mt-1 text-[1rem] font-medium text-gray-700"
+                        className="flex items-center mt-1 text-[1rem] font-medium text-gray-700 pl-1"
                       >
                         <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400 mr-2" />
                         <span>{streak} day{streak > 1 && 's'} streak!</span>
