@@ -65,20 +65,11 @@ export default function MealChat({
     return () => clearTimeout(timer)
   }, [meal])
 
-  // Scroll to bottom when new message - smooth coordination
+  // Scroll to bottom when new message - smooth
   useEffect(() => {
     if (!chatBodyRef.current) return
     const el = chatBodyRef.current
-    
-    // Use requestAnimationFrame for smooth scrolling
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.scrollTo({
-          top: el.scrollHeight,
-          behavior: 'smooth'
-        })
-      })
-    })
+    el.scrollTop = el.scrollHeight
   }, [messages, loading])
 
   async function finishChat() {
@@ -205,22 +196,25 @@ export default function MealChat({
       >
         <AnimatePresence initial={false}>
           {messages.map((msg, i) => (
-            <motion.div
+            <div
               key={`${msg.sender}-${i}`}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ 
-                duration: 0.2, 
-                ease: "easeOut",
-                delay: i === 0 ? 0.05 : 0
-              }}
               className={`
                 flex w-full mb-1.5 relative
                 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}
               `}
             >
-              <div
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                transition={{ 
+                  duration: 0.3, 
+                  ease: [0.25, 0.46, 0.45, 0.94],
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 20,
+                  delay: i === 0 ? 0.15 : 0
+                }}
                 className={`
                   relative px-4 py-2.5 max-w-[75%] break-words select-text
                   ${msg.sender === 'user'
@@ -244,20 +238,23 @@ export default function MealChat({
                 }}
               >
                 {msg.text}
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           ))}
           
           {loading && (
-            <motion.div
-              key="typing"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="flex justify-start mb-1.5"
-            >
-              <div 
+            <div className="flex justify-start mb-1.5">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.8, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                transition={{ 
+                  duration: 0.25, 
+                  ease: [0.25, 0.46, 0.45, 0.94],
+                  type: "spring",
+                  stiffness: 350,
+                  damping: 25
+                }}
                 className="px-4 py-2.5 rounded-[22px] rounded-bl-[8px] max-w-[75%]"
                 style={{
                   background: 'rgba(255, 255, 255, 0.7)',
@@ -272,8 +269,8 @@ export default function MealChat({
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>

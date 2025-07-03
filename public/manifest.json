@@ -1,6 +1,6 @@
 {
   "name": "Progress Planner",
-  "short_name": "Progress",
+  "short_name": "Meal Tracker",
   "description": "A loving meal log and motivation app.",
   "start_url": "/",
   "display": "standalone",
