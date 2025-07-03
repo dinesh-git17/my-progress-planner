@@ -359,7 +359,7 @@ useEffect(() => {
   return (
     <main className="
       min-h-[100dvh] w-full h-[100dvh] overflow-y-auto overflow-x-hidden
-      bg-gradient-to-br from-[#fdf6e3] via-[#fff5fa] to-[#e6e6fa]
+      bg-gradient-to-br from-[#f5ede6] via-[#f7edf5] to-[#d8d8f0]
       pt-8 md:pt-12 pb-32 flex flex-col
     ">
       {/* Top Profile Bar */}
