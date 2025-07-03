@@ -359,9 +359,31 @@ useEffect(() => {
   return (
     <main className="
       min-h-[100dvh] w-full h-[100dvh] overflow-y-auto overflow-x-hidden
-      bg-gradient-to-br from-[#f5ede6] via-[#f7edf5] to-[#d8d8f0]
-      pt-8 md:pt-12 pb-32 flex flex-col
+      relative pt-8 md:pt-12 pb-32 flex flex-col
     ">
+      {/* Animated Background */}
+      <div className="
+        fixed inset-0 -z-10
+        bg-gradient-to-br from-[#f5ede6] via-[#f7edf5] to-[#d8d8f0]
+        animate-gradient-shift
+      " style={{
+        backgroundSize: '400% 400%',
+        animation: 'gradientShift 8s ease-in-out infinite'
+      }} />
+      
+      <style jsx>{`
+        @keyframes gradientShift {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+      `}</style>
       {/* Top Profile Bar */}
       <div className="w-full max-w-lg mx-auto px-4 flex flex-row items-center justify-between mb-8">
         <div className="flex flex-col">
