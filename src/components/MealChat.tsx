@@ -74,7 +74,7 @@ export default function MealChat({
 
   async function finishChat() {
     setLoading(true)
-    const today = new Date().toISOString().slice(0, 10)
+    const today = new Date().toLocaleString("en-US", { timeZone: "America/New_York" }).slice(0, 10);
     const user_id = getOrCreateUserId()
     await upsertMealLog({
       user_id,

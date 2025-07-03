@@ -84,17 +84,26 @@ function highlightQuote(quote: string): string {
   return highlighted
 }
 
-function getMsUntilNextESTMidnight() {
+function getMsUntilNextEstMidnight() {
   // Handles daylight savings too!
   const now = new Date()
   // Get current NY time
   const nowNY = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }))
-  // Set next midnight in NY
+  // Set next midnight EST (which is 4 AM UTC)
   const nextMidnightNY = new Date(nowNY)
-  nextMidnightNY.setHours(24, 0, 0, 0)
-  // How many ms until next midnight in NY?
-  return nextMidnightNY.getTime() - nowNY.getTime()
+  nextMidnightNY.setHours(0, 0, 0, 0)  // Midnight EST
+  
+  if (nowNY > nextMidnightNY) {
+    // If it's already past midnight EST, calculate for the next day
+    nextMidnightNY.setDate(nextMidnightNY.getDate() + 1)
+  }
+
+  const nextResetUTC = new Date(nextMidnightNY).getTime() // Reset time in UTC
+
+  // How many ms until next reset time (midnight EST)
+  return nextResetUTC - now.getTime()
 }
+
 
 export default function Home() {
   const [quote, setQuote] = useState('')
@@ -110,15 +119,15 @@ export default function Home() {
   const router = useRouter()
   const hasFetchedMeals = useRef(false)
 
-  useEffect(() => {
-    // Auto-refresh at next EST midnight (America/New_York)
-    const msUntilMidnight = getMsUntilNextESTMidnight()
-    const timeout = setTimeout(() => {
-      window.location.reload()
-    }, msUntilMidnight + 2000) // 2s buffer to be safe
+useEffect(() => {
+  const msUntilMidnight = getMsUntilNextEstMidnight()
+  const timeout = setTimeout(() => {
+    window.location.reload()
+  }, msUntilMidnight + 2000) // 2s buffer to be safe
 
-    return () => clearTimeout(timeout)
-  }, [])
+  return () => clearTimeout(timeout)
+}, [])
+
 
   useEffect(() => {
     const uid = getOrCreateUserId()
