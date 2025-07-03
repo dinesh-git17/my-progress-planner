@@ -403,110 +403,139 @@ useEffect(() => {
           animation: gradient-fade-3 12s ease-in-out infinite 8s;
         }
       `}</style>
-      {/* Top Profile Bar */}
-      <div className="w-full max-w-lg mx-auto px-4 flex flex-row items-center justify-between mb-8">
-        <div className="flex flex-col">
-          <span className="text-[1.5rem] font-bold text-gray-900 leading-snug flex items-center gap-1">
-            {name ? <>Hello, {name.split(' ')[0]} <span className="ml-1">👋</span></> : "Hello! 👋"}
-          </span>
-          {!streakLoading && streak > 0 && (
-            <motion.span
-              key={streak}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1.1, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 18 }}
-              className="flex items-center mt-1 text-[1rem] font-medium text-gray-700"
-            >
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400 mr-2" />
-              <span>{streak} day{streak > 1 && 's'} streak!</span>
-            </motion.span>
-          )}
-        </div>
-        <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg select-none uppercase">
-          {getInitials(name) || "🍽️"}
-        </div>
-      </div>
 
-      {/* Motivational Quote */}
-      <div className="w-full max-w-lg mx-auto px-4 mb-8">
+      {/* Name Input Flow - Full Screen Overlay */}
+      {askName && !showNameSaved && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12, duration: 0.5 }}
-          className="
-            relative flex items-start px-6 py-5 rounded-2xl shadow-xl shadow-pink-100/40
-            bg-gradient-to-tr from-[#fff3fc] via-[#f9f3fd] to-[#e7ffe7] border border-white/60
-            min-h-[72px] z-10 w-full
-            before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-2xl
-            before:bg-gradient-to-tr before:from-pink-200/40 before:via-purple-100/40 before:to-yellow-100/40
-            before:blur-2xl
-          "
-        >
-          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-pink-50 text-xl mr-4 ml-0">
-            💡
-          </span>
-          {loading || !quote ? (
-            <span className="animate-pulse text-base font-normal italic text-gray-400">
-              Loading motivation…
-            </span>
-          ) : (
-            <span
-              className="font-semibold text-[1.11rem] sm:text-lg leading-snug text-gray-800 break-words"
-              dangerouslySetInnerHTML={{ __html: highlightQuote(quote) }}
-            />
-          )}
-        </motion.div>
-      </div>
-
-      {/* Name Prompt Flow */}
-      {askName && !showNameSaved ? (
-        <div className="w-full max-w-lg mx-auto px-4 mt-8">
-          <div className="flex flex-col items-center mb-6">
-            <div className="mb-2 text-3xl">👩‍❤️‍💋‍👨</div>
-            <p className="text-center text-lg font-semibold text-pink-600 mb-1 tracking-tight">
-              Hi love 🥺 What's your name?
-            </p>
-            <p className="text-center text-base text-gray-500 mb-0.5">
-              I'll remember it for your daily progress!
-            </p>
-          </div>
-          <input
-            className="
-              w-full px-5 py-3 mb-4 rounded-xl border-none shadow-inner
-              bg-white text-gray-800 text-lg
-              focus:ring-2 focus:ring-pink-300/40 outline-none transition
-              placeholder:text-gray-400
-            "
-            placeholder="Your sweet name…"
-            value={tempName}
-            maxLength={32}
-            onChange={(e) => setTempName(e.target.value)}
-            aria-label="Enter your name"
-          />
-          <button
-            onClick={handleSaveName}
-            className="
-              w-full py-3 rounded-full bg-gradient-to-r from-pink-300 via-pink-400 to-yellow-300
-              text-white text-lg font-bold shadow-md transition hover:scale-[1.03]
-              tracking-wide focus:outline-none focus:ring-2 focus:ring-pink-300/30
-            "
-            type="button"
-          >
-            Save My Name 💌
-          </button>
-        </div>
-      ) : askName && showNameSaved ? (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="w-full max-w-lg mx-auto px-4 text-center text-lg font-semibold text-pink-500 my-8"
+          className="absolute inset-0 z-50 flex items-center justify-center px-4"
         >
-          Yay! Your name is saved, my love 💖<br />
-          Let's crush your goals together!
+          <div className="w-full max-w-md">
+            <div className="flex flex-col items-center mb-8">
+              <div className="mb-4 text-6xl">👩‍❤️‍💋‍👨</div>
+              <h1 className="text-center text-2xl font-bold text-pink-600 mb-3 tracking-tight">
+                Hi love 🥺 What's your name?
+              </h1>
+              <p className="text-center text-lg text-gray-600 mb-0.5">
+                I'll remember it for your daily progress!
+              </p>
+            </div>
+            
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/40">
+              <input
+                className="
+                  w-full px-6 py-4 mb-6 rounded-2xl border-none shadow-inner
+                  bg-white/90 text-gray-800 text-xl
+                  focus:ring-2 focus:ring-pink-300/40 outline-none transition
+                  placeholder:text-gray-400
+                "
+                placeholder="Your sweet name…"
+                value={tempName}
+                maxLength={32}
+                onChange={(e) => setTempName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                aria-label="Enter your name"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveName}
+                disabled={!tempName.trim()}
+                className="
+                  w-full py-4 rounded-2xl bg-gradient-to-r from-pink-400 via-pink-500 to-yellow-400
+                  text-white text-xl font-bold shadow-lg transition 
+                  hover:scale-[1.02] active:scale-[0.98]
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                  tracking-wide focus:outline-none focus:ring-2 focus:ring-pink-300/40
+                "
+                type="button"
+              >
+                Save My Name 💌
+              </button>
+            </div>
+          </div>
         </motion.div>
-      ) : (
+      )}
+
+      {/* Name Saved Confirmation - Full Screen Overlay */}
+      {askName && showNameSaved && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="absolute inset-0 z-50 flex items-center justify-center px-4"
+        >
+          <div className="text-center">
+            <div className="mb-6 text-6xl">💖</div>
+            <h1 className="text-3xl font-bold text-pink-500 mb-4">
+              Yay! Your name is saved, my love
+            </h1>
+            <p className="text-xl text-gray-600">
+              Let's crush your goals together!
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Main Content - Hidden when asking for name */}
+      {!askName && (
         <>
+          {/* Top Profile Bar */}
+          <div className="w-full max-w-lg mx-auto px-4 flex flex-row items-center justify-between mb-8">
+            <div className="flex flex-col">
+              <span className="text-[1.5rem] font-bold text-gray-900 leading-snug flex items-center gap-1">
+                {name ? <>Hello, {name.split(' ')[0]} <span className="ml-1">👋</span></> : "Hello! 👋"}
+              </span>
+              {!streakLoading && streak > 0 && (
+                <motion.span
+                  key={streak}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1.1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 320, damping: 18 }}
+                  className="flex items-center mt-1 text-[1rem] font-medium text-gray-700"
+                >
+                  <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400 mr-2" />
+                  <span>{streak} day{streak > 1 && 's'} streak!</span>
+                </motion.span>
+              )}
+            </div>
+            <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg select-none uppercase">
+              {getInitials(name) || "🍽️"}
+            </div>
+          </div>
+
+          {/* Motivational Quote */}
+          <div className="w-full max-w-lg mx-auto px-4 mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.12, duration: 0.5 }}
+              className="
+                relative flex items-start px-6 py-5 rounded-2xl shadow-xl shadow-pink-100/40
+                bg-gradient-to-tr from-[#fff3fc] via-[#f9f3fd] to-[#e7ffe7] border border-white/60
+                min-h-[72px] z-10 w-full
+                before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-2xl
+                before:bg-gradient-to-tr before:from-pink-200/40 before:via-purple-100/40 before:to-yellow-100/40
+                before:blur-2xl
+              "
+            >
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-pink-50 text-xl mr-4 ml-0">
+                💡
+              </span>
+              {loading || !quote ? (
+                <span className="animate-pulse text-base font-normal italic text-gray-400">
+                  Loading motivation…
+                </span>
+              ) : (
+                <span
+                  className="font-semibold text-[1.11rem] sm:text-lg leading-snug text-gray-800 break-words"
+                  dangerouslySetInnerHTML={{ __html: highlightQuote(quote) }}
+                />
+              )}
+            </motion.div>
+          </div>
+
           {/* Enable Notifications Section */}
           {!notificationsEnabled && (
             <div className="w-full max-w-lg mx-auto px-4 mb-6">
