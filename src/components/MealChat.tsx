@@ -173,7 +173,7 @@ export default function MealChat({
           
           <div className="flex items-center gap-2.5">
             <span className="text-lg">
-              {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🥪' : '🍜'}
+              {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🫐' : '🍜'}
             </span>
             <h1 className="text-[17px] font-semibold text-gray-800 tracking-[-0.41px] leading-[22px]">
               {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
