@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 
 const mealLabels = [
   { meal: 'breakfast', emoji: '🍳', label: 'Breakfast' },
-  { meal: 'lunch', emoji: '🥪', label: 'Lunch' },
+  { meal: 'lunch', emoji: '🫐', label: 'Lunch' },
   { meal: 'dinner', emoji: '🍜', label: 'Dinner' },
 ]
 
