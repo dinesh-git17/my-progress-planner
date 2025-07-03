@@ -361,27 +361,46 @@ useEffect(() => {
       min-h-[100dvh] w-full h-[100dvh] overflow-y-auto overflow-x-hidden
       relative pt-8 md:pt-12 pb-32 flex flex-col
     ">
-      {/* Animated Background */}
-      <div className="
-        fixed inset-0 -z-10
-        bg-gradient-to-br from-[#f5ede6] via-[#f7edf5] to-[#d8d8f0]
-        animate-gradient-shift
-      " style={{
-        backgroundSize: '400% 400%',
-        animation: 'gradientShift 8s ease-in-out infinite'
-      }} />
+      {/* Dynamic Animated Gradient Background */}
+      <div className="fixed inset-0 -z-10">
+        {/* Base gradient layer */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#f5ede6] via-[#f7edf5] to-[#d8d8f0]" />
+        
+        {/* Animated overlay layers */}
+        <div className="absolute inset-0 opacity-0 animate-gradient-1 bg-gradient-to-tr from-[#f7edf5] via-[#d8d8f0] to-[#f2e8e8]" />
+        <div className="absolute inset-0 opacity-0 animate-gradient-2 bg-gradient-to-bl from-[#d8d8f0] via-[#f2e8e8] to-[#f5ede6]" />
+        <div className="absolute inset-0 opacity-0 animate-gradient-3 bg-gradient-to-tl from-[#f2e8e8] via-[#f5ede6] to-[#f7edf5]" />
+      </div>
       
       <style jsx>{`
-        @keyframes gradientShift {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
+        @keyframes gradient-fade-1 {
+          0%, 100% { opacity: 0; }
+          25% { opacity: 0.6; }
+          50% { opacity: 0; }
+        }
+        
+        @keyframes gradient-fade-2 {
+          0%, 100% { opacity: 0; }
+          50% { opacity: 0.5; }
+          75% { opacity: 0; }
+        }
+        
+        @keyframes gradient-fade-3 {
+          0%, 25% { opacity: 0; }
+          75% { opacity: 0.7; }
+          100% { opacity: 0; }
+        }
+        
+        .animate-gradient-1 {
+          animation: gradient-fade-1 12s ease-in-out infinite;
+        }
+        
+        .animate-gradient-2 {
+          animation: gradient-fade-2 12s ease-in-out infinite 4s;
+        }
+        
+        .animate-gradient-3 {
+          animation: gradient-fade-3 12s ease-in-out infinite 8s;
         }
       `}</style>
       {/* Top Profile Bar */}
