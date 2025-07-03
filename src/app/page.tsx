@@ -411,10 +411,10 @@ export default function Home() {
           <div className="flex flex-col items-center mb-6">
             <div className="mb-2 text-3xl">👩‍❤️‍💋‍👨</div>
             <p className="text-center text-lg font-semibold text-pink-600 mb-1 tracking-tight">
-              Hi love 🥺 What's your name?
+              Hi love 🥺 What&apos;s your name?
             </p>
             <p className="text-center text-base text-gray-500 mb-0.5">
-              I'll remember it for your daily progress!
+              I&apos;ll remember it for your daily progress!
             </p>
           </div>
           <input
@@ -450,7 +450,7 @@ export default function Home() {
           className="w-full max-w-lg mx-auto px-4 text-center text-lg font-semibold text-pink-500 my-8"
         >
           Yay! Your name is saved, my love 💖<br />
-          Let's crush your goals together!
+          Let&apos;s crush your goals together!
         </motion.div>
       ) : (
         <>
