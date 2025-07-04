@@ -780,6 +780,42 @@ const fetchLoggedMeals = async (user_id: string): Promise<void> => {
                               </svg>
                             </span>
                           </motion.div>
+
+                          <motion.div
+                            whileTap={{ scale: 0.98 }}
+                            className={`
+                              flex items-center px-6 py-5 rounded-2xl transition
+                              bg-white/95 border border-gray-100 shadow-sm
+                              hover:bg-orange-50 hover:shadow-lg
+                              cursor-pointer
+                            `}
+                            onClick={() => router.push('/streaks')}
+                            tabIndex={0}
+                            role="button"
+                            onKeyDown={e => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                router.push('/streaks')
+                              }
+                            }}
+                          >
+                            <span className="text-2xl">🏆</span>
+                            <div className="flex-1 flex flex-col ml-4">
+                              <span className="text-base font-semibold text-gray-900">
+                                View My Streaks
+                              </span>
+                              <span className="text-xs text-gray-400 mt-1">
+                                {!streakLoading && streak > 0 
+                                  ? `Current streak: ${streak} day${streak > 1 ? 's' : ''}!`
+                                  : 'See all your achievement milestones!'
+                                }
+                              </span>
+                            </div>
+                            <span className="ml-2 text-gray-300 group-hover:text-orange-400 transition">
+                              <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                                <path fillRule="evenodd" d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z" clipRule="evenodd" />
+                              </svg>
+                            </span>
+                          </motion.div>
                         </div>
                       </motion.div>
                     )}
