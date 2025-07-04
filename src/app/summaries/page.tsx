@@ -369,7 +369,7 @@ export default function SummariesPage() {
       <div
         className="flex-1 w-full max-w-2xl mx-auto flex flex-col relative z-10"
         style={{
-          marginTop: `${BANNER_TOTAL_HEIGHT - 90}px`,
+          marginTop: `${BANNER_TOTAL_HEIGHT - 70}px`,
           height: `calc(100vh - ${BANNER_TOTAL_HEIGHT - 70}px)`,
           overflow: 'hidden',
         }}
@@ -400,23 +400,34 @@ export default function SummariesPage() {
       </div>
 
       {/* IG-Style Story Modal */}
-      {activeSummary && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] flex items-center justify-center">
-          <div
-            className={`
-              w-full h-[100dvh] max-h-[100dvh] flex flex-col animate-fadein overflow-hidden
-              bg-gradient-to-br from-white/85 via-[#f6e7fc]/80 to-[#fdf6fa]/90
-              select-none
-              ${dmSans.className}
-            `}
-            onClick={handleStoryAreaClick}
-            style={{
-              borderRadius: 0,
-              boxShadow: '0 12px 48px 0 rgba(120,80,140,0.08)',
-              minHeight: '100dvh',
-              maxHeight: '100dvh'
-            }}
+      <AnimatePresence>
+        {activeSummary && (
+          <motion.div 
+            className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
           >
+            <motion.div
+              className={`
+                w-full h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden
+                bg-gradient-to-br from-white/85 via-[#f6e7fc]/80 to-[#fdf6fa]/90
+                select-none
+                ${dmSans.className}
+              `}
+              onClick={handleStoryAreaClick}
+              style={{
+                borderRadius: 0,
+                boxShadow: '0 12px 48px 0 rgba(120,80,140,0.08)',
+                minHeight: '100dvh',
+                maxHeight: '100dvh'
+              }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            >
             {/* Modal Top: Progress bar & Close */}
             <div className="relative flex items-center w-full pt-10 pb-2 px-6">
               <div className="flex-1 flex gap-2">
@@ -530,9 +541,10 @@ export default function SummariesPage() {
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
