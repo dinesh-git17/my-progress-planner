@@ -58,6 +58,14 @@ export default function AdminLandingPage() {
   const [showLoadingScreen, setShowLoadingScreen] = useState(true)
   const [contentReady, setContentReady] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalMeals: 0,
+    todayMeals: 0,
+    lastUpdated: null as string | null
+  })
+  const [statsLoading, setStatsLoading] = useState(false)
   const router = useRouter()
 
   // Handle loading screen timing and authentication check together
@@ -78,6 +86,44 @@ export default function AdminLandingPage() {
 
     return () => clearTimeout(timer)
   }, [])
+
+  // Fetch stats when authenticated and content is ready
+  useEffect(() => {
+    if (isAuthenticated && contentReady) {
+      fetchStats()
+      // Refresh stats every 30 seconds
+      const interval = setInterval(fetchStats, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [isAuthenticated, contentReady])
+
+  const fetchStats = async () => {
+    setStatsLoading(true)
+    try {
+      const timestamp = new Date().getTime()
+      console.log('📊 Fetching stats for landing page...')
+      
+      const response = await fetch(`/api/admin/stats?timestamp=${timestamp}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📊 Landing page received stats:', data)
+        setStats({
+          totalUsers: data?.totalUsers || 0,
+          activeUsers: data?.activeUsers || 0,
+          totalMeals: data?.totalMeals || 0,
+          todayMeals: data?.todayMeals || 0,
+          lastUpdated: data?.lastUpdated || null
+        })
+      } else {
+        console.error('Failed to fetch stats:', response.status)
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error)
+    } finally {
+      setStatsLoading(false)
+    }
+  }
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -112,6 +158,13 @@ export default function AdminLandingPage() {
     setIsAuthenticated(false)
     setPassword('')
     setError('')
+    setStats({
+      totalUsers: 0,
+      activeUsers: 0,
+      totalMeals: 0,
+      todayMeals: 0,
+      lastUpdated: null
+    })
   }
 
   const adminNavItems = [
@@ -416,20 +469,56 @@ export default function AdminLandingPage() {
                       ">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-bold text-gray-800">System Overview</h3>
-                        <span className="text-2xl">📈</span>
+                        <div className="flex items-center gap-2">
+                          {statsLoading && (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"
+                            />
+                          )}
+                          <span className="text-2xl">📈</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-center mb-4">
+                        <div className="bg-white/60 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-purple-600">
+                            {statsLoading ? '--' : (stats?.activeUsers || 0).toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-600">Active Users</div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            Last 7 days
+                          </div>
+                        </div>
+                        <div className="bg-white/60 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-pink-600">
+                            {statsLoading ? '--' : (stats?.totalMeals || 0).toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-600">Total Meals</div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            All time
+                          </div>
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-center">
                         <div className="bg-white/60 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-purple-600">--</div>
-                          <div className="text-xs text-gray-600">Active Users</div>
+                          <div className="text-xl font-bold text-blue-600">
+                            {statsLoading ? '--' : (stats?.totalUsers || 0).toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-600">Total Users</div>
                         </div>
                         <div className="bg-white/60 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-pink-600">--</div>
-                          <div className="text-xs text-gray-600">Total Meals</div>
+                          <div className="text-xl font-bold text-green-600">
+                            {statsLoading ? '--' : (stats?.todayMeals || 0).toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-600">Today's Meals</div>
                         </div>
                       </div>
                       <div className="mt-4 text-xs text-center text-gray-500">
-                        Statistics updated in real-time
+                        {stats?.lastUpdated 
+                          ? `Last updated: ${new Date(stats.lastUpdated).toLocaleTimeString()}`
+                          : 'Statistics updated every 30 seconds'
+                        }
                       </div>
                     </div>
                   </div>
