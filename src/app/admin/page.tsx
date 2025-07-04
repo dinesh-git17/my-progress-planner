@@ -7,6 +7,7 @@ type MealLog = {
   id: string
   created_at: string
   user_id: string
+  date: string
   name?: string
   breakfast: any
   lunch: any
@@ -14,7 +15,6 @@ type MealLog = {
   breakfast_gpt?: string[] | null
   lunch_gpt?: string[] | null
   dinner_gpt?: string[] | null
-  full_day_summary?: string
 }
 
 function renderMeal(meal: any) {
@@ -62,12 +62,11 @@ export default function AdminPage() {
   const [filteredLogs, setFilteredLogs] = useState<MealLog[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedName, setSelectedName] = useState('')
-  const [expandedLogId, setExpandedLogId] = useState<string | null>(null) // Track which log is expanded
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null)
 
   useEffect(() => {
-    const timestamp = new Date().getTime() // Add a unique timestamp
+    const timestamp = new Date().getTime()
 
-    // Fetch fresh data with a cache-busting query parameter
     fetch(`/api/admin/log-meal?timestamp=${timestamp}`)
       .then(res => res.json())
       .then(data => {
@@ -90,7 +89,6 @@ export default function AdminPage() {
     }
   }
 
-  // Toggle expand/collapse of meal log
   const handleLogToggle = (logId: string) => {
     setExpandedLogId(prev => (prev === logId ? null : logId))
   }
@@ -209,7 +207,7 @@ export default function AdminPage() {
                     <span className="block sm:inline truncate">{log.name || 'Unknown'}</span>
                     <span className="hidden sm:inline"> — </span>
                     <span className="block sm:inline text-sm sm:text-base text-pink-600/80">
-                      {new Date(log.created_at).toLocaleDateString()}
+                      {log.date || new Date(log.created_at).toLocaleDateString()}
                     </span>
                   </h2>
                   <motion.div
@@ -257,12 +255,6 @@ export default function AdminPage() {
                           <div className="mt-1">{renderMeal(log.dinner)}</div>
                         </div>
                         <div className="pl-0 sm:pl-2">{renderGptResponse(log.dinner_gpt)}</div>
-                      </div>
-                    )}
-                    {log.full_day_summary && (
-                      <div className="pt-2 border-t border-dashed border-gray-300 mt-3 sm:mt-2">
-                        <strong className="text-pink-600">Full Day:</strong>
-                        <div className="mt-1">{log.full_day_summary}</div>
                       </div>
                     )}
                   </motion.div>
