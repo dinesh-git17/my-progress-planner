@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Progress Planner
 
-## Getting Started
+Progress Planner is a small PWA that helps you log meals and celebrate progress.
+It is built with **Next.js** and **TypeScript** and stores data in **Supabase**.
+OpenAI is used to generate motivational summaries for each meal and day.
+Push notifications remind you when it's time to record your meals.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Log breakfast, lunch and dinner with a friendly interface.
+- GPT powered summaries and encouraging quotes.
+- Calendar view with daily streak tracking.
+- Works offline and installs like an app thanks to service worker support.
+- Optional push notifications using Web Push and scheduled cron routes.
+- Admin portal to review meal logs, summaries and app stats.
+
+## Getting started
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+2. **Create `.env.local`** with the variables listed below.
+3. **Run the dev server**
+   ```bash
+   npm run dev
+   ```
+   The app will be available at [http://localhost:3000](http://localhost:3000).
+
+### Environment variables
+
+At minimum you need your Supabase credentials and an OpenAI key:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+OPENAI_API_KEY=...
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+PUSH_CONTACT_EMAIL=you@example.com
+ADMIN_PASSWORD=changeme
+CRON_SECRET=supersecret
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+These settings enable database access, GPT summaries and push notifications.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Building for production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Run `npm run build` followed by `npm start` to serve the optimized build.
+Scheduled push reminders use the cron configuration in `vercel.json`.
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is provided as-is without a specific license.
