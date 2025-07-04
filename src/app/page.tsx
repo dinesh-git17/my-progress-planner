@@ -681,58 +681,59 @@ const fetchLoggedMeals = async (user_id: string): Promise<void> => {
                           Meals Today
                         </span>
                         <div className="flex flex-col gap-6">
-                          {mealLabels.map(({ meal, emoji, label }) => {
-                            const isLogged = loggedMeals.includes(meal)
-                            return (
-                              <motion.div
-                                key={meal}
-                                whileTap={{ scale: isLogged ? 1 : 0.98 }}
-                                className={`
-                                  flex items-center px-6 py-5 rounded-2xl transition
-                                  bg-white/95 border border-gray-100 shadow-sm
-                                  ${isLogged
-                                    ? 'opacity-60 pointer-events-none'
-                                    : 'hover:bg-pink-50 hover:shadow-lg'}
-                                  cursor-pointer
-                                `}
-                                onClick={() => !isLogged && router.push(`/${meal}`)}
-                                tabIndex={isLogged ? -1 : 0}
-                                aria-disabled={isLogged}
-                                role="button"
-                                onKeyDown={e => {
-                                  if (!isLogged && (e.key === "Enter" || e.key === " ")) {
-                                    router.push(`/${meal}`)
-                                  }
-                                }}
-                              >
-                                <span className="text-2xl">{emoji}</span>
-                                <div className="flex-1 flex flex-col ml-4">
-                                  <span className="text-base font-semibold text-gray-900">
-                                    {label}
-                                  </span>
-                                  <span className="text-xs text-gray-400 mt-1">
-                                    {isLogged
-                                      ? `Logged!`
-                                      : `Tap to log your ${label.toLowerCase()}`}
-                                  </span>
-                                </div>
-                                {isLogged ? (
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold shadow-sm">
-                                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 mr-1">
-                                      <path fillRule="evenodd" d="M16.707 6.293a1 1 0 010 1.414l-6.364 6.364a1 1 0 01-1.414 0l-3.182-3.182a1 1 0 011.414-1.414l2.475 2.475 5.657-5.657a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                    Logged
-                                  </span>
-                                ) : (
-                                  <span className="ml-2 text-gray-300 group-hover:text-pink-400 transition">
-                                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                                      <path fillRule="evenodd" d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z" clipRule="evenodd" />
-                                    </svg>
-                                  </span>
-                                )}
-                              </motion.div>
-                            )
-                          })}
+{mealLabels.map(({ meal, emoji, label }) => {
+  const isLogged = loggedMeals.includes(meal)
+  return (
+    <motion.div
+      key={meal}
+      whileTap={{ scale: isLogged ? 1 : 0.98 }}
+      className={`
+        flex items-center px-6 py-5 rounded-2xl transition
+        bg-white/95 border border-gray-100 shadow-sm
+        ${isLogged
+          ? 'opacity-60 pointer-events-none'
+          : 'hover:bg-pink-50 hover:shadow-lg'}
+        cursor-pointer
+      `}
+      onClick={() => !isLogged && router.push(`/${meal}`)}
+      tabIndex={isLogged ? -1 : 0}
+      aria-disabled={isLogged}
+      role="button"
+      onKeyDown={e => {
+        if (!isLogged && (e.key === "Enter" || e.key === " ")) {
+          router.push(`/${meal}`)
+        }
+      }}
+    >
+      <span className="text-2xl">{emoji}</span>
+      <div className="flex-1 flex flex-col ml-4">
+        <span className="text-base font-semibold text-gray-900">
+          {label}
+        </span>
+        <span className="text-xs text-gray-400 mt-1">
+          {isLogged
+            ? `Logged!`
+            : `Tap to log your ${label.toLowerCase()}`}
+        </span>
+      </div>
+      {isLogged ? (
+        <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold shadow-sm">
+          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 mr-1">
+            <path fillRule="evenodd" d="M16.707 6.293a1 1 0 010 1.414l-6.364 6.364a1 1 0 01-1.414 0l-3.182-3.182a1 1 0 011.414-1.414l2.475 2.475 5.657-5.657a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          Logged
+        </span>
+      ) : (
+        <span className="ml-2 text-gray-300 group-hover:text-pink-400 transition">
+          <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+            <path fillRule="evenodd" d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z" clipRule="evenodd" />
+          </svg>
+        </span>
+      )}
+    </motion.div>
+  )
+})}
+
                         </div>
                       </motion.div>
                     )}
