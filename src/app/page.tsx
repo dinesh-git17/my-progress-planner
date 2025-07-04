@@ -633,7 +633,7 @@ const fetchLoggedMeals = async (user_id: string): Promise<void> => {
 
                 {/* Motivational Quote */}
                 <div className="w-full max-w-lg mx-auto px-4 mb-6">
-                  <motion.div
+                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.12, duration: 0.5 }}
@@ -646,16 +646,16 @@ const fetchLoggedMeals = async (user_id: string): Promise<void> => {
                       before:blur-2xl
                     "
                   >
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-pink-50 text-xl mr-4 ml-0">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-pink-50 text-xl mr-4 ml-0 flex-shrink-0 mt-0.5">
                       💡
                     </span>
                     {loading || !quote ? (
-                      <span className="animate-pulse text-base font-normal italic text-gray-400">
+                      <span className="animate-pulse text-base font-normal italic text-gray-400 flex-1">
                         Loading motivation…
                       </span>
                     ) : (
                       <span
-                        className="font-semibold text-[1.11rem] sm:text-lg leading-snug text-gray-800 break-words"
+                        className="font-semibold text-[1.11rem] sm:text-lg leading-snug text-gray-800 break-words flex-1"
                         dangerouslySetInnerHTML={{ __html: highlightQuote(quote) }}
                       />
                     )}

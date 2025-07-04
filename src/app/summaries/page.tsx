@@ -67,7 +67,7 @@ function SummariesHeader({ dancingScriptClass }: { dancingScriptClass: string })
       <div
         className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #fdf6e3 0%, #fff5fa 54%, #e6e6fa 100%)',
+          background: 'linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%)',
           height: '100%',
         }}
       >
@@ -88,7 +88,7 @@ function SummariesHeader({ dancingScriptClass }: { dancingScriptClass: string })
             }}>
             Summaries
           </div>
-          <div className="text-lg sm:text-xl text-purple-700/80 font-medium text-center max-w-lg mx-auto mt-2 px-2 leading-tight" style={{ fontFamily: "inherit" }}>
+          <div className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
             A gentle way to track your meal journey and celebrate your daily wins ✨
           </div>
         </div>
@@ -108,9 +108,9 @@ function SummariesHeader({ dancingScriptClass }: { dancingScriptClass: string })
         >
           <defs>
             <linearGradient id="curveGradient" x1="0" y1="0" x2="500" y2="44" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#fdf6e3" />
-              <stop offset="0.54" stopColor="#fff5fa" />
-              <stop offset="1" stopColor="#e6e6fa" />
+              <stop stopColor="#f5ede6" />
+              <stop offset="0.54" stopColor="#f7edf5" />
+              <stop offset="1" stopColor="#d8d8f0" />
             </linearGradient>
           </defs>
           <path
@@ -120,6 +120,144 @@ function SummariesHeader({ dancingScriptClass }: { dancingScriptClass: string })
         </svg>
       </div>
     </header>
+  )
+}
+
+function Calendar({ summaries, onDateClick }: { summaries: Summary[], onDateClick: (summary: Summary) => void }) {
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const today = new Date()
+  
+  // Create a map of dates that have summaries
+  const summaryDates = new Set(summaries.map(s => s.date))
+  
+  const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+  const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+  const startOfCalendar = new Date(startOfMonth)
+  startOfCalendar.setDate(startOfCalendar.getDate() - startOfCalendar.getDay())
+  
+  const endOfCalendar = new Date(endOfMonth)
+  endOfCalendar.setDate(endOfCalendar.getDate() + (6 - endOfCalendar.getDay()))
+  
+  const calendarDays = []
+  const current = new Date(startOfCalendar)
+  
+  while (current <= endOfCalendar) {
+    calendarDays.push(new Date(current))
+    current.setDate(current.getDate() + 1)
+  }
+  
+  const monthName = currentDate.toLocaleDateString('en-US', { month: 'long' })
+  const year = currentDate.getFullYear()
+  
+  const isToday = (date: Date) => {
+    return date.toDateString() === today.toDateString()
+  }
+  
+  const isCurrentMonth = (date: Date) => {
+    return date.getMonth() === currentDate.getMonth()
+  }
+  
+  const formatDateKey = (date: Date) => {
+    return date.toISOString().split('T')[0]
+  }
+  
+  const hasSummary = (date: Date) => {
+    return summaryDates.has(formatDateKey(date))
+  }
+  
+  const handleDateClick = (date: Date) => {
+    const dateKey = formatDateKey(date)
+    const summary = summaries.find(s => s.date === dateKey)
+    if (summary) {
+      onDateClick(summary)
+    }
+  }
+  
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev)
+      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1))
+      return newDate
+    })
+  }
+  
+  return (
+    <div className="w-full max-w-lg mx-auto h-full flex flex-col justify-center">
+      {/* Month Header */}
+      <div className="flex items-center justify-between mb-6 px-4">
+        <button
+          onClick={() => navigateMonth('prev')}
+          className="p-2 rounded-full hover:bg-purple-100/50 transition-colors"
+        >
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        
+        <h2 className={`text-2xl font-bold text-gray-800 ${dancingScript.className}`}>
+          {monthName} {year}
+        </h2>
+        
+        <button
+          onClick={() => navigateMonth('next')}
+          className="p-2 rounded-full hover:bg-purple-100/50 transition-colors"
+        >
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+      
+      {/* Day Headers */}
+      <div className="grid grid-cols-7 gap-1 mb-6">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+          <div key={index} className="text-center text-sm font-medium text-gray-500 py-2">
+            {day}
+          </div>
+        ))}
+      </div>
+      
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {calendarDays.map((date, index) => {
+          const isCurrentMonthDay = isCurrentMonth(date)
+          const isTodayDate = isToday(date)
+          const hasSummaryData = hasSummary(date)
+          
+          return (
+            <motion.button
+              key={index}
+              onClick={() => handleDateClick(date)}
+              disabled={!hasSummaryData}
+              className={`
+                relative h-12 w-12 mx-auto flex items-center justify-center text-sm font-medium
+                transition-all duration-200 rounded-full
+                ${!isCurrentMonthDay ? 'text-gray-300' : 'text-gray-700'}
+                ${isTodayDate ? 'relative' : ''}
+                ${hasSummaryData ? 'cursor-pointer hover:scale-105' : 'cursor-default'}
+                ${hasSummaryData && isCurrentMonthDay ? 
+                  'bg-gradient-to-br from-purple-200/70 via-pink-200/60 to-purple-300/70 text-purple-800 shadow-sm border border-purple-200/50' : 
+                  ''
+                }
+              `}
+              whileHover={hasSummaryData ? { scale: 1.05 } : {}}
+              whileTap={hasSummaryData ? { scale: 0.95 } : {}}
+            >
+              {date.getDate()}
+              
+              {/* Today indicator */}
+              {isTodayDate && (
+                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                  <span className="text-[10px] font-medium text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                    TODAY
+                  </span>
+                </div>
+              )}
+            </motion.button>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -170,6 +308,7 @@ export default function SummariesPage() {
   function getAvailableStories(summary: Summary) {
     return storyTabs.filter(tab => summary[tab.key as keyof Summary])
   }
+  
   function handleStoryAreaClick() {
     const availableStories = getAvailableStories(activeSummary!)
     if (activeStoryIdx >= availableStories.length - 1) {
@@ -179,42 +318,44 @@ export default function SummariesPage() {
       setStoryAutoKey(prev => prev + 1)
     }
   }
+  
   function handleDotClick(i: number) {
     setActiveStoryIdx(i)
     setStoryAutoKey(prev => prev + 1)
   }
 
-  const BG_GRADIENT = "linear-gradient(135deg, #fdf6e3 0%, #fff5fa 54%, #e6e6fa 100%)"
+  const BG_GRADIENT = "linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%)"
 
   return (
-    <div className={`relative min-h-screen w-full flex flex-col overflow-hidden ${dmSans.className}`}>
+    <div className={`h-screen w-full flex flex-col overflow-hidden fixed inset-0 ${dmSans.className}`}>
       {/* Fixed gradient background */}
       <div
         className="fixed inset-0 z-0 pointer-events-none"
         aria-hidden="true"
         style={{ background: BG_GRADIENT }}
       />
+      
       {/* Back Button */}
       <motion.div
         className="absolute left-4 top-4 z-40"
-        initial={{ opacity: 0, x: -10 }}  // Starts slightly off-screen to the left
-        animate={{ opacity: 1, x: 0 }}   // Moves to the normal position
-        exit={{ opacity: 0, x: -10 }}    // Moves off-screen to the left on exit
-        transition={{ duration: 0.3 }}   // Smooth transition time
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -10 }}
+        transition={{ duration: 0.3 }}
         style={{
-          position: 'fixed',  // Make sure it's fixed
-          zIndex: 40,         // Ensure it's above other content
-          top: '16px',        // Keep it fixed from the top
-          left: '16px',       // Keep it fixed from the left
-          willChange: 'opacity'  // Optimize rendering for opacity change
+          position: 'fixed',
+          zIndex: 40,
+          top: '16px',
+          left: '16px',
+          willChange: 'opacity'
         }}
       >
         <button
           onClick={() => router.push('/')}
-          className="p-3 bg-white/80 text-gray-900 rounded-full shadow-md hover:bg-purple-100/70 focus:ring-2 focus:ring-purple-300 transition-all"
+          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go Back"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5"></path>
             <path d="M12 19l-7-7 7-7"></path>
           </svg>
@@ -224,91 +365,34 @@ export default function SummariesPage() {
       {/* Banner fixed above */}
       <SummariesHeader dancingScriptClass={dancingScript.className} />
 
-      {/* Cards area - only this scrolls, fully transparent, hides under banner */}
+      {/* Calendar area - fixed height, no scrolling */}
       <div
         className="flex-1 w-full max-w-2xl mx-auto flex flex-col relative z-10"
         style={{
-          paddingTop: `${BANNER_TOTAL_HEIGHT - BANNER_CURVE_HEIGHT}px`,
-          minHeight: 0,
-          height: `calc(100dvh - 0px)`,
+          marginTop: `${BANNER_TOTAL_HEIGHT - 90}px`,
+          height: `calc(100vh - ${BANNER_TOTAL_HEIGHT - 70}px)`,
           overflow: 'hidden',
         }}
       >
         <div
-          className="flex-1 overflow-y-auto px-3 pt-14 pb-8"
+          className="h-full px-3 flex items-start justify-center"
           style={{
-            borderRadius: 0,
-            WebkitOverflowScrolling: 'touch',
-            minHeight: 0,
-            height: '100%',
-            zIndex: 10,
-            background: 'transparent'
+            overflow: 'hidden'
           }}
         >
           {loading ? (
-            <div className="mt-14 text-center text-gray-400/80 text-base font-medium animate-pulse">Loading summaries…</div>
-          ) : summaries.length === 0 ? (
-            <div className="mt-14 text-center text-gray-400/80 text-lg font-normal">No summaries yet. Start logging your meals 💖</div>
+            <div className="text-center text-gray-400/80 text-base font-medium animate-pulse">
+              Loading summaries…
+            </div>
           ) : (
             <AnimatePresence mode="wait">
               <motion.div
-                className="grid grid-cols-2 gap-8"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
+                className="h-full"
               >
-                {summaries.map((summary, idx) => (
-                  <motion.button
-                    key={summary.date}
-                    className={`
-                      flex items-center justify-center w-full h-[230px] sm:h-[260px] rounded-3xl
-                      bg-gradient-to-br from-[#fdf6e3] via-[#f8e1f7] to-[#e9e6fa]
-                      shadow-xl border-[1.5px] border-white/20
-                      focus:ring-2 focus:ring-purple-100
-                      cursor-pointer
-                    `}
-                    onClick={() => setActiveSummary(summary)}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ 
-                      duration: 0.4, 
-                      ease: "easeOut",
-                      delay: idx * 0.1
-                    }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.95 }}
-                    style={{ willChange: 'auto' }}
-                  >
-                    {(() => {
-                      const { monthDay, year } = formatPrettyDateStacked(summary.date)
-                      return (
-                        <span className="flex flex-col items-center justify-center w-full">
-                          <span
-                            className={`text-[2.05rem] sm:text-[2.4rem] text-center text-gray-700 ${dancingScript.className}`}
-                            style={{
-                              letterSpacing: '0.008em',
-                              fontWeight: 600,
-                              lineHeight: 1.08,
-                              textShadow: '0 2px 18px rgba(210,140,200,0.08)',
-                            }}
-                          >
-                            {monthDay}
-                          </span>
-                          <span
-                            className={`text-[1.16rem] sm:text-[1.32rem] text-center text-gray-500 ${dancingScript.className}`}
-                            style={{
-                              fontWeight: 500,
-                              marginTop: '0.13em',
-                            }}
-                          >
-                            {year}
-                          </span>
-                        </span>
-                      )
-                    })()}
-                  </motion.button>
-                ))}
+                <Calendar summaries={summaries} onDateClick={setActiveSummary} />
               </motion.div>
             </AnimatePresence>
           )}
@@ -363,9 +447,9 @@ export default function SummariesPage() {
                 className="absolute right-2 top-3 text-gray-400 hover:text-gray-600 bg-transparent rounded-none p-2 z-20"
                 aria-label="Close"
                 style={{
-                  fontSize: '1.1rem',  // Smaller font size
-                  fontWeight: '600',   // Slightly bolder for visibility
-                  color: '#888',       // Softer, subtle color
+                  fontSize: '1.1rem',
+                  fontWeight: '600',
+                  color: '#888',
                   transition: 'all 0.3s ease',
                   cursor: 'pointer'
                 }}
@@ -381,11 +465,12 @@ export default function SummariesPage() {
                 }
               `}
             </style>
-            {/* Modal Content, fills page */}
+            
+            {/* Modal Content */}
             <div className="flex flex-col flex-1 min-h-0 w-full px-6 pb-3 justify-start">
               {/* Date */}
               <div className="w-full pt-8 pb-2 flex flex-col items-center">
-                <div className="text-center text-purple-600/80 font-medium uppercase tracking-widest text-[1.15rem] sm:text-[1.25rem] select-none mb-1">
+                <div className="text-center text-gray-600 font-normal uppercase tracking-widest text-[1.15rem] sm:text-[1.25rem] select-none mb-1">
                   {(() => {
                     const { monthDay, year } = formatPrettyDateStacked(activeSummary.date)
                     return (
@@ -396,42 +481,42 @@ export default function SummariesPage() {
                   })()}
                 </div>
               </div>
+              
               {/* Label */}
-              <div className="text-center text-purple-700 text-[2.2rem] sm:text-[2.7rem] font-semibold leading-tight mt-1 mb-6" style={{ letterSpacing: '-0.02em' }}>
+              <div className="text-center text-gray-800 text-[2.2rem] sm:text-[2.7rem] font-semibold leading-tight mt-1 mb-6" style={{ letterSpacing: '-0.02em' }}>
                 {(() => {
                   const availableStories = getAvailableStories(activeSummary)
                   const tab = availableStories[activeStoryIdx]
                   return `${tab.emoji} ${tab.label}`
                 })()}
               </div>
-              {/* Story text: fills rest */}
-                <div
-                  className={`
-                    w-full max-w-xl mx-auto px-1
-                    text-gray-600/90
-                    text-[1.01rem] sm:text-[1.09rem]
-                    leading-[1.8] select-text
-                    rounded-xl
-                    flex-1 flex items-start
-                    antialiased
-                    font-[500]
-                    tracking-wide
-                    italic
-                  `}
-                  style={{
-                    alignItems: 'flex-start',
-                    justifyContent: 'flex-start',
-                    fontFamily: `'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif`
-                  }}
-                >
-                  {(() => {
-                    const availableStories = getAvailableStories(activeSummary)
-                    const tab = availableStories[activeStoryIdx]
-                    const storyContent = prettifyText(activeSummary[tab.key as keyof Summary] as string)
-                    return storyContent
-                  })()}
-                </div>
-
+              
+              {/* Story text */}
+              <div
+                className={`
+                  w-full max-w-xl mx-auto px-1
+                  text-gray-800
+                  text-[1.01rem] sm:text-[1.09rem]
+                  leading-[1.8] select-text
+                  rounded-xl
+                  flex-1 flex items-start
+                  antialiased
+                  font-normal
+                  tracking-normal
+                `}
+                style={{
+                  alignItems: 'flex-start',
+                  justifyContent: 'flex-start',
+                  fontFamily: `'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif`
+                }}
+              >
+                {(() => {
+                  const availableStories = getAvailableStories(activeSummary)
+                  const tab = availableStories[activeStoryIdx]
+                  const storyContent = prettifyText(activeSummary[tab.key as keyof Summary] as string)
+                  return storyContent
+                })()}
+              </div>
 
               {/* Dots at the bottom */}
               <div className="flex items-center justify-center gap-1 pt-3 pb-2">
