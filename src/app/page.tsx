@@ -309,11 +309,17 @@ useEffect(() => {
       .finally(() => setLoading(false))
   }
 
-  interface MealLog {
-    breakfast?: boolean
-    lunch?: boolean
-    dinner?: boolean
-  }
+interface MealLog {
+  id: string;
+  user_id: string;
+  date: string; // Store the date as a string (ISO format)
+  breakfast?: boolean;
+  lunch?: boolean;
+  dinner?: boolean;
+  created_at: string; // Add this line to include the 'created_at' field
+  // You may also want to add any other fields you expect from the database
+}
+
 
   interface MealLogResponse {
     mealLog?: MealLog
@@ -355,19 +361,26 @@ const fetchLoggedMeals = async (user_id: string): Promise<void> => {
     
     if (data?.mealLog) {
       const meals: string[] = []
-      if (data.mealLog.breakfast) {
-        meals.push('breakfast')
-        console.log('🍳 Found breakfast logged')
-      }
-      if (data.mealLog.lunch) {
-        meals.push('lunch')
-        console.log('🥪 Found lunch logged')
-      }
-      if (data.mealLog.dinner) {
-        meals.push('dinner')
-        console.log('🍜 Found dinner logged')
-      }
       
+      // Extract the date part from created_at and compare with today
+      const mealDate = data.mealLog.created_at.slice(0, 10) // Get the date part 'YYYY-MM-DD'
+
+      // Now, compare the extracted date with today's date
+      if (mealDate === todayEst) {
+        if (data.mealLog.breakfast) {
+          meals.push('breakfast')
+          console.log('🍳 Found breakfast logged')
+        }
+        if (data.mealLog.lunch) {
+          meals.push('lunch')
+          console.log('🥪 Found lunch logged')
+        }
+        if (data.mealLog.dinner) {
+          meals.push('dinner')
+          console.log('🍜 Found dinner logged')
+        }
+      }
+
       setLoggedMeals(meals)
       console.log('✅ State updated successfully')
     } else {
@@ -381,6 +394,7 @@ const fetchLoggedMeals = async (user_id: string): Promise<void> => {
     setLoggedMeals([])
   }
 }
+
 
 
   const handleSaveName = async () => {
