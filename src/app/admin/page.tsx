@@ -1,269 +1,444 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
-type MealLog = {
-  id: string
-  created_at: string
-  user_id: string
-  date: string
-  name?: string
-  breakfast: any
-  lunch: any
-  dinner: any
-  breakfast_gpt?: string[] | null
-  lunch_gpt?: string[] | null
-  dinner_gpt?: string[] | null
-}
-
-function renderMeal(meal: any) {
-  if (!meal || (Array.isArray(meal) && meal.length === 0)) {
-    return (<span className="italic text-gray-400">—</span>)
-  }
-
-  if (typeof meal === 'string') {
-    try {
-      meal = JSON.parse(meal)
-    } catch {
-      return <span>{meal}</span>
-    }
-  }
-
-  if (Array.isArray(meal)) {
-    return (
-      <ul className="list-disc pl-4 space-y-1">
-        {meal.map((item, idx) => (
-          <li key={idx} className="text-gray-700">{item}</li>
-        ))}
-      </ul>
-    )
-  }
-
-  return <span>{JSON.stringify(meal)}</span>
-}
-
-function renderGptResponse(responses: string[] | null | undefined) {
-  if (!responses || responses.length === 0) {
-    return <span className="italic text-gray-400">—</span>
-  }
-
+// Loading Screen Component
+function LoadingScreen({ isVisible }: { isVisible: boolean }) {
   return (
-    <ul className="list-disc pl-4 space-y-1 text-sm text-pink-700">
-      {responses.map((line, idx) => (
-        <li key={idx} className="leading-snug">{line}</li>
-      ))}
-    </ul>
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+          className="loading-screen-image flex flex-col items-center justify-center"
+        >
+          {/* Spacer to push content to bottom */}
+          <div className="flex-1" />
+          
+          {/* Text content positioned at bottom */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+            className="relative z-10 text-center px-6 pb-16"
+          >
+            <h1 
+              className="text-lg font-light text-gray-600 mb-3 tracking-wide" 
+              style={{ 
+                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Arial, sans-serif',
+                letterSpacing: '0.5px'
+              }}
+            >
+              loading admin portal
+            </h1>
+            <motion.div
+              animate={{ opacity: [0.3, 0.7, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="flex justify-center space-x-1.5"
+            >
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
-export default function AdminPage() {
-  const [logs, setLogs] = useState<MealLog[]>([])
-  const [filteredLogs, setFilteredLogs] = useState<MealLog[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedName, setSelectedName] = useState('')
-  const [expandedLogId, setExpandedLogId] = useState<string | null>(null)
+export default function AdminLandingPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [password, setPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [showLoadingScreen, setShowLoadingScreen] = useState(true)
+  const [contentReady, setContentReady] = useState(false)
+  const [authChecked, setAuthChecked] = useState(false)
+  const router = useRouter()
 
+  // Handle loading screen timing and authentication check together
   useEffect(() => {
-    const timestamp = new Date().getTime()
+    // Check authentication status immediately
+    const authStatus = sessionStorage.getItem('admin_authenticated')
+    if (authStatus === 'true') {
+      setIsAuthenticated(true)
+    }
+    setAuthChecked(true)
 
-    fetch(`/api/admin/log-meal?timestamp=${timestamp}`)
-      .then(res => res.json())
-      .then(data => {
-        setLogs(data.logs || [])
-        setFilteredLogs(data.logs || [])
-      })
-      .finally(() => setLoading(false))
+    // Always show loading screen for minimum duration for smooth experience
+    const timer = setTimeout(() => {
+      setShowLoadingScreen(false)
+      // Small delay to ensure smooth transition
+      setTimeout(() => setContentReady(true), 100)
+    }, 2000) // Show loading screen for 2 seconds minimum
+
+    return () => clearTimeout(timer)
   }, [])
 
-  const uniqueNames = Array.from(new Set(logs.map(log => log.name).filter(Boolean)))
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const name = e.target.value
-    setSelectedName(name)
+    try {
+      const response = await fetch('/api/admin/landing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      })
 
-    if (name === '') {
-      setFilteredLogs(logs)
-    } else {
-      setFilteredLogs(logs.filter(log => log.name === name))
+      if (response.ok) {
+        sessionStorage.setItem('admin_authenticated', 'true')
+        setIsAuthenticated(true)
+        setPassword('')
+      } else {
+        setError('Invalid password. Please try again.')
+      }
+    } catch (err) {
+      setError('Authentication failed. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleLogToggle = (logId: string) => {
-    setExpandedLogId(prev => (prev === logId ? null : logId))
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin_authenticated')
+    setIsAuthenticated(false)
+    setPassword('')
+    setError('')
   }
 
+  const adminNavItems = [
+    {
+      title: 'Meal Logs',
+      description: 'View and manage user meal entries',
+      icon: '📋',
+      path: '/admin/logs',
+      color: 'from-pink-400 to-pink-500',
+      hoverColor: 'hover:bg-pink-50'
+    },
+    {
+      title: 'Daily Summaries', 
+      description: 'AI-generated meal summaries and insights',
+      icon: '💬',
+      path: '/admin/summaries',
+      color: 'from-purple-400 to-purple-500',
+      hoverColor: 'hover:bg-purple-50'
+    },
+    {
+      title: 'User Analytics',
+      description: 'User engagement and streak analytics',
+      icon: '📊',
+      path: '/admin/stats',
+      color: 'from-blue-400 to-blue-500',
+      hoverColor: 'hover:bg-blue-50'
+    },
+    {
+      title: 'System Settings',
+      description: 'Configure app settings and preferences',
+      icon: '⚙️',
+      path: '/admin/settings',
+      color: 'from-gray-400 to-gray-500',
+      hoverColor: 'hover:bg-gray-50'
+    }
+  ]
+
   return (
-    <main className="w-full min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-[#fdf6e3] via-[#fff5fa] to-[#e6e6fa] p-2 sm:p-4">
-      {/* Banner Section with Gradient and Filter */}
-      <section className="w-full max-w-6xl mt-4 sm:mt-10 bg-gradient-to-r from-[#fdf6e3] to-[#fda085] rounded-2xl sm:rounded-3xl shadow-lg backdrop-blur-md p-4 sm:p-6 mb-4 sm:mb-8">
-        {/* Mobile Layout */}
-        <div className="block sm:hidden">
-          <div className="flex items-center justify-between mb-4">
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-              className="w-10 h-10 bg-gradient-to-r from-pink-200 to-yellow-300 rounded-full flex items-center justify-center text-xl font-bold text-white shadow-lg"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 2a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H8zM6 4a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H8a2 2 0 01-2-2V4z" clipRule="evenodd" />
-              </svg>
-            </motion.div>
-            <div className="text-xl font-semibold text-white">Admin Logs</div>
-          </div>
-          <div className="text-sm text-white/90 mb-4 text-center">Manage and analyze user meal logs</div>
-          
-          {/* Mobile Filter Dropdown */}
-          <div className="relative w-full">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-pink-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <motion.select
-              value={selectedName}
-              onChange={handleFilterChange}
-              className="appearance-none pl-10 pr-10 py-2.5 rounded-xl border-0 bg-white/95 backdrop-blur-sm shadow-lg text-gray-700 focus:ring-2 focus:ring-pink-300 focus:ring-opacity-50 w-full transition-all duration-300 ease-in-out focus:outline-none font-medium text-sm"
-              whileTap={{ scale: 0.98 }}
-            >
-              <option value="" className="text-gray-700">🌸 Show All Users</option>
-              {uniqueNames.map((name) => (
-                <option key={name} value={name} className="text-gray-700">
-                  👤 {name}
-                </option>
-              ))}
-            </motion.select>
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-pink-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-        </div>
+    <>
+      {/* Font Awesome CDN */}
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossOrigin="anonymous"
+        referrerPolicy="no-referrer"
+      />
 
-        {/* Desktop Layout */}
-        <div className="hidden sm:flex items-center justify-between gap-4">
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-12 h-12 bg-gradient-to-r from-pink-200 to-yellow-300 rounded-full flex items-center justify-center text-xl font-bold text-white shadow-lg"
+      {/* Loading Screen */}
+      <LoadingScreen isVisible={showLoadingScreen} />
+
+      {/* Main Content */}
+      <AnimatePresence>
+        {contentReady && authChecked && (
+          <motion.main
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+            className="
+              min-h-[100dvh] w-full h-[100dvh] overflow-hidden
+              relative pt-8 md:pt-12 flex flex-col
+            "
+            style={{
+              paddingTop: 'max(env(safe-area-inset-top), 2rem)',
+            }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M8 2a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H8zM6 4a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H8a2 2 0 01-2-2V4z" clipRule="evenodd" />
-            </svg>
-          </motion.div>
-          <div className="text-3xl font-semibold text-white">Admin Logs</div>
-          <div className="text-md text-white mt-2">Manage and analyze user meal logs</div>
-          
-          {/* Desktop Filter Dropdown */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-pink-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <motion.select
-              value={selectedName}
-              onChange={handleFilterChange}
-              className="appearance-none pl-10 pr-10 py-3 rounded-2xl border-0 bg-white/95 backdrop-blur-sm shadow-lg text-gray-700 focus:ring-2 focus:ring-pink-300 focus:ring-opacity-50 w-52 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl focus:outline-none font-medium text-sm"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            {/* Dynamic Animated Gradient Background */}
+            <div 
+              className="fixed -z-10"
+              style={{
+                top: 'calc(-1 * env(safe-area-inset-top, 0px))',
+                left: 'calc(-1 * env(safe-area-inset-left, 0px))',
+                right: 'calc(-1 * env(safe-area-inset-right, 0px))',
+                bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
+                width: 'calc(100vw + env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px))',
+                height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+                minHeight: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+              }}
             >
-              <option value="" className="text-gray-700">🌸 Show All Users</option>
-              {uniqueNames.map((name) => (
-                <option key={name} value={name} className="text-gray-700">
-                  👤 {name}
-                </option>
-              ))}
-            </motion.select>
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-pink-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
+              {/* Base gradient layer */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#f5ede6] via-[#f7edf5] to-[#d8d8f0]" />
+              
+              {/* Animated overlay layers */}
+              <div className="absolute inset-0 opacity-0 animate-gradient-1 bg-gradient-to-tr from-[#f7edf5] via-[#d8d8f0] to-[#f2e8e8]" />
+              <div className="absolute inset-0 opacity-0 animate-gradient-2 bg-gradient-to-bl from-[#d8d8f0] via-[#f2e8e8] to-[#f5ede6]" />
+              <div className="absolute inset-0 opacity-0 animate-gradient-3 bg-gradient-to-tl from-[#f2e8e8] via-[#f5ede6] to-[#f7edf5]" />
             </div>
-          </div>
-        </div>
-      </section>
+            
+            <style jsx>{`
+              @keyframes gradient-fade-1 {
+                0%, 100% { opacity: 0; }
+                25% { opacity: 0.6; }
+                50% { opacity: 0; }
+              }
+              
+              @keyframes gradient-fade-2 {
+                0%, 100% { opacity: 0; }
+                50% { opacity: 0.5; }
+                75% { opacity: 0; }
+              }
+              
+              @keyframes gradient-fade-3 {
+                0%, 25% { opacity: 0; }
+                75% { opacity: 0.7; }
+                100% { opacity: 0; }
+              }
+              
+              .animate-gradient-1 {
+                animation: gradient-fade-1 12s ease-in-out infinite;
+              }
+              
+              .animate-gradient-2 {
+                animation: gradient-fade-2 12s ease-in-out infinite 4s;
+              }
+              
+              .animate-gradient-3 {
+                animation: gradient-fade-3 12s ease-in-out infinite 8s;
+              }
+            `}</style>
 
-      {/* Logs Cards Section */}
-      <section className="w-full max-w-6xl mt-4 sm:mt-10 bg-white/90 rounded-2xl sm:rounded-3xl shadow-lg backdrop-blur-md p-3 sm:p-6">
-        {loading ? (
-          <div className="text-center text-gray-400 py-8">Loading logs…</div>
-        ) : filteredLogs.length === 0 ? (
-          <div className="text-center text-gray-400 py-8">No logs yet.</div>
-        ) : (
-          <div className="space-y-4 sm:space-y-6">
-            {filteredLogs.map((log, i) => (
+            {/* Authentication Flow */}
+            {!isAuthenticated ? (
               <motion.div
-                key={log.id}
-                className="bg-white/80 rounded-xl sm:rounded-2xl shadow-sm p-3 sm:p-4 mb-4 sm:mb-6 cursor-pointer"
-                whileHover={{ scale: window.innerWidth >= 640 ? 1.03 : 1.01 }}
-                onClick={() => handleLogToggle(log.id)}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="flex items-center justify-center flex-1 px-4"
               >
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base sm:text-lg font-semibold text-pink-700 flex-1 min-w-0">
-                    <span className="block sm:inline truncate">{log.name || 'Unknown'}</span>
-                    <span className="hidden sm:inline"> — </span>
-                    <span className="block sm:inline text-sm sm:text-base text-pink-600/80">
-                      {log.date || new Date(log.created_at).toLocaleDateString()}
+                <div className="w-full max-w-md">
+                  <div className="flex flex-col items-center mb-8">
+                    <div className="mb-4 text-6xl">🔐</div>
+                    <h1 className="text-center text-2xl font-bold text-pink-600 mb-3 tracking-tight">
+                      Admin Portal Access
+                    </h1>
+                    <p className="text-center text-lg text-gray-600 mb-0.5">
+                      Enter admin password to continue
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/40">
+                    <form onSubmit={handlePasswordSubmit}>
+                      <input
+                        type="password"
+                        className="
+                          w-full px-6 py-4 mb-6 rounded-2xl border-none shadow-inner
+                          bg-white/90 text-gray-800 text-xl
+                          focus:ring-2 focus:ring-pink-300/40 outline-none transition
+                          placeholder:text-gray-400
+                        "
+                        placeholder="Admin password…"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoFocus
+                        disabled={isLoading}
+                      />
+                      
+                      {error && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mb-4 text-red-500 text-sm text-center"
+                        >
+                          {error}
+                        </motion.div>
+                      )}
+                      
+                      <button
+                        type="submit"
+                        disabled={!password.trim() || isLoading}
+                        className="
+                          w-full py-4 rounded-2xl bg-gradient-to-r from-pink-400 via-pink-500 to-purple-400
+                          text-white text-xl font-bold shadow-lg transition 
+                          hover:scale-[1.02] active:scale-[0.98]
+                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                          tracking-wide focus:outline-none focus:ring-2 focus:ring-pink-300/40
+                        "
+                      >
+                        {isLoading ? (
+                          <div className="flex items-center justify-center">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
+                            />
+                            Authenticating...
+                          </div>
+                        ) : (
+                          'Access Admin Portal 🔑'
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              /* Admin Dashboard */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="flex flex-col h-full"
+              >
+                {/* Top Header Bar */}
+                <div className="w-full max-w-lg mx-auto px-4 flex flex-row items-center justify-between mb-8">
+                  <div className="flex flex-col">
+                    <span className="text-[1.5rem] font-bold text-gray-900 leading-snug flex items-center gap-1">
+                      Admin Portal <span className="ml-1">⚡</span>
                     </span>
-                  </h2>
-                  <motion.div
-                    className={`transform transition-transform duration-200 ${expandedLogId === log.id ? 'rotate-180' : ''} flex-shrink-0 ml-2`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6 text-pink-700 cursor-pointer" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 14a1 1 0 01-.707-.293l-5-5a1 1 0 111.414-1.414L10 11.586l4.293-4.293a1 1 0 111.414 1.414l-5 5A1 1 0 0110 14z" clipRule="evenodd" />
-                    </svg>
-                  </motion.div>
+                    <span className="text-sm text-gray-600 mt-1">
+                      Manage your meal tracking application
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {/* Logout Button */}
+                    <button
+                      onClick={handleLogout}
+                      className="w-10 h-10 rounded-full bg-gradient-to-r from-red-400 to-red-500 flex items-center justify-center shadow-lg cursor-pointer text-white hover:scale-105 transition-transform"
+                    >
+                      <i className="fas fa-sign-out-alt text-sm"></i>
+                    </button>
+                    
+                    {/* Admin Icon */}
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg select-none">
+                      👨🏽‍💻
+                    </div>
+                  </div>
                 </div>
 
-                {expandedLogId === log.id && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="mt-3 sm:mt-4 space-y-3 sm:space-y-2 text-gray-800 text-sm overflow-hidden"
+                {/* Welcome Card */}
+                <div className="w-full max-w-lg mx-auto px-4 mb-6">
+                  <div
+                    className="
+                      relative flex items-start px-6 py-5 rounded-2xl shadow-xl shadow-pink-100/40
+                      bg-gradient-to-tr from-[#fff3fc] via-[#f9f3fd] to-[#e7ffe7] border border-white/60
+                      min-h-[72px] z-10 w-full
+                      before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-2xl
+                      before:bg-gradient-to-tr before:from-pink-200/40 before:via-purple-100/40 before:to-yellow-100/40
+                      before:blur-2xl
+                    "
                   >
-                    {log.breakfast && (
-                      <div className="space-y-2">
-                        <div>
-                          <strong className="text-orange-500">Breakfast:</strong>
-                          <div className="mt-1">{renderMeal(log.breakfast)}</div>
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-50 text-xl mr-4 ml-0 flex-shrink-0 mt-0.5">
+                      🎯
+                    </span>
+                    <span className="font-semibold text-[1.11rem] sm:text-lg leading-snug text-gray-800 break-words flex-1">
+                      Welcome to the admin dashboard! Manage users, view analytics, and monitor system health.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Navigation Cards */}
+                <div className="w-full max-w-lg mx-auto px-4 flex-1 overflow-y-auto pb-8">
+                  <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                    Admin Functions
+                  </span>
+                  <div className="flex flex-col gap-6">
+                    {adminNavItems.map((item, index) => (
+                      <motion.div
+                        key={item.path}
+                        whileTap={{ scale: 0.98 }}
+                        className={`
+                          flex items-center px-6 py-5 rounded-2xl transition
+                          bg-white/95 border border-gray-100 shadow-sm
+                          ${item.hoverColor} hover:shadow-lg
+                          cursor-pointer
+                        `}
+                        onClick={() => router.push(item.path)}
+                        tabIndex={0}
+                        role="button"
+                        onKeyDown={e => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            router.push(item.path)
+                          }
+                        }}
+                      >
+                        <span className="text-2xl">{item.icon}</span>
+                        <div className="flex-1 flex flex-col ml-4">
+                          <span className="text-base font-semibold text-gray-900">
+                            {item.title}
+                          </span>
+                          <span className="text-xs text-gray-400 mt-1">
+                            {item.description}
+                          </span>
                         </div>
-                        <div className="pl-0 sm:pl-2">{renderGptResponse(log.breakfast_gpt)}</div>
+                        <span className="ml-2 text-gray-300 group-hover:text-gray-600 transition">
+                          <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                            <path fillRule="evenodd" d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Quick Stats Card */}
+                  <div className="mt-8">
+                    <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                      Quick Stats
+                    </span>
+                    <div className="
+                        bg-gradient-to-r from-purple-100 via-pink-50 to-yellow-100
+                        border border-purple-200/50 rounded-2xl p-6 shadow-sm
+                      ">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-gray-800">System Overview</h3>
+                        <span className="text-2xl">📈</span>
                       </div>
-                    )}
-                    {log.lunch && (
-                      <div className="space-y-2">
-                        <div>
-                          <strong className="text-orange-500">Lunch:</strong>
-                          <div className="mt-1">{renderMeal(log.lunch)}</div>
+                      <div className="grid grid-cols-2 gap-4 text-center">
+                        <div className="bg-white/60 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-purple-600">--</div>
+                          <div className="text-xs text-gray-600">Active Users</div>
                         </div>
-                        <div className="pl-0 sm:pl-2">{renderGptResponse(log.lunch_gpt)}</div>
-                      </div>
-                    )}
-                    {log.dinner && (
-                      <div className="space-y-2">
-                        <div>
-                          <strong className="text-orange-500">Dinner:</strong>
-                          <div className="mt-1">{renderMeal(log.dinner)}</div>
+                        <div className="bg-white/60 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-pink-600">--</div>
+                          <div className="text-xs text-gray-600">Total Meals</div>
                         </div>
-                        <div className="pl-0 sm:pl-2">{renderGptResponse(log.dinner_gpt)}</div>
                       </div>
-                    )}
-                  </motion.div>
-                )}
+                      <div className="mt-4 text-xs text-center text-gray-500">
+                        Statistics updated in real-time
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </motion.div>
-            ))}
-          </div>
+            )}
+          </motion.main>
         )}
-      </section>
-    </main>
+      </AnimatePresence>
+    </>
   )
 }
