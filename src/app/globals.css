@@ -2,6 +2,118 @@
 @tailwind components;
 @tailwind utilities;
 
+/* PWA Full Screen Support - Aggressive approach */
+html,
+body {
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background-color: #f5ede6; /* Match your app background */
+}
+
+/* Force full screen coverage including status bar area */
+html {
+  background-color: #f5ede6;
+}
+
+body {
+  background-color: #f5ede6;
+}
+
+/* Ensure PWA fills entire screen with safe area support */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Extend background into status bar area */
+  html {
+    padding-top: env(safe-area-inset-top);
+    margin-top: calc(-1 * env(safe-area-inset-top));
+    background-color: #f5ede6;
+  }
+}
+
+/* Mobile viewport meta tag support */
+@media screen and (max-width: 768px) {
+  html,
+  body {
+    height: 100vh;
+    height: 100dvh;
+    position: fixed;
+    width: 100%;
+    background-color: #f5ede6;
+  }
+
+  body {
+    position: relative;
+  }
+}
+
+/* Loading screen with image - enhanced approach */
+.loading-screen-image {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  z-index: 99999 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+
+  /* Multi-layer approach for seamless coverage */
+  background: 
+    /* Primary image */
+    url(/loading-image.png) center/cover no-repeat,
+    /* Fallback gradient that matches image edges */
+      linear-gradient(135deg, #ffeaa7 0%, #fab1a0 50%, #fd79a8 100%),
+    /* Final fallback color */ #f5ede6 !important;
+
+  /* Alternative: If your image has specific edge colors, match them */
+  /* background: 
+    url(/loading-image.png) center/cover no-repeat,
+    linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%),
+    #f5ede6 !important; */
+}
+
+/* Enhanced version with image scaling */
+.loading-screen-image-scaled {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  z-index: 99999 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+
+  /* Scale image slightly larger to ensure edge coverage */
+  background-image: url(/loading-image.png) !important;
+  background-size: 105% 105% !important; /* Slightly oversized */
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: #f5ede6 !important;
+
+  /* Fallback gradient */
+  background:
+    url(/loading-image.png) center/105% no-repeat,
+    linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%) !important;
+}
+
+/* Remove any default margins/padding and ensure proper box-sizing */
+* {
+  box-sizing: border-box;
+}
+
 /* Optional: smooth transitions for specific elements */
 button,
 a {

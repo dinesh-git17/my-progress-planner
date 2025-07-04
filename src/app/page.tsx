@@ -112,13 +112,7 @@ function LoadingScreen({ isVisible }: { isVisible: boolean }) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
-          style={{
-            backgroundImage: 'url(/loading-image.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-          }}
+          className="loading-screen-image flex flex-col items-center justify-center"
         >
           {/* Spacer to push content to bottom */}
           <div className="flex-1" />
@@ -449,9 +443,23 @@ const fetchLoggedMeals = async (user_id: string): Promise<void> => {
               min-h-[100dvh] w-full h-[100dvh] overflow-hidden
               relative pt-8 md:pt-12 flex flex-col
             "
+            style={{
+              paddingTop: 'max(env(safe-area-inset-top), 2rem)',
+            }}
           >
             {/* Dynamic Animated Gradient Background */}
-            <div className="fixed inset-0 -z-10">
+            <div 
+              className="fixed -z-10"
+              style={{
+                top: 'calc(-1 * env(safe-area-inset-top, 0px))',
+                left: 'calc(-1 * env(safe-area-inset-left, 0px))',
+                right: 'calc(-1 * env(safe-area-inset-right, 0px))',
+                bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
+                width: 'calc(100vw + env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px))',
+                height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+                minHeight: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+              }}
+            >
               {/* Base gradient layer */}
               <div className="absolute inset-0 bg-gradient-to-br from-[#f5ede6] via-[#f7edf5] to-[#d8d8f0]" />
               
