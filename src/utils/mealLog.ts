@@ -42,12 +42,24 @@ export async function upsertMealLog({
 }) {
   const gptField = `${meal}_gpt`
 
+  // Convert the EST date to ensure it's stored correctly in the database
+  // The date parameter should be in 'YYYY-MM-DD' format representing EST date
+  const estDate = date // Keep as-is since it should already be EST date
+
   // Save to `meal_logs` table
-  const { error: upsertError } = await supabase
-    .from('meal_logs')
-    .upsert([{ user_id, date, [meal]: answers, [gptField]: gpt_response }], {
+  const { error: upsertError } = await supabase.from('meal_logs').upsert(
+    [
+      {
+        user_id,
+        date: estDate, // Store the EST date directly
+        [meal]: answers,
+        [gptField]: gpt_response,
+      },
+    ],
+    {
       onConflict: 'user_id,date',
-    })
+    }
+  )
 
   if (upsertError) {
     console.error('Supabase meal_logs upsert error:', upsertError)
@@ -89,13 +101,13 @@ export async function upsertMealLog({
       return
     }
 
-    // 🔒 Upsert into `daily_summaries`
+    // 🔒 Upsert into `daily_summaries` - use the same EST date
     const { error: summaryError } = await supabase.from('daily_summaries').upsert(
       [
         {
           user_id,
           name,
-          date,
+          date: estDate, // Use the same EST date for consistency
           [`${meal}_summary`]: summaryText,
         },
       ],
@@ -107,12 +119,12 @@ export async function upsertMealLog({
       return
     }
 
-    // 🍽 Check if all 3 meals are now logged
+    // 🍽 Check if all 3 meals are now logged for this EST date
     const { data: allMealsData, error: mealCheckError } = await supabase
       .from('meal_logs')
       .select('breakfast, lunch, dinner')
       .eq('user_id', user_id)
-      .eq('date', date)
+      .eq('date', estDate) // Query using the same EST date
       .maybeSingle()
 
     if (mealCheckError) {
@@ -144,7 +156,7 @@ export async function upsertMealLog({
           .from('daily_summaries')
           .update({ full_day_summary: fullSummary })
           .eq('user_id', user_id)
-          .eq('date', date)
+          .eq('date', estDate) // Use the same EST date
       }
     }
   } catch (err) {
