@@ -319,76 +319,69 @@ useEffect(() => {
     mealLog?: MealLog
   }
 
-  const fetchLoggedMeals = async (user_id: string): Promise<void> => {
-    console.log('🍽️ === FETCHING LOGGED MEALS ===')
-    console.log('👤 User ID:', user_id)
+const fetchLoggedMeals = async (user_id: string): Promise<void> => {
+  console.log('🍽️ === FETCHING LOGGED MEALS ===')
+  console.log('👤 User ID:', user_id)
+  
+  try {
+    // Get today's date in EST
+    const now = new Date();
+    const nowEST = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const todayEst = nowEST.toISOString().slice(0, 10); // Get the date in 'YYYY-MM-DD' format
+
+    console.log('📅 Looking for date:', todayEst)
     
-    try {
-      // Use the same date format as the meal chat (YYYY-MM-DD in UTC)
-      const today = new Date().toISOString().slice(0, 10)
-      console.log('📅 Looking for date:', today)
-      console.log('🕐 Current time:', new Date().toISOString())
-      
-      const url = `/api/meals/check?user_id=${encodeURIComponent(user_id)}&date=${encodeURIComponent(today)}&timestamp=${Date.now()}`
-      console.log('🌐 Full API URL:', url)
-      
-      console.log('📡 Making fetch request...')
-      const res = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      console.log('📥 Response received:')
-      console.log('  Status:', res.status)
-      console.log('  Status Text:', res.statusText)
-      console.log('  Headers:', Object.fromEntries(res.headers.entries()))
-      
-      if (!res.ok) {
-        console.error('❌ HTTP Error Response:')
-        const errorText = await res.text()
-        console.error('  Error body:', errorText)
-        throw new Error(`HTTP error! status: ${res.status} - ${errorText}`)
-      }
-      
-      const data: MealLogResponse = await res.json()
-      console.log('✅ Meal data received:', JSON.stringify(data, null, 2))
-      
-      if (data?.mealLog) {
-        const meals: string[] = []
-        if (data.mealLog.breakfast) {
-          meals.push('breakfast')
-          console.log('🍳 Found breakfast logged')
-        }
-        if (data.mealLog.lunch) {
-          meals.push('lunch')
-          console.log('🥪 Found lunch logged')
-        }
-        if (data.mealLog.dinner) {
-          meals.push('dinner')
-          console.log('🍜 Found dinner logged')
-        }
-        
-        console.log('🎯 Setting logged meals to:', meals)
-        setLoggedMeals(meals)
-        console.log('✅ State updated successfully')
-      } else {
-        console.log('📭 No meal log found in response, resetting to empty')
-        setLoggedMeals([])
-      }
-      
-      console.log('🍽️ === FETCH COMPLETE ===')
-      
-    } catch (error) {
-      console.error('💥 === ERROR FETCHING MEALS ===')
-      console.error('Error details:', error)
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-      setLoggedMeals([])
-      console.log('🔄 Reset meals to empty due to error')
+    const url = `/api/meals/check?user_id=${encodeURIComponent(user_id)}&date=${encodeURIComponent(todayEst)}&timestamp=${Date.now()}`
+    console.log('🌐 Full API URL:', url)
+    
+    console.log('📡 Making fetch request...')
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (!res.ok) {
+      console.error('❌ HTTP Error Response:')
+      const errorText = await res.text()
+      console.error('  Error body:', errorText)
+      throw new Error(`HTTP error! status: ${res.status} - ${errorText}`)
     }
+    
+    const data: MealLogResponse = await res.json()
+    console.log('✅ Meal data received:', JSON.stringify(data, null, 2))
+    
+    if (data?.mealLog) {
+      const meals: string[] = []
+      if (data.mealLog.breakfast) {
+        meals.push('breakfast')
+        console.log('🍳 Found breakfast logged')
+      }
+      if (data.mealLog.lunch) {
+        meals.push('lunch')
+        console.log('🥪 Found lunch logged')
+      }
+      if (data.mealLog.dinner) {
+        meals.push('dinner')
+        console.log('🍜 Found dinner logged')
+      }
+      
+      setLoggedMeals(meals)
+      console.log('✅ State updated successfully')
+    } else {
+      console.log('📭 No meal log found in response, resetting to empty')
+      setLoggedMeals([])
+    }
+    
+  } catch (error) {
+    console.error('💥 === ERROR FETCHING MEALS ===')
+    console.error('Error details:', error)
+    setLoggedMeals([])
   }
+}
+
 
   const handleSaveName = async () => {
     if (!tempName.trim() || !userId) return
