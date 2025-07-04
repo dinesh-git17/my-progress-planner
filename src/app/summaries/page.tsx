@@ -26,16 +26,33 @@ const storyTabs = [
 ]
 
 function formatPrettyDateStacked(dateString: string) {
+  // Handle YYYY-MM-DD format properly by parsing components
+  const parts = dateString.split('-')
+  if (parts.length === 3) {
+    const year = parseInt(parts[0])
+    const month = parseInt(parts[1]) - 1 // Month is 0-indexed
+    const day = parseInt(parts[2])
+    const date = new Date(year, month, day)
+    
+    const monthDay = date.toLocaleDateString(undefined, {
+      month: 'long',
+      day: 'numeric'
+    })
+    
+    return { monthDay, year: year.toString() }
+  }
+  
+  // Fallback for other formats
   const date = new Date(dateString)
   if (isNaN(date.getTime())) return { monthDay: dateString, year: '' }
+  
   const monthDay = date.toLocaleDateString(undefined, {
     month: 'long',
     day: 'numeric'
   })
   const year = date.getFullYear()
-  return { monthDay, year }
+  return { monthDay, year: year.toString() }
 }
-
 function prettifyText(str: string | null) {
   if (!str) return ''
   let s = str.trim()
