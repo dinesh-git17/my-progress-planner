@@ -185,44 +185,46 @@ export default function Home() {
     return outputArray
   }
 
-  // Enhanced notification handler with debug logging
-// Alternative: Try this simpler approach based on your original PushSubscriptionButton
+// Update your handleNotificationClick to not send user_id
 const handleNotificationClick = async () => {
-  console.log('🔔 Trying original approach...')
+  console.log('🔔 Starting notification setup...')
   
   try {
-    // This is closer to your original PushSubscriptionButton logic
     const reg = await navigator.serviceWorker.ready
+    console.log('✅ Service worker ready')
 
-    // Ask for notification permission
     const perm = await Notification.requestPermission()
     if (perm !== 'granted') throw new Error('Notification permission denied')
+    console.log('✅ Permission granted')
 
     const vapidPublicKey = 'BAEWVqKa9ASTlGbc7Oo_BJGAsYBtlYAS1IkI1gKMz5Ot6WnNQuP-WQ2u3sDRDV4Ca5kZQwo8aKOshT3wOrUugxk'
 
-    // Subscribe for push
-    const sub = await reg.pushManager.subscribe({
+    const subscription = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
     })
+    console.log('✅ Push subscription created')
 
-    // Send subscription object to your backend to save
+    // Simple API call - just send the subscription
     const response = await fetch('/api/push/save-subscription', {
       method: 'POST',
-      body: JSON.stringify({
-        subscription: sub,
-        user_id: userId
+      body: JSON.stringify({ 
+        subscription // No user_id needed
       }),
       headers: { 'Content-Type': 'application/json' }
     })
 
-    if (!response.ok) throw new Error('Failed to save subscription')
-    
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
+    }
+
     setNotificationsEnabled(true)
+    console.log('✅ All done!')
     alert('🎉 Notifications enabled!')
     
   } catch (err: any) {
-    console.error('❌ Error:', err)
+    console.error('💥 Error:', err)
     alert(`Error: ${err.message}`)
   }
 }

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Use service role key for server operations
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export const runtime = 'edge'
@@ -12,27 +12,25 @@ export const runtime = 'edge'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { subscription, user_id } = body
+    const { subscription } = body
 
-    if (!subscription || !user_id) {
+    if (!subscription) {
       return NextResponse.json(
         {
           ok: false,
-          error: 'Missing subscription or user_id',
+          error: 'Missing subscription',
         },
         { status: 400 }
       )
     }
 
-    // Save subscription with user association
+    // Simple upsert - just endpoint and subscription
     const { error } = await supabase.from('push_subscriptions').upsert(
       [
         {
           endpoint: subscription.endpoint,
           subscription: subscription,
-          user_id: user_id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          // That's it! No user_id, no updated_at
         },
       ],
       {
