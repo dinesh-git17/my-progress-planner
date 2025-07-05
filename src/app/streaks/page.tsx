@@ -1,76 +1,176 @@
-'use client'
+'use client';
 
-import { getOrCreateUserId } from '@/utils/mealLog'
-import { AnimatePresence, motion } from 'framer-motion'
-import { DM_Sans, Dancing_Script } from 'next/font/google'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { getOrCreateUserId } from '@/utils/mealLog';
+import { AnimatePresence, motion } from 'framer-motion';
+import { DM_Sans, Dancing_Script } from 'next/font/google';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-const dmSans = DM_Sans({ subsets: ['latin'], weight: ['400', '500', '700'] })
-const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' })
+const dmSans = DM_Sans({ subsets: ['latin'], weight: ['400', '500', '700'] });
+const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' });
 
 function calculateStreak(dates: string[]): number {
-  if (!dates.length) return 0
-  const today = new Date()
-  today.setUTCHours(0, 0, 0, 0)
-  let streak = 0
-  let compare = new Date(today)
+  if (!dates.length) return 0;
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  let streak = 0;
+  let compare = new Date(today);
   for (const dateStr of dates) {
-    const logDate = new Date(dateStr + 'T00:00:00Z')
+    const logDate = new Date(dateStr + 'T00:00:00Z');
     if (logDate.getTime() === compare.getTime()) {
-      streak += 1
-      compare.setUTCDate(compare.getUTCDate() - 1)
+      streak += 1;
+      compare.setUTCDate(compare.getUTCDate() - 1);
     } else if (logDate.getTime() < compare.getTime()) {
-      break
+      break;
     }
   }
-  return streak
+  return streak;
 }
 
 // Streak milestones with Apple Health inspired styling
 const streakMilestones = [
-  { days: 1, title: 'First Step', bgFrom: '#ffecd2', bgTo: '#fcb69f', emoji: '🌱' },
-  { days: 3, title: 'Getting Started', bgFrom: '#a8edea', bgTo: '#fed6e3', emoji: '🔥' },
-  { days: 5, title: 'Building Habits', bgFrom: '#f9d423', bgTo: '#ff4e50', emoji: '🏆' },
-  { days: 7, title: 'One Week Strong', bgFrom: '#fceabb', bgTo: '#f8b500', emoji: '⭐' },
-  { days: 10, title: 'Double Digits', bgFrom: '#d299c2', bgTo: '#fef9d7', emoji: '🥉' },
-  { days: 14, title: 'Two Week Warrior', bgFrom: '#89f7fe', bgTo: '#66a6ff', emoji: '👑' },
-  { days: 21, title: 'Habit Master', bgFrom: '#fdbb2d', bgTo: '#22c1c3', emoji: '💎' },
-  { days: 30, title: 'Monthly Champion', bgFrom: '#ff9a9e', bgTo: '#fecfef', emoji: '🥈' },
-  { days: 45, title: 'Consistency King', bgFrom: '#a18cd1', bgTo: '#fbc2eb', emoji: '♔' },
-  { days: 60, title: 'Two Month Hero', bgFrom: '#fad0c4', bgTo: '#ffd1ff', emoji: '🚀' },
-  { days: 75, title: 'Unstoppable', bgFrom: '#ffecd2', bgTo: '#fcb69f', emoji: '⚡' },
-  { days: 90, title: 'Three Month Legend', bgFrom: '#667eea', bgTo: '#764ba2', emoji: '🥇' },
-  { days: 120, title: 'Four Month Master', bgFrom: '#f093fb', bgTo: '#f5576c', emoji: '♾️' },
-  { days: 150, title: 'Five Month Phenomenon', bgFrom: '#4facfe', bgTo: '#00f2fe', emoji: '✨' },
-  { days: 180, title: 'Half Year Hero', bgFrom: '#43e97b', bgTo: '#38f9d7', emoji: '☀️' },
-  { days: 365, title: 'One Year Legend', bgFrom: '#fa709a', bgTo: '#fee140', emoji: '👸' },
-]
+  {
+    days: 1,
+    title: 'First Step',
+    bgFrom: '#ffecd2',
+    bgTo: '#fcb69f',
+    emoji: '🌱',
+  },
+  {
+    days: 3,
+    title: 'Getting Started',
+    bgFrom: '#a8edea',
+    bgTo: '#fed6e3',
+    emoji: '🔥',
+  },
+  {
+    days: 5,
+    title: 'Building Habits',
+    bgFrom: '#f9d423',
+    bgTo: '#ff4e50',
+    emoji: '🏆',
+  },
+  {
+    days: 7,
+    title: 'One Week Strong',
+    bgFrom: '#fceabb',
+    bgTo: '#f8b500',
+    emoji: '⭐',
+  },
+  {
+    days: 10,
+    title: 'Double Digits',
+    bgFrom: '#d299c2',
+    bgTo: '#fef9d7',
+    emoji: '🥉',
+  },
+  {
+    days: 14,
+    title: 'Two Week Warrior',
+    bgFrom: '#89f7fe',
+    bgTo: '#66a6ff',
+    emoji: '👑',
+  },
+  {
+    days: 21,
+    title: 'Habit Master',
+    bgFrom: '#fdbb2d',
+    bgTo: '#22c1c3',
+    emoji: '💎',
+  },
+  {
+    days: 30,
+    title: 'Monthly Champion',
+    bgFrom: '#ff9a9e',
+    bgTo: '#fecfef',
+    emoji: '🥈',
+  },
+  {
+    days: 45,
+    title: 'Consistency King',
+    bgFrom: '#a18cd1',
+    bgTo: '#fbc2eb',
+    emoji: '♔',
+  },
+  {
+    days: 60,
+    title: 'Two Month Hero',
+    bgFrom: '#fad0c4',
+    bgTo: '#ffd1ff',
+    emoji: '🚀',
+  },
+  {
+    days: 75,
+    title: 'Unstoppable',
+    bgFrom: '#ffecd2',
+    bgTo: '#fcb69f',
+    emoji: '⚡',
+  },
+  {
+    days: 90,
+    title: 'Three Month Legend',
+    bgFrom: '#667eea',
+    bgTo: '#764ba2',
+    emoji: '🥇',
+  },
+  {
+    days: 120,
+    title: 'Four Month Master',
+    bgFrom: '#f093fb',
+    bgTo: '#f5576c',
+    emoji: '♾️',
+  },
+  {
+    days: 150,
+    title: 'Five Month Phenomenon',
+    bgFrom: '#4facfe',
+    bgTo: '#00f2fe',
+    emoji: '✨',
+  },
+  {
+    days: 180,
+    title: 'Half Year Hero',
+    bgFrom: '#43e97b',
+    bgTo: '#38f9d7',
+    emoji: '☀️',
+  },
+  {
+    days: 365,
+    title: 'One Year Legend',
+    bgFrom: '#fa709a',
+    bgTo: '#fee140',
+    emoji: '👸',
+  },
+];
 
 function useUserStreak(user_id?: string) {
-  const [streak, setStreak] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [streak, setStreak] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user_id) return
-    setLoading(true)
+    if (!user_id) return;
+    setLoading(true);
     fetch(`/api/streak?user_id=${user_id}`)
-      .then(res => res.json())
+      .then((res) => res.json())
       .then(({ dates }) => setStreak(calculateStreak(dates ?? [])))
       .catch((err) => {
-        setStreak(0)
+        setStreak(0);
       })
-      .finally(() => setLoading(false))
-  }, [user_id])
+      .finally(() => setLoading(false));
+  }, [user_id]);
 
-  return { streak, loading }
+  return { streak, loading };
 }
 
-const BANNER_CURVE_HEIGHT = 44
-const BANNER_TOP_PADDING = 32
-const BANNER_BOTTOM_PADDING = 22
-const BANNER_TEXT_HEIGHT = 74
-const BANNER_TOTAL_HEIGHT = BANNER_CURVE_HEIGHT + BANNER_TOP_PADDING + BANNER_BOTTOM_PADDING + BANNER_TEXT_HEIGHT
+const BANNER_CURVE_HEIGHT = 44;
+const BANNER_TOP_PADDING = 32;
+const BANNER_BOTTOM_PADDING = 22;
+const BANNER_TEXT_HEIGHT = 74;
+const BANNER_TOTAL_HEIGHT =
+  BANNER_CURVE_HEIGHT +
+  BANNER_TOP_PADDING +
+  BANNER_BOTTOM_PADDING +
+  BANNER_TEXT_HEIGHT;
 
 function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
   return (
@@ -88,7 +188,8 @@ function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
       <div
         className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%)',
+          background:
+            'linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%)',
           height: '100%',
         }}
       >
@@ -106,7 +207,8 @@ function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
               lineHeight: 1.15,
               letterSpacing: '-0.02em',
               fontWeight: 700,
-            }}>
+            }}
+          >
             Streak Awards
           </div>
           <div className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
@@ -128,7 +230,14 @@ function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
           }}
         >
           <defs>
-            <linearGradient id="curveGradient" x1="0" y1="0" x2="500" y2="44" gradientUnits="userSpaceOnUse">
+            <linearGradient
+              id="curveGradient"
+              x1="0"
+              y1="0"
+              x2="500"
+              y2="44"
+              gradientUnits="userSpaceOnUse"
+            >
               <stop stopColor="#f5ede6" />
               <stop offset="0.54" stopColor="#f7edf5" />
               <stop offset="1" stopColor="#d8d8f0" />
@@ -141,37 +250,38 @@ function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
         </svg>
       </div>
     </header>
-  )
+  );
 }
 
 export default function StreaksPage() {
-  const [userId, setUserId] = useState<string | null>(null)
-  const { streak, loading } = useUserStreak(userId ?? undefined)
-  const router = useRouter()
+  const [userId, setUserId] = useState<string | null>(null);
+  const { streak, loading } = useUserStreak(userId ?? undefined);
+  const router = useRouter();
 
   useEffect(() => {
-    const uid = getOrCreateUserId()
-    setUserId(uid)
-  }, [])
+    const uid = getOrCreateUserId();
+    setUserId(uid);
+  }, []);
 
-  const getAwardStatus = (milestone: typeof streakMilestones[0]) => {
+  const getAwardStatus = (milestone: (typeof streakMilestones)[0]) => {
     if (streak >= milestone.days) {
-      return 'earned'
+      return 'earned';
     } else if (streak >= milestone.days - 3) {
-      return 'close'
+      return 'close';
     } else {
-      return 'locked'
+      return 'locked';
     }
-  }
+  };
 
   const getNextMilestone = () => {
-    return streakMilestones.find(m => m.days > streak)
-  }
+    return streakMilestones.find((m) => m.days > streak);
+  };
 
-  const nextMilestone = getNextMilestone()
-  const earnedCount = streakMilestones.filter(m => streak >= m.days).length
+  const nextMilestone = getNextMilestone();
+  const earnedCount = streakMilestones.filter((m) => streak >= m.days).length;
 
-  const BG_GRADIENT = "linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%)"
+  const BG_GRADIENT =
+    'linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%)';
 
   return (
     <>
@@ -184,14 +294,16 @@ export default function StreaksPage() {
         referrerPolicy="no-referrer"
       />
 
-      <div className={`h-screen w-full flex flex-col overflow-hidden fixed inset-0 ${dmSans.className}`}>
+      <div
+        className={`h-screen w-full flex flex-col overflow-hidden fixed inset-0 ${dmSans.className}`}
+      >
         {/* Fixed gradient background */}
         <div
           className="fixed inset-0 z-0 pointer-events-none"
           aria-hidden="true"
           style={{ background: BG_GRADIENT }}
         />
-        
+
         {/* Back Button */}
         <motion.div
           className="absolute left-4 top-4 z-40"
@@ -204,7 +316,7 @@ export default function StreaksPage() {
             zIndex: 40,
             top: '16px',
             left: '16px',
-            willChange: 'opacity'
+            willChange: 'opacity',
           }}
         >
           <button
@@ -212,7 +324,16 @@ export default function StreaksPage() {
             className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-orange-200/50 transition-all shadow-sm"
             aria-label="Go Back"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M19 12H5"></path>
               <path d="M12 19l-7-7 7-7"></path>
             </svg>
@@ -259,10 +380,17 @@ export default function StreaksPage() {
                       <div className="text-lg text-gray-600 mb-4">
                         Day{streak !== 1 ? 's' : ''} in a row
                       </div>
-                      
+
                       {nextMilestone && (
                         <div className="text-sm text-gray-500">
-                          <span className="font-medium">{nextMilestone.days - streak} more day{nextMilestone.days - streak !== 1 ? 's' : ''}</span> until <span className="font-semibold text-orange-500">{nextMilestone.title}</span>
+                          <span className="font-medium">
+                            {nextMilestone.days - streak} more day
+                            {nextMilestone.days - streak !== 1 ? 's' : ''}
+                          </span>{' '}
+                          until{' '}
+                          <span className="font-semibold text-orange-500">
+                            {nextMilestone.title}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -277,15 +405,28 @@ export default function StreaksPage() {
                     <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/60">
                       <div className="flex justify-between items-center">
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-gray-900">{earnedCount}</div>
-                          <div className="text-sm text-gray-600">Awards Earned</div>
+                          <div className="text-2xl font-bold text-gray-900">
+                            {earnedCount}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Awards Earned
+                          </div>
                         </div>
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-gray-900">{streakMilestones.length}</div>
-                          <div className="text-sm text-gray-600">Total Awards</div>
+                          <div className="text-2xl font-bold text-gray-900">
+                            {streakMilestones.length}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Total Awards
+                          </div>
                         </div>
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-gray-900">{Math.round((earnedCount / streakMilestones.length) * 100)}%</div>
+                          <div className="text-2xl font-bold text-gray-900">
+                            {Math.round(
+                              (earnedCount / streakMilestones.length) * 100,
+                            )}
+                            %
+                          </div>
                           <div className="text-sm text-gray-600">Complete</div>
                         </div>
                       </div>
@@ -298,69 +439,85 @@ export default function StreaksPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.6 }}
                   >
-                    <h2 className="text-lg font-semibold text-gray-900 mb-6">Achievement Milestones</h2>
-                    
+                    <h2 className="text-lg font-semibold text-gray-900 mb-6">
+                      Achievement Milestones
+                    </h2>
+
                     <div className="grid grid-cols-2 gap-4">
                       {streakMilestones.map((milestone, index) => {
-                        const status = getAwardStatus(milestone)
-                        const isEarned = status === 'earned'
-                        const isClose = status === 'close'
-                        
+                        const status = getAwardStatus(milestone);
+                        const isEarned = status === 'earned';
+                        const isClose = status === 'close';
+
                         return (
                           <motion.div
                             key={milestone.days}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.4 + index * 0.05, duration: 0.4 }}
+                            transition={{
+                              delay: 0.4 + index * 0.05,
+                              duration: 0.4,
+                            }}
                             className={`
                               relative p-6 rounded-2xl border transition-all duration-300
-                              ${isEarned 
-                                ? 'bg-white/95 shadow-lg border-white/60 scale-105' 
-                                : isClose
-                                ? 'bg-white/70 shadow-md border-orange-200'
-                                : 'bg-white/40 shadow-sm border-gray-200 opacity-60'
+                              ${
+                                isEarned
+                                  ? 'bg-white/95 shadow-lg border-white/60 scale-105'
+                                  : isClose
+                                    ? 'bg-white/70 shadow-md border-orange-200'
+                                    : 'bg-white/40 shadow-sm border-gray-200 opacity-60'
                               }
                             `}
                           >
                             {/* Award Background Gradient */}
                             {isEarned && (
-                              <div 
+                              <div
                                 className="absolute inset-0 rounded-2xl opacity-20"
                                 style={{
-                                  background: `linear-gradient(135deg, ${milestone.bgFrom}, ${milestone.bgTo})`
+                                  background: `linear-gradient(135deg, ${milestone.bgFrom}, ${milestone.bgTo})`,
                                 }}
                               />
                             )}
-                            
+
                             <div className="relative z-10 text-center">
                               {/* Icon/Emoji */}
                               <div className="text-3xl mb-3">
                                 {isEarned ? milestone.emoji : '🔒'}
                               </div>
-                              
+
                               {/* Days */}
-                              <div className={`text-xl font-bold mb-2 ${isEarned ? 'text-gray-900' : 'text-gray-500'}`}>
-                                {milestone.days} day{milestone.days !== 1 ? 's' : ''}
+                              <div
+                                className={`text-xl font-bold mb-2 ${isEarned ? 'text-gray-900' : 'text-gray-500'}`}
+                              >
+                                {milestone.days} day
+                                {milestone.days !== 1 ? 's' : ''}
                               </div>
-                              
+
                               {/* Title */}
-                              <div className={`text-sm font-medium ${isEarned ? 'text-gray-800' : 'text-gray-500'}`}>
+                              <div
+                                className={`text-sm font-medium ${isEarned ? 'text-gray-800' : 'text-gray-500'}`}
+                              >
                                 {milestone.title}
                               </div>
-                              
+
                               {/* Progress indicator for close milestones */}
                               {isClose && !isEarned && (
                                 <div className="mt-2 text-xs text-orange-600 font-medium">
-                                  {milestone.days - streak} more day{milestone.days - streak !== 1 ? 's' : ''}!
+                                  {milestone.days - streak} more day
+                                  {milestone.days - streak !== 1 ? 's' : ''}!
                                 </div>
                               )}
-                              
+
                               {/* Earned indicator */}
                               {isEarned && (
                                 <motion.div
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
-                                  transition={{ delay: 0.6 + index * 0.05, type: 'spring', stiffness: 200 }}
+                                  transition={{
+                                    delay: 0.6 + index * 0.05,
+                                    type: 'spring',
+                                    stiffness: 200,
+                                  }}
                                   className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
                                 >
                                   <i className="fas fa-check text-white text-xs"></i>
@@ -368,7 +525,7 @@ export default function StreaksPage() {
                               )}
                             </div>
                           </motion.div>
-                        )
+                        );
                       })}
                     </div>
                   </motion.div>
@@ -383,14 +540,13 @@ export default function StreaksPage() {
                     <div className="bg-gradient-to-r from-orange-50 to-pink-50 rounded-2xl p-6 border border-orange-100">
                       <div className="text-2xl mb-3">✨</div>
                       <div className="text-gray-700 font-medium">
-                        {streak === 0 
-                          ? "Start your journey today! Every meal logged is a step toward building healthy habits."
+                        {streak === 0
+                          ? 'Start your journey today! Every meal logged is a step toward building healthy habits.'
                           : streak < 7
-                          ? "You're building momentum! Keep going to unlock more achievements."
-                          : streak < 30
-                          ? "Amazing progress! You're developing incredible consistency."
-                          : "You're a true champion! Your dedication is inspiring."
-                        }
+                            ? "You're building momentum! Keep going to unlock more achievements."
+                            : streak < 30
+                              ? "Amazing progress! You're developing incredible consistency."
+                              : "You're a true champion! Your dedication is inspiring."}
                       </div>
                     </div>
                   </motion.div>
@@ -401,5 +557,5 @@ export default function StreaksPage() {
         </div>
       </div>
     </>
-  )
+  );
 }

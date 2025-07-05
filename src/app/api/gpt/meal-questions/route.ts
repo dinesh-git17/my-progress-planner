@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   const prompt = `
@@ -6,7 +6,7 @@ You are a loving boyfriend helping your girlfriend log her meals in a supportive
 Generate 3 short, warm, conversational questions to help her log what she ate, how much, and how she felt about it.
 Respond in strict JSON as an array of strings, no commentary.
 Example: ["What did you eat today, my love?", "How much did you have?", "How did it make you feel?"]
-`
+`;
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -20,24 +20,28 @@ Example: ["What did you eat today, my love?", "How much did you have?", "How did
         temperature: 0.9,
         max_tokens: 120,
       }),
-    })
+    });
 
     if (!res.ok) {
-      const errorText = await res.text()
-      console.error('OpenAI API Error:', errorText)
-      throw new Error('Failed to fetch GPT questions')
+      const errorText = await res.text();
+      console.error('OpenAI API Error:', errorText);
+      throw new Error('Failed to fetch GPT questions');
     }
 
-    const data = await res.json()
-    const message = data.choices?.[0]?.message?.content ?? ''
-    const arrMatch = message.match(/\[[^\]]*\]/)
+    const data = await res.json();
+    const message = data.choices?.[0]?.message?.content ?? '';
+    const arrMatch = message.match(/\[[^\]]*\]/);
     const questions = arrMatch
       ? JSON.parse(arrMatch[0])
-      : ['What did you eat today, my love?', 'How much did you have?', 'How did it make you feel?']
+      : [
+          'What did you eat today, my love?',
+          'How much did you have?',
+          'How did it make you feel?',
+        ];
 
-    return NextResponse.json({ questions })
+    return NextResponse.json({ questions });
   } catch (err) {
-    console.error('API Route Error:', err)
+    console.error('API Route Error:', err);
     return NextResponse.json(
       {
         questions: [
@@ -46,7 +50,7 @@ Example: ["What did you eat today, my love?", "How much did you have?", "How did
           'How did it make you feel?',
         ],
       },
-      { status: 200 }
-    )
+      { status: 200 },
+    );
   }
 }

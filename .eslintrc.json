@@ -1,14 +1,30 @@
 {
-  "plugins": ["align"],
+  "plugins": ["prettier", "@next/next"],
+  "env": {
+    "es6": true,
+    "node": true,
+    "browser": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:prettier/recommended",
+    "next/core-web-vitals"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
   "rules": {
-    "align/align": [
+    "prettier/prettier": [
       "error",
       {
-        "arguments": "always",
-        "arrays": "always",
-        "objects": "always",
-        "parameters": "always"
+        "singleQuote": true,
+        "semi": true
       }
-    ]
+    ],
+    "no-console": "off",
+    "no-unused-vars": "warn",
+    "react/no-unescaped-entities": "off",
+    "react-hooks/exhaustive-deps": "off"
   }
 }

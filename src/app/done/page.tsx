@@ -1,21 +1,21 @@
-'use client'
+'use client';
 
-import { AnimatePresence, motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function DonePage() {
-  const router = useRouter()
-  const [contentReady, setContentReady] = useState(false)
+  const router = useRouter();
+  const [contentReady, setContentReady] = useState(false);
 
   // Handle content timing to match homepage
   useEffect(() => {
     const timer = setTimeout(() => {
-      setContentReady(true)
-    }, 100)
+      setContentReady(true);
+    }, 100);
 
-    return () => clearTimeout(timer)
-  }, [])
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <>
@@ -35,54 +35,78 @@ export default function DonePage() {
             }}
           >
             {/* Same Dynamic Animated Gradient Background as Homepage */}
-            <div 
+            <div
               className="fixed -z-10"
               style={{
                 top: 'calc(-1 * env(safe-area-inset-top, 0px))',
                 left: 'calc(-1 * env(safe-area-inset-left, 0px))',
                 right: 'calc(-1 * env(safe-area-inset-right, 0px))',
                 bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
-                width: 'calc(100vw + env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px))',
-                height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
-                minHeight: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+                width:
+                  'calc(100vw + env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px))',
+                height:
+                  'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+                minHeight:
+                  'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
               }}
             >
               {/* Base gradient layer */}
               <div className="absolute inset-0 bg-gradient-to-br from-[#f5ede6] via-[#f7edf5] to-[#d8d8f0]" />
-              
+
               {/* Animated overlay layers */}
               <div className="absolute inset-0 opacity-0 animate-gradient-1 bg-gradient-to-tr from-[#f7edf5] via-[#d8d8f0] to-[#f2e8e8]" />
               <div className="absolute inset-0 opacity-0 animate-gradient-2 bg-gradient-to-bl from-[#d8d8f0] via-[#f2e8e8] to-[#f5ede6]" />
               <div className="absolute inset-0 opacity-0 animate-gradient-3 bg-gradient-to-tl from-[#f2e8e8] via-[#f5ede6] to-[#f7edf5]" />
             </div>
-            
+
             <style jsx>{`
               @keyframes gradient-fade-1 {
-                0%, 100% { opacity: 0; }
-                25% { opacity: 0.6; }
-                50% { opacity: 0; }
+                0%,
+                100% {
+                  opacity: 0;
+                }
+                25% {
+                  opacity: 0.6;
+                }
+                50% {
+                  opacity: 0;
+                }
               }
-              
+
               @keyframes gradient-fade-2 {
-                0%, 100% { opacity: 0; }
-                50% { opacity: 0.5; }
-                75% { opacity: 0; }
+                0%,
+                100% {
+                  opacity: 0;
+                }
+                50% {
+                  opacity: 0.5;
+                }
+                75% {
+                  opacity: 0;
+                }
               }
-              
+
               @keyframes gradient-fade-3 {
-                0%, 25% { opacity: 0; }
-                75% { opacity: 0.7; }
-                100% { opacity: 0; }
+                0%,
+                25% {
+                  opacity: 0;
+                }
+                75% {
+                  opacity: 0.7;
+                }
+                100% {
+                  opacity: 0;
+                }
               }
-              
+
               .animate-gradient-1 {
                 animation: gradient-fade-1 12s ease-in-out infinite;
               }
-              
+
               .animate-gradient-2 {
                 animation: gradient-fade-2 12s ease-in-out infinite 4s;
               }
-              
+
               .animate-gradient-3 {
                 animation: gradient-fade-3 12s ease-in-out infinite 8s;
               }
@@ -95,23 +119,25 @@ export default function DonePage() {
               transition={{ duration: 0.8, delay: 0.2, ease: [0.4, 0, 0.2, 1] }}
               className="w-full max-w-md mx-auto px-4"
             >
-              <div className="
+              <div
+                className="
                 relative flex flex-col items-center px-8 py-10 rounded-3xl shadow-2xl shadow-pink-100/40
                 bg-gradient-to-tr from-[#fff3fc] via-[#f9f3fd] to-[#e7ffe7] border border-white/60
                 before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-3xl
                 before:bg-gradient-to-tr before:from-pink-200/40 before:via-purple-100/40 before:to-yellow-100/40
                 before:blur-2xl
-              ">
+              "
+              >
                 {/* Animated Emoji */}
                 <motion.div
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
-                  transition={{ 
-                    duration: 1, 
-                    delay: 0.5, 
-                    type: "spring", 
-                    stiffness: 200, 
-                    damping: 15 
+                  transition={{
+                    duration: 1,
+                    delay: 0.5,
+                    type: 'spring',
+                    stiffness: 200,
+                    damping: 15,
                   }}
                   className="text-6xl mb-6"
                 >
@@ -187,5 +213,5 @@ export default function DonePage() {
         )}
       </AnimatePresence>
     </>
-  )
+  );
 }

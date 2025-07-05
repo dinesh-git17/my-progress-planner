@@ -1,18 +1,18 @@
 // src/app/api/push/save-subscription/route.ts
-import { createClient } from '@supabase/supabase-js'
-import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+);
 
-export const runtime = 'edge'
+export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { subscription } = body
+    const body = await req.json();
+    const { subscription } = body;
 
     if (!subscription) {
       return NextResponse.json(
@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
           ok: false,
           error: 'Missing subscription',
         },
-        { status: 400 }
-      )
+        { status: 400 },
+      );
     }
 
     // Simple upsert - just endpoint and subscription
@@ -35,29 +35,29 @@ export async function POST(req: NextRequest) {
       ],
       {
         onConflict: 'endpoint',
-      }
-    )
+      },
+    );
 
     if (error) {
-      console.error('Supabase error:', error)
+      console.error('Supabase error:', error);
       return NextResponse.json(
         {
           ok: false,
           error: error.message,
         },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('API error:', error)
+    console.error('API error:', error);
     return NextResponse.json(
       {
         ok: false,
         error: 'Internal server error',
       },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }

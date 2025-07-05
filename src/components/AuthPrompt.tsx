@@ -1,17 +1,20 @@
 // src/components/AuthPrompt.tsx
 
-'use client'
+'use client';
 
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
 
 interface AuthPromptProps {
-  onContinueAsGuest: () => void
-  onLogin: () => void
+  onContinueAsGuest: () => void;
+  onLogin: () => void;
 }
 
-export default function AuthPrompt({ onContinueAsGuest, onLogin }: AuthPromptProps) {
-  console.log('🔐 AuthPrompt component rendered')
-  
+export default function AuthPrompt({
+  onContinueAsGuest,
+  onLogin,
+}: AuthPromptProps) {
+  console.log('🔐 AuthPrompt component rendered');
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -29,13 +32,13 @@ export default function AuthPrompt({ onContinueAsGuest, onLogin }: AuthPromptPro
             Choose how you'd like to continue
           </p>
         </div>
-        
+
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/40 space-y-4">
           {/* Login Button */}
           <button
             onClick={() => {
-              console.log('🔑 Login button clicked')
-              onLogin()
+              console.log('🔑 Login button clicked');
+              onLogin();
             }}
             className="
               w-full py-4 rounded-2xl bg-gradient-to-r from-blue-400 via-blue-500 to-purple-400
@@ -57,8 +60,8 @@ export default function AuthPrompt({ onContinueAsGuest, onLogin }: AuthPromptPro
           {/* Continue as Guest Button */}
           <button
             onClick={() => {
-              console.log('👥 Guest button clicked')
-              onContinueAsGuest()
+              console.log('👥 Guest button clicked');
+              onContinueAsGuest();
             }}
             className="
               w-full py-4 rounded-2xl bg-gradient-to-r from-gray-400 via-gray-500 to-gray-400
@@ -73,5 +76,5 @@ export default function AuthPrompt({ onContinueAsGuest, onLogin }: AuthPromptPro
         </div>
       </div>
     </motion.div>
-  )
+  );
 }

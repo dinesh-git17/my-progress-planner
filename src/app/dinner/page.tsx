@@ -1,9 +1,9 @@
-'use client'
-import MealChat from '@/components/MealChat'
-import { useRouter } from 'next/navigation'
+'use client';
+import MealChat from '@/components/MealChat';
+import { useRouter } from 'next/navigation';
 
 export default function DinnerPage() {
-  const router = useRouter()
+  const router = useRouter();
   return (
     <MealChat
       meal="dinner"
@@ -12,5 +12,5 @@ export default function DinnerPage() {
       nextMealHref="/done"
       onComplete={() => router.push('/done')}
     />
-  )
+  );
 }
