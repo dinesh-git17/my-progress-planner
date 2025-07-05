@@ -1,8 +1,9 @@
 'use client';
 import MealChat from '@/components/MealChat';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function BreakfastPage() {
+function BreakfastContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const userId = searchParams.get('user_id') || '';
@@ -16,5 +17,13 @@ export default function BreakfastPage() {
       nextMealHref="/lunch"
       onComplete={() => router.push(`/lunch?user_id=${userId}`)}
     />
+  );
+}
+
+export default function BreakfastPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BreakfastContent />
+    </Suspense>
   );
 }
