@@ -1,7 +1,11 @@
 'use client'
 import { useState } from "react"
 
-export function PushSubscriptionButton() {
+interface PushSubscriptionButtonProps {
+  userId: string // Add userId as a prop
+}
+
+export function PushSubscriptionButton({ userId }: PushSubscriptionButtonProps) {
   const [enabled, setEnabled] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -18,6 +22,10 @@ export function PushSubscriptionButton() {
 
   async function subscribeToPush() {
     try {
+      if (!userId) {
+        throw new Error('User ID is required')
+      }
+
       const reg = await navigator.serviceWorker.ready
 
       // Ask for notification permission
@@ -27,22 +35,30 @@ export function PushSubscriptionButton() {
       const vapidPublicKey = 'BAEWVqKa9ASTlGbc7Oo_BJGAsYBtlYAS1IkI1gKMz5Ot6WnNQuP-WQ2u3sDRDV4Ca5kZQwo8aKOshT3wOrUugxk'
 
       // Subscribe for push
-      const sub = await reg.pushManager.subscribe({
+      const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
       })
 
-      // Send subscription object to your backend to save
+      // Send subscription object with user_id to your backend
       const response = await fetch('/api/push/save-subscription', {
         method: 'POST',
-        body: JSON.stringify(sub),
+        body: JSON.stringify({ 
+          subscription, 
+          user_id: userId 
+        }),
         headers: { 'Content-Type': 'application/json' }
       })
 
-      if (!response.ok) throw new Error('Failed to save subscription')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save subscription')
+      }
+
       setEnabled(true)
       setError(null)
     } catch (err: any) {
+      console.error('Push subscription error:', err)
       setError(err.message)
       setEnabled(false)
     }
@@ -53,7 +69,7 @@ export function PushSubscriptionButton() {
       <button
         onClick={subscribeToPush}
         className="px-6 py-2 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 text-white font-semibold text-base shadow-md transition hover:scale-105 disabled:opacity-70"
-        disabled={enabled}
+        disabled={enabled || !userId}
       >
         {enabled ? 'Notifications enabled! 💌' : 'Enable Notifications'}
       </button>

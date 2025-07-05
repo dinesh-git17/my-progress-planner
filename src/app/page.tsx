@@ -166,6 +166,69 @@ export default function Home() {
   const router = useRouter()
   const hasFetchedMeals = useRef(false)
 
+  // Helper function for VAPID key conversion
+  function urlBase64ToUint8Array(base64String: string) {
+    console.log('🔄 Converting VAPID key:', base64String.substring(0, 20) + '...')
+    
+    const padding = '='.repeat((4 - base64String.length % 4) % 4)
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+').replace(/_/g, '/')
+    
+    const rawData = window.atob(base64)
+    const outputArray = new Uint8Array(rawData.length)
+    
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i)
+    }
+    
+    console.log('✅ VAPID key converted to Uint8Array, length:', outputArray.length)
+    return outputArray
+  }
+
+// Update your handleNotificationClick to not send user_id
+const handleNotificationClick = async () => {
+  console.log('🔔 Starting notification setup...')
+  
+  try {
+    const reg = await navigator.serviceWorker.ready
+    console.log('✅ Service worker ready')
+
+    const perm = await Notification.requestPermission()
+    if (perm !== 'granted') throw new Error('Notification permission denied')
+    console.log('✅ Permission granted')
+
+    const vapidPublicKey = 'BAEWVqKa9ASTlGbc7Oo_BJGAsYBtlYAS1IkI1gKMz5Ot6WnNQuP-WQ2u3sDRDV4Ca5kZQwo8aKOshT3wOrUugxk'
+
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+    })
+    console.log('✅ Push subscription created')
+
+    // Simple API call - just send the subscription
+    const response = await fetch('/api/push/save-subscription', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        subscription // No user_id needed
+      }),
+      headers: { 'Content-Type': 'application/json' }
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
+    }
+
+    setNotificationsEnabled(true)
+    console.log('✅ All done!')
+    alert('🎉 Notifications enabled!')
+    
+  } catch (err: any) {
+    console.error('💥 Error:', err)
+    alert(`Error: ${err.message}`)
+  }
+}
+
   // Handle loading screen timing
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -177,15 +240,14 @@ export default function Home() {
     return () => clearTimeout(timer)
   }, [])
 
-useEffect(() => {
-  const msUntilMidnight = getMsUntilNextEstMidnight()
-  const timeout = setTimeout(() => {
-    window.location.reload()
-  }, msUntilMidnight + 2000) // 2s buffer to be safe
+  useEffect(() => {
+    const msUntilMidnight = getMsUntilNextEstMidnight()
+    const timeout = setTimeout(() => {
+      window.location.reload()
+    }, msUntilMidnight + 2000) // 2s buffer to be safe
 
-  return () => clearTimeout(timeout)
-}, [])
-
+    return () => clearTimeout(timeout)
+  }, [])
 
   useEffect(() => {
     const uid = getOrCreateUserId()
@@ -193,10 +255,13 @@ useEffect(() => {
   }, [])
 
   useEffect(() => {
+    // Check notification permission status
     if (typeof Notification !== 'undefined') {
       setNotificationsEnabled(Notification.permission === 'granted')
     }
+    
     if (!userId || !contentReady) return
+    
     const init = async () => {
       const existingName = await getUserName(userId)
       if (!existingName) {
@@ -206,9 +271,26 @@ useEffect(() => {
         fetchQuote(existingName)
         fetchLoggedMeals(userId)
       }
+
+      // Check if user already has push notifications enabled
+      // This will check both browser permission AND if they have an active subscription
+      try {
+        if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+          const registration = await navigator.serviceWorker.getRegistration()
+          if (registration) {
+            const subscription = await registration.pushManager.getSubscription()
+            if (subscription) {
+              // User has both permission and active subscription
+              setNotificationsEnabled(true)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking existing push subscription:', error)
+      }
     }
+    
     init()
-    // eslint-disable-next-line
   }, [userId, contentReady])
 
   // Refresh logged meals whenever the page becomes visible or gains focus
@@ -303,90 +385,87 @@ useEffect(() => {
       .finally(() => setLoading(false))
   }
 
-interface MealLog {
-  id: string;
-  user_id: string;
-  date: string; // Store the date as a string (ISO format)
-  breakfast?: boolean;
-  lunch?: boolean;
-  dinner?: boolean;
-  created_at: string; // Add this line to include the 'created_at' field
-  // You may also want to add any other fields you expect from the database
-}
-
+  interface MealLog {
+    id: string;
+    user_id: string;
+    date: string; // Store the date as a string (ISO format)
+    breakfast?: boolean;
+    lunch?: boolean;
+    dinner?: boolean;
+    created_at: string; // Add this line to include the 'created_at' field
+    // You may also want to add any other fields you expect from the database
+  }
 
   interface MealLogResponse {
     mealLog?: MealLog
   }
 
-const fetchLoggedMeals = async (user_id: string): Promise<void> => {
-  console.log('🍽️ === FETCHING LOGGED MEALS ===')
-  console.log('👤 User ID:', user_id)
-  
-  try {
-    // Get today's date in EST - CORRECTED METHOD
-    const now = new Date();
-    const todayEst = new Intl.DateTimeFormat('en-CA', { 
-      timeZone: 'America/New_York' 
-    }).format(now); // Returns 'YYYY-MM-DD' format directly in EST
+  const fetchLoggedMeals = async (user_id: string): Promise<void> => {
+    console.log('🍽️ === FETCHING LOGGED MEALS ===')
+    console.log('👤 User ID:', user_id)
+    
+    try {
+      // Get today's date in EST - CORRECTED METHOD
+      const now = new Date();
+      const todayEst = new Intl.DateTimeFormat('en-CA', { 
+        timeZone: 'America/New_York' 
+      }).format(now); // Returns 'YYYY-MM-DD' format directly in EST
 
-    console.log('📅 Looking for date:', todayEst)
-    
-    const url = `/api/meals/check?user_id=${encodeURIComponent(user_id)}&date=${encodeURIComponent(todayEst)}&timestamp=${Date.now()}`
-    console.log('🌐 Full API URL:', url)
-    
-    console.log('📡 Making fetch request...')
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    })
-    
-    if (!res.ok) {
-      console.error('❌ HTTP Error Response:')
-      const errorText = await res.text()
-      console.error('  Error body:', errorText)
-      throw new Error(`HTTP error! status: ${res.status} - ${errorText}`)
-    }
-    
-    const data: MealLogResponse = await res.json()
-    console.log('✅ Meal data received:', JSON.stringify(data, null, 2))
-    
-    if (data?.mealLog) {
-      const meals: string[] = []
+      console.log('📅 Looking for date:', todayEst)
       
-      // Since we're querying by the exact EST date, and the API already filtered
-      // correctly, we can directly check for logged meals without date comparison
-      if (data.mealLog.breakfast) {
-        meals.push('breakfast')
-        console.log('🍳 Found breakfast logged')
+      const url = `/api/meals/check?user_id=${encodeURIComponent(user_id)}&date=${encodeURIComponent(todayEst)}&timestamp=${Date.now()}`
+      console.log('🌐 Full API URL:', url)
+      
+      console.log('📡 Making fetch request...')
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!res.ok) {
+        console.error('❌ HTTP Error Response:')
+        const errorText = await res.text()
+        console.error('  Error body:', errorText)
+        throw new Error(`HTTP error! status: ${res.status} - ${errorText}`)
       }
-      if (data.mealLog.lunch) {
-        meals.push('lunch')
-        console.log('🥪 Found lunch logged')
-      }
-      if (data.mealLog.dinner) {
-        meals.push('dinner')
-        console.log('🍜 Found dinner logged')
-      }
+      
+      const data: MealLogResponse = await res.json()
+      console.log('✅ Meal data received:', JSON.stringify(data, null, 2))
+      
+      if (data?.mealLog) {
+        const meals: string[] = []
+        
+        // Since we're querying by the exact EST date, and the API already filtered
+        // correctly, we can directly check for logged meals without date comparison
+        if (data.mealLog.breakfast) {
+          meals.push('breakfast')
+          console.log('🍳 Found breakfast logged')
+        }
+        if (data.mealLog.lunch) {
+          meals.push('lunch')
+          console.log('🥪 Found lunch logged')
+        }
+        if (data.mealLog.dinner) {
+          meals.push('dinner')
+          console.log('🍜 Found dinner logged')
+        }
 
-      setLoggedMeals(meals)
-      console.log('✅ State updated successfully')
-    } else {
-      console.log('📭 No meal log found in response, resetting to empty')
+        setLoggedMeals(meals)
+        console.log('✅ State updated successfully')
+      } else {
+        console.log('📭 No meal log found in response, resetting to empty')
+        setLoggedMeals([])
+      }
+      
+    } catch (error) {
+      console.error('💥 === ERROR FETCHING MEALS ===')
+      console.error('Error details:', error)
       setLoggedMeals([])
     }
-    
-  } catch (error) {
-    console.error('💥 === ERROR FETCHING MEALS ===')
-    console.error('Error details:', error)
-    setLoggedMeals([])
   }
-}
-
-
 
   const handleSaveName = async () => {
     if (!tempName.trim() || !userId) return
@@ -417,6 +496,13 @@ const fetchLoggedMeals = async (user_id: string): Promise<void> => {
   console.log('👋 Current name:', name)
   console.log('📊 Current streak:', streak)
   console.log('🏠 === END RENDER DEBUG ===')
+
+  // Add this right before your return statement to debug state
+console.log('🔍 BUTTON RENDER DEBUG:')
+console.log('- notificationsEnabled:', notificationsEnabled)
+console.log('- userId:', userId)
+console.log('- Should show button:', !notificationsEnabled && userId)
+console.log('- Notification.permission:', typeof Notification !== 'undefined' ? Notification.permission : 'undefined')
 
   return (
     <>
@@ -600,35 +686,28 @@ const fetchLoggedMeals = async (user_id: string): Promise<void> => {
                   
                   <div className="flex items-center gap-3">
                     {/* Notification Bell */}
-                    {!notificationsEnabled && (
+                    {!notificationsEnabled && userId && (
                       <button
-                        onClick={async () => {
-                          console.log('🔔 Bell button clicked!')
-                          
-                          try {
-                            if ('Notification' in window) {
-                              console.log('📱 Requesting notification permission...')
-                              const permission = await Notification.requestPermission()
-                              console.log('✅ Permission result:', permission)
-                              
-                              if (permission === 'granted') {
-                                console.log('🎉 Setting notifications enabled to true')
-                                setNotificationsEnabled(true)
-                              }
-                            }
-                          } catch (error) {
-                            console.error('❌ Error:', error)
-                          }
+                        onClick={(e) => {
+                          console.log('🖱️ Button clicked!', e);
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleNotificationClick();
                         }}
-                        className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 flex items-center justify-center shadow-lg cursor-pointer z-50 relative"
+                        className="
+                          w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 
+                          flex items-center justify-center shadow-lg 
+                          cursor-pointer hover:scale-110 active:scale-95 transition-transform
+                          border-none outline-none focus:ring-2 focus:ring-pink-300
+                        "
                         style={{ 
-                          position: 'relative',
-                          zIndex: 9999,
-                          border: 'none',
-                          outline: 'none'
+                          zIndex: 10000,
+                          WebkitTapHighlightColor: 'transparent'
                         }}
+                        type="button"
+                        aria-label="Enable notifications"
                       >
-                        <i className="fas fa-bell text-white text-xs"></i>
+                        <i className="fas fa-bell text-white text-xs pointer-events-none"></i>
                       </button>
                     )}
                     
