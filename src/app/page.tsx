@@ -7,7 +7,7 @@ import { getOrCreateUserId } from '@/utils/mealLog'
 import { getUserName, saveUserName } from '@/utils/user'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 const mealLabels = [
   { meal: 'breakfast', emoji: '🍳', label: 'Breakfast' },
@@ -103,6 +103,155 @@ function getMsUntilNextEstMidnight() {
   return nextResetUTC - now.getTime()
 }
 
+// Profile Dropdown Component
+function ProfileDropdown({ name, isOpen, onClose, profileButtonRef }: { 
+  name: string; 
+  isOpen: boolean; 
+  onClose: () => void;
+  profileButtonRef: React.RefObject<HTMLButtonElement>;
+}) {
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: Event) {
+      const target = event.target as Node
+      const isClickOnProfileButton = profileButtonRef.current?.contains(target)
+      const isClickOnDropdown = dropdownRef.current?.contains(target)
+      
+      if (!isClickOnProfileButton && !isClickOnDropdown) {
+        onClose()
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [isOpen, onClose, profileButtonRef])
+
+  const handleLogin = () => {
+    // TODO: Add login logic here
+    console.log('Login clicked')
+    onClose()
+  }
+
+  const handleEditProfile = () => {
+    // TODO: Add edit profile logic here
+    console.log('Edit profile clicked')
+    onClose()
+  }
+
+  const handleSettings = () => {
+    // TODO: Add settings logic here
+    console.log('Settings clicked')
+    onClose()
+  }
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          ref={dropdownRef}
+          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+          transition={{ 
+            duration: 0.2, 
+            ease: [0.4, 0, 0.2, 1],
+            type: "spring",
+            stiffness: 300,
+            damping: 30
+          }}
+          className="absolute top-14 right-0 z-50 min-w-[200px] origin-top-right"
+        >
+          {/* Backdrop blur overlay for better visibility */}
+          <div className="absolute inset-0 -z-10 bg-white/10 backdrop-blur-sm rounded-2xl" />
+          
+          <div className="
+            bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/60
+            overflow-hidden min-w-[200px]
+            shadow-pink-100/40
+          ">
+            {/* Profile Header */}
+            <div className="px-4 py-4 bg-gradient-to-r from-pink-50 to-yellow-50 border-b border-gray-100/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md select-none uppercase">
+                  {getInitials(name) || "🍽️"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {name || 'Guest User'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Meal tracking enthusiast
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu Items */}
+            <div className="py-2">
+              {/* Edit Profile */}
+              <motion.button
+                whileHover={{ backgroundColor: 'rgba(249, 168, 212, 0.1)' }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleEditProfile}
+                className="
+                  w-full px-4 py-3 text-left flex items-center gap-3 
+                  text-gray-700 hover:text-pink-600 transition-colors
+                  border-none bg-transparent cursor-pointer
+                "
+              >
+                <i className="fas fa-user-edit text-sm w-4 text-center text-pink-500"></i>
+                <span className="text-sm font-medium">Edit Profile</span>
+              </motion.button>
+
+              {/* Settings */}
+              <motion.button
+                whileHover={{ backgroundColor: 'rgba(168, 162, 250, 0.1)' }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleSettings}
+                className="
+                  w-full px-4 py-3 text-left flex items-center gap-3 
+                  text-gray-700 hover:text-purple-600 transition-colors
+                  border-none bg-transparent cursor-pointer
+                "
+              >
+                <i className="fas fa-cog text-sm w-4 text-center text-purple-500"></i>
+                <span className="text-sm font-medium">Settings</span>
+              </motion.button>
+
+              {/* Divider */}
+              <div className="mx-4 my-2 border-t border-gray-100"></div>
+
+              {/* Login/Account */}
+              <motion.button
+                whileHover={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleLogin}
+                className="
+                  w-full px-4 py-3 text-left flex items-center gap-3 
+                  text-gray-700 hover:text-green-600 transition-colors
+                  border-none bg-transparent cursor-pointer
+                "
+              >
+                <i className="fas fa-sign-in-alt text-sm w-4 text-center text-green-500"></i>
+                <span className="text-sm font-medium">Login / Account</span>
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 // Loading Screen Component
 function LoadingScreen({ isVisible }: { isVisible: boolean }) {
   return (
@@ -162,6 +311,8 @@ export default function Home() {
   const [showLoadingScreen, setShowLoadingScreen] = useState(true)
   const [contentReady, setContentReady] = useState(false)
   const [activeTab, setActiveTab] = useState<'meals' | 'progress'>('meals')
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+  const profileButtonRef = useRef<HTMLButtonElement>(null)
   const { streak, loading: streakLoading } = useUserStreak(userId ?? undefined)
   const router = useRouter()
   const hasFetchedMeals = useRef(false)
@@ -684,7 +835,7 @@ console.log('- Notification.permission:', typeof Notification !== 'undefined' ? 
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 relative">
                     {/* Notification Bell */}
                     {!notificationsEnabled && userId && (
                       <button
@@ -711,9 +862,35 @@ console.log('- Notification.permission:', typeof Notification !== 'undefined' ? 
                       </button>
                     )}
                     
-                    {/* Profile Initial */}
-                    <div className="w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg select-none uppercase">
-                      {getInitials(name) || "🍽️"}
+                    {/* Profile Initial with Dropdown */}
+                    <div className="relative">
+                      <motion.button
+                        ref={profileButtonRef}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                        className="
+                          w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full 
+                          flex items-center justify-center text-lg font-bold text-white shadow-lg 
+                          select-none uppercase cursor-pointer transition-all duration-200
+                          hover:shadow-xl hover:from-pink-300 hover:to-yellow-300
+                          focus:outline-none focus:ring-2 focus:ring-pink-300/40
+                          border-none
+                        "
+                        type="button"
+                        aria-label="Profile menu"
+                        style={{ WebkitTapHighlightColor: 'transparent' }}
+                      >
+                        {getInitials(name) || "🍽️"}
+                      </motion.button>
+                      
+                      {/* Profile Dropdown */}
+                      <ProfileDropdown 
+                        name={name}
+                        isOpen={showProfileDropdown}
+                        onClose={() => setShowProfileDropdown(false)}
+                        profileButtonRef={profileButtonRef}
+                      />
                     </div>
                   </div>
                 </div>
