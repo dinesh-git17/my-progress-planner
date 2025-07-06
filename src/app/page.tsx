@@ -15,12 +15,30 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 
+// ============================================================================
+// CONSTANTS & DATA STRUCTURES
+// ============================================================================
+
+/**
+ * Meal configuration with labels, emojis, and routing paths
+ * Used throughout the app for consistent meal representation
+ */
 const mealLabels = [
   { meal: 'breakfast', emoji: '🍳', label: 'Breakfast' },
   { meal: 'lunch', emoji: '🫐', label: 'Lunch' },
   { meal: 'dinner', emoji: '🍜', label: 'Dinner' },
 ];
 
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Generates user initials from a full name string
+ * Falls back to empty string if name is invalid
+ * @param {string} name - Full name string
+ * @returns {string} Two-character initials in uppercase
+ */
 function getInitials(name = '') {
   return name
     .split(' ')
@@ -29,17 +47,21 @@ function getInitials(name = '') {
     .slice(0, 2);
 }
 
-interface HighlightedWord {
-  regex: RegExp;
-  className: string;
-}
-
+/**
+ * Calculates consecutive day streak from an array of date strings
+ * Counts backwards from today, breaking on first gap
+ * @param {string[]} dates - Array of ISO date strings (YYYY-MM-DD)
+ * @returns {number} Number of consecutive days
+ */
 function calculateStreak(dates: string[]): number {
   if (!dates.length) return 0;
+
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
+
   let streak = 0;
   let compare = new Date(today);
+
   for (const dateStr of dates) {
     const logDate = new Date(dateStr + 'T00:00:00Z');
     if (logDate.getTime() === compare.getTime()) {
@@ -49,49 +71,15 @@ function calculateStreak(dates: string[]): number {
       break;
     }
   }
+
   return streak;
 }
 
-function useUserStreak(user_id?: string) {
-  const [streak, setStreak] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user_id) return;
-    setLoading(true);
-    fetch(`/api/streak?user_id=${user_id}`)
-      .then((res) => res.json())
-      .then(({ dates }) => setStreak(calculateStreak(dates ?? [])))
-      .catch((err) => {
-        setStreak(0);
-      })
-      .finally(() => setLoading(false));
-  }, [user_id]);
-
-  return { streak, loading };
-}
-
-function highlightQuote(quote: string): string {
-  const highlights: HighlightedWord[] = [
-    { regex: /self-care/gi, className: 'text-pink-500 font-semibold' },
-    { regex: /progress/gi, className: 'text-purple-500 font-semibold' },
-    { regex: /small steps/gi, className: 'text-yellow-500 font-semibold' },
-    { regex: /amazing/gi, className: 'text-green-500 font-semibold' },
-    { regex: /love/gi, className: 'text-red-500 font-semibold' },
-    { regex: /motivation/gi, className: 'text-blue-500 font-semibold' },
-    { regex: /healthy/gi, className: 'text-teal-500 font-semibold' },
-    { regex: /victory/gi, className: 'text-teal-500 font-semibold' },
-  ];
-  let highlighted = quote;
-  for (const { regex, className } of highlights) {
-    highlighted = highlighted.replace(
-      regex,
-      (match) => `<span class="${className}">${match}</span>`,
-    );
-  }
-  return highlighted;
-}
-
+/**
+ * Calculates milliseconds until next EST midnight for auto-refresh
+ * Accounts for timezone differences and daylight saving time
+ * @returns {number} Milliseconds until next EST midnight
+ */
 function getMsUntilNextEstMidnight() {
   const now = new Date();
   const nowNY = new Date(
@@ -108,17 +96,137 @@ function getMsUntilNextEstMidnight() {
   return nextResetUTC - now.getTime();
 }
 
+/**
+ * Adds semantic highlighting to motivational quotes
+ * Wraps specific keywords in colored spans for visual emphasis
+ * @param {string} quote - Raw quote text
+ * @returns {string} HTML string with highlighted keywords
+ */
+function highlightQuote(quote: string): string {
+  const highlights: HighlightedWord[] = [
+    { regex: /self-care/gi, className: 'text-pink-500 font-semibold' },
+    { regex: /progress/gi, className: 'text-purple-500 font-semibold' },
+    { regex: /small steps/gi, className: 'text-yellow-500 font-semibold' },
+    { regex: /amazing/gi, className: 'text-green-500 font-semibold' },
+    { regex: /love/gi, className: 'text-red-500 font-semibold' },
+    { regex: /motivation/gi, className: 'text-blue-500 font-semibold' },
+    { regex: /healthy/gi, className: 'text-teal-500 font-semibold' },
+    { regex: /victory/gi, className: 'text-teal-500 font-semibold' },
+  ];
+
+  let highlighted = quote;
+  for (const { regex, className } of highlights) {
+    highlighted = highlighted.replace(
+      regex,
+      (match) => `<span class="${className}">${match}</span>`,
+    );
+  }
+  return highlighted;
+}
+
+/**
+ * Converts VAPID public key from base64 to Uint8Array for push notifications
+ * Required for service worker push subscription setup
+ * @param {string} base64String - VAPID public key in base64 format
+ * @returns {Uint8Array} Converted key for push manager
+ */
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+
+  return outputArray;
+}
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+interface HighlightedWord {
+  regex: RegExp;
+  className: string;
+}
+
+interface MealLog {
+  id: string;
+  user_id: string;
+  date: string;
+  breakfast?: boolean;
+  lunch?: boolean;
+  dinner?: boolean;
+  created_at: string;
+}
+
+interface MealLogResponse {
+  mealLog?: MealLog;
+}
+
+interface QuoteResponse {
+  quote?: string;
+}
+
+// ============================================================================
+// CUSTOM HOOKS
+// ============================================================================
+
+/**
+ * Custom hook to fetch and manage user streak data
+ * Automatically refetches when user_id changes
+ * @param {string} user_id - Current user identifier
+ * @returns {Object} Streak count and loading state
+ */
+function useUserStreak(user_id?: string) {
+  const [streak, setStreak] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user_id) return;
+
+    setLoading(true);
+    fetch(`/api/streak?user_id=${user_id}`)
+      .then((res) => res.json())
+      .then(({ dates }) => setStreak(calculateStreak(dates ?? [])))
+      .catch((err) => {
+        console.error('Failed to fetch streak:', err);
+        setStreak(0);
+      })
+      .finally(() => setLoading(false));
+  }, [user_id]);
+
+  return { streak, loading };
+}
+
+// ============================================================================
+// DATA HANDLING FUNCTIONS
+// ============================================================================
+
+/**
+ * Merges guest user data into authenticated user account
+ * Handles data migration when user logs in after using as guest
+ * @param {string} guestUserId - Temporary guest user ID
+ * @param {string} authUserId - Authenticated user ID
+ * @returns {Promise<Object>} Merge operation result with success status
+ */
 async function mergeGuestDataToAuthUser(
   guestUserId: string,
   authUserId: string,
 ) {
   try {
+    // Skip merge if IDs are the same (user was already authenticated)
     if (guestUserId === authUserId) {
       return { success: true, skipped: true };
     }
 
+    // Preserve guest user's name for transfer
     const guestName = await getUserName(guestUserId);
 
+    // Call backend API to merge meal logs and other data
     const mergeResponse = await fetch('/api/merge-user-data', {
       method: 'POST',
       headers: {
@@ -138,13 +246,15 @@ async function mergeGuestDataToAuthUser(
       );
     }
 
+    // Transfer name to authenticated account if merge was successful
     if (guestName && !mergeResult.skipped) {
       const nameTransferSuccess = await saveUserName(authUserId, guestName);
       if (!nameTransferSuccess) {
-        console.error('Failed to transfer name');
+        console.error('Failed to transfer name from guest to auth user');
       }
     }
 
+    // Update local storage to use authenticated user ID
     setLocalUserId(authUserId);
 
     return {
@@ -153,6 +263,7 @@ async function mergeGuestDataToAuthUser(
       nameTransferred: !!guestName,
     };
   } catch (error: any) {
+    console.error('Data merge failed:', error);
     return {
       success: false,
       error: error.message,
@@ -161,6 +272,14 @@ async function mergeGuestDataToAuthUser(
   }
 }
 
+// ============================================================================
+// COMPONENT DEFINITIONS
+// ============================================================================
+
+/**
+ * Profile dropdown menu component
+ * Handles user authentication state and profile actions
+ */
 function ProfileDropdown({
   name,
   isOpen,
@@ -180,6 +299,7 @@ function ProfileDropdown({
 }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Handle clicks outside dropdown to close it
   useEffect(() => {
     function handleClickOutside(event: Event) {
       const target = event.target as Node;
@@ -202,6 +322,7 @@ function ProfileDropdown({
     };
   }, [isOpen, onClose, profileButtonRef]);
 
+  // Dropdown action handlers
   const handleLogin = () => {
     onLogin();
     onClose();
@@ -213,10 +334,12 @@ function ProfileDropdown({
   };
 
   const handleEditProfile = () => {
+    // TODO: Implement profile editing functionality
     onClose();
   };
 
   const handleSettings = () => {
+    // TODO: Implement settings page navigation
     onClose();
   };
 
@@ -237,6 +360,7 @@ function ProfileDropdown({
           }}
           className="absolute top-14 right-0 z-50 min-w-[200px] origin-top-right"
         >
+          {/* Backdrop blur effect */}
           <div className="absolute inset-0 -z-10 bg-white/10 backdrop-blur-sm rounded-2xl" />
 
           <div
@@ -246,6 +370,7 @@ function ProfileDropdown({
             shadow-pink-100/40
           "
           >
+            {/* User info header */}
             <div className="px-4 py-4 bg-gradient-to-r from-pink-50 to-yellow-50 border-b border-gray-100/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md select-none uppercase">
@@ -262,6 +387,7 @@ function ProfileDropdown({
               </div>
             </div>
 
+            {/* Menu options */}
             <div className="py-2">
               <motion.button
                 whileHover={{ backgroundColor: 'rgba(249, 168, 212, 0.1)' }}
@@ -293,6 +419,7 @@ function ProfileDropdown({
 
               <div className="mx-4 my-2 border-t border-gray-100"></div>
 
+              {/* Authentication actions */}
               {isAuthenticated ? (
                 <motion.button
                   whileHover={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
@@ -330,6 +457,10 @@ function ProfileDropdown({
   );
 }
 
+/**
+ * Loading screen component with animated elements
+ * Displays during app initialization
+ */
 function LoadingScreen({ isVisible }: { isVisible: boolean }) {
   return (
     <AnimatePresence>
@@ -374,30 +505,63 @@ function LoadingScreen({ isVisible }: { isVisible: boolean }) {
   );
 }
 
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
+/**
+ * Main Home page component
+ * Handles user authentication, meal tracking, and overall app state
+ */
 export default function Home() {
+  // ========================================================================
+  // STATE MANAGEMENT
+  // ========================================================================
+
+  // Content and UI state
   const [quote, setQuote] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
+  const [contentReady, setContentReady] = useState(false);
+  const [activeTab, setActiveTab] = useState<'meals' | 'progress'>('meals');
+
+  // User and authentication state
   const [name, setName] = useState('');
   const [askName, setAskName] = useState(false);
   const [tempName, setTempName] = useState('');
   const [showNameSaved, setShowNameSaved] = useState(false);
-  const [loggedMeals, setLoggedMeals] = useState<string[]>([]);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
-  const [contentReady, setContentReady] = useState(false);
-  const [activeTab, setActiveTab] = useState<'meals' | 'progress'>('meals');
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
+
+  // Meal tracking state
+  const [loggedMeals, setLoggedMeals] = useState<string[]>([]);
+
+  // Notifications and features state
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  // Modal and dropdown state
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Data merging state (for guest -> authenticated user transition)
   const [isMergingData, setIsMergingData] = useState(false);
   const [mergeError, setMergeError] = useState<string | null>(null);
   const [showMergeSuccess, setShowMergeSuccess] = useState(false);
-  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
+
+  // Refs and hooks
   const profileButtonRef = useRef<HTMLButtonElement>(null);
+  const hasFetchedMeals = useRef(false);
   const { streak, loading: streakLoading } = useUserStreak(userId ?? undefined);
   const router = useRouter();
-  const hasFetchedMeals = useRef(false);
 
+  // ========================================================================
+  // EVENT HANDLERS
+  // ========================================================================
+
+  /**
+   * Handles guest user continuation flow
+   * Generates new user ID and prompts for name
+   */
   const handleContinueAsGuest = () => {
     const newUserId = generateUserId();
     setLocalUserId(newUserId);
@@ -405,40 +569,35 @@ export default function Home() {
     setAskName(true);
   };
 
+  /**
+   * Opens login modal for user authentication
+   */
   const handleLogin = () => {
     setShowLoginModal(true);
   };
 
-  function urlBase64ToUint8Array(base64String: string) {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding)
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
-
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-
-    return outputArray;
-  }
-
+  /**
+   * Handles push notification setup and subscription
+   * Requests permission and registers service worker
+   */
   const handleNotificationClick = async () => {
     try {
+      // Register service worker and request permission
       const reg = await navigator.serviceWorker.ready;
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') throw new Error('Notification permission denied');
 
+      // VAPID public key for push subscription (should be in environment variables)
       const vapidPublicKey =
         'BAEWVqKa9ASTlGbc7Oo_BJGAsYBtlYAS1IkI1gKMz5Ot6WnNQuP-WQ2u3sDRDV4Ca5kZQwo8aKOshT3wOrUugxk';
 
+      // Subscribe to push notifications
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
+      // Save subscription to backend
       const response = await fetch('/api/push/save-subscription', {
         method: 'POST',
         body: JSON.stringify({
@@ -455,11 +614,145 @@ export default function Home() {
       setNotificationsEnabled(true);
       alert('🎉 Notifications enabled!');
     } catch (err: any) {
+      console.error('Notification setup failed:', err);
       alert(`Error: ${err.message}`);
     }
   };
 
-  // App initialization
+  /**
+   * Saves user name to backend and updates UI state
+   */
+  const handleSaveName = async () => {
+    if (!tempName.trim() || !userId) return;
+
+    const success = await saveUserName(userId, tempName.trim());
+    if (success) {
+      setName(tempName.trim());
+      setShowNameSaved(true);
+      setTimeout(() => {
+        setAskName(false);
+        fetchQuote(tempName.trim());
+        fetchLoggedMeals(userId);
+      }, 1200);
+    }
+  };
+
+  /**
+   * Handles user logout and cleanup
+   */
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setUserId(null);
+      setName('');
+      setAskName(false);
+      setLoggedMeals([]);
+      localStorage.removeItem('user_id');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  /**
+   * Navigates to data recovery page
+   */
+  const handleRecoverData = () => {
+    router.push('/recover');
+  };
+
+  // ========================================================================
+  // DATA FETCHING FUNCTIONS
+  // ========================================================================
+
+  /**
+   * Fetches personalized motivational quote from GPT API
+   * @param {string} nameToUse - User's name for personalization
+   */
+  const fetchQuote = (nameToUse: string): void => {
+    setLoading(true);
+    setQuote('');
+
+    fetch(
+      `/api/gpt/quote?ts=${Date.now()}&name=${encodeURIComponent(nameToUse)}`,
+    )
+      .then((res: Response) => res.json())
+      .then((data: QuoteResponse) => {
+        let safeQuote = typeof data.quote === 'string' ? data.quote : '';
+
+        // Fallback for invalid or empty quotes
+        if (
+          !safeQuote ||
+          safeQuote.toLowerCase().includes('undefined') ||
+          safeQuote.length < 8
+        ) {
+          safeQuote = "You're doing amazing! One step at a time.";
+        }
+        setQuote(safeQuote);
+      })
+      .catch((error) => {
+        console.error('Quote fetch failed:', error);
+        setQuote("You're doing amazing! One step at a time.");
+      })
+      .finally(() => setLoading(false));
+  };
+
+  /**
+   * Fetches today's logged meals for the current user
+   * Uses EST timezone for consistent daily boundaries
+   * @param {string} user_id - Current user identifier
+   */
+  const fetchLoggedMeals = async (user_id: string): Promise<void> => {
+    try {
+      // Get today's date in EST timezone
+      const now = new Date();
+      const todayEst = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York',
+      }).format(now);
+
+      // Add timestamp to prevent caching issues
+      const url = `/api/meals/check?user_id=${encodeURIComponent(user_id)}&date=${encodeURIComponent(todayEst)}&timestamp=${Date.now()}`;
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`HTTP error! status: ${res.status} - ${errorText}`);
+      }
+
+      const data: MealLogResponse = await res.json();
+
+      // Parse meal log data into array of logged meal types
+      if (data?.mealLog) {
+        const meals: string[] = [];
+
+        if (data.mealLog.breakfast) meals.push('breakfast');
+        if (data.mealLog.lunch) meals.push('lunch');
+        if (data.mealLog.dinner) meals.push('dinner');
+
+        setLoggedMeals(meals);
+      } else {
+        setLoggedMeals([]);
+      }
+    } catch (error) {
+      console.error('Error fetching meals:', error);
+      setLoggedMeals([]);
+    }
+  };
+
+  // ========================================================================
+  // EFFECT HOOKS
+  // ========================================================================
+
+  /**
+   * App initialization effect
+   * Handles loading screen timing and content readiness
+   */
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowLoadingScreen(false);
@@ -469,16 +762,23 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Auto-reload at midnight EST
+  /**
+   * Auto-reload at midnight EST effect
+   * Ensures daily data stays current across timezone boundaries
+   */
   useEffect(() => {
     const msUntilMidnight = getMsUntilNextEstMidnight();
     const timeout = setTimeout(() => {
       window.location.reload();
-    }, msUntilMidnight + 2000);
+    }, msUntilMidnight + 2000); // Add 2s buffer for timezone edge cases
 
     return () => clearTimeout(timeout);
   }, []);
 
+  /**
+   * Authentication state tracking effect
+   * Updates UI based on current user session
+   */
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -494,7 +794,10 @@ export default function Home() {
     }
   }, [userId]);
 
-  // Initialize user ID from localStorage
+  /**
+   * User ID initialization from localStorage
+   * Restores user session on app start
+   */
   useEffect(() => {
     const localUserId = getLocalUserId();
     if (localUserId) {
@@ -502,8 +805,12 @@ export default function Home() {
     }
   }, []);
 
-  // Initialize app data when user ID and content are ready
+  /**
+   * App data initialization effect
+   * Loads user data once userId and content are ready
+   */
   useEffect(() => {
+    // Check notification permission status
     if (typeof Notification !== 'undefined') {
       setNotificationsEnabled(Notification.permission === 'granted');
     }
@@ -511,6 +818,7 @@ export default function Home() {
     if (!userId || !contentReady) return;
 
     const init = async () => {
+      // Load existing user name or prompt for new one
       const existingName = await getUserName(userId);
       if (!existingName) {
         setAskName(true);
@@ -543,7 +851,10 @@ export default function Home() {
     init();
   }, [userId, contentReady]);
 
-  // Refresh meals data on visibility changes
+  /**
+   * Meal data refresh effect
+   * Handles real-time updates when app regains focus
+   */
   useEffect(() => {
     if (!userId || !contentReady) return;
 
@@ -551,8 +862,10 @@ export default function Home() {
       fetchLoggedMeals(userId);
     };
 
+    // Initial fetch
     refreshMeals();
 
+    // Set up event listeners for app state changes
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         refreshMeals();
@@ -571,6 +884,7 @@ export default function Home() {
     window.addEventListener('focus', handleFocus);
     window.addEventListener('pageshow', handlePageShow);
 
+    // Periodic refresh for real-time updates
     const interval = setInterval(() => {
       if (!document.hidden) {
         refreshMeals();
@@ -585,6 +899,10 @@ export default function Home() {
     };
   }, [userId, contentReady]);
 
+  /**
+   * Initial meal fetch effect
+   * Ensures meals are loaded exactly once per user session
+   */
   useEffect(() => {
     if (userId && !hasFetchedMeals.current && contentReady) {
       fetchLoggedMeals(userId);
@@ -592,15 +910,17 @@ export default function Home() {
     }
   });
 
+  /**
+   * Reset meal fetch tracking when user changes
+   */
   useEffect(() => {
     hasFetchedMeals.current = false;
   }, [userId]);
 
-  interface QuoteResponse {
-    quote?: string;
-  }
-
-  // Handle authentication state changes with data merging
+  /**
+   * Authentication state change handler with data merging
+   * Handles guest user data migration when user authenticates
+   */
   useEffect(() => {
     const handleAuthStateChange = async () => {
       if (!contentReady) {
@@ -634,15 +954,18 @@ export default function Home() {
                 );
               }
             } catch (mergeError) {
+              console.error('Data merge error:', mergeError);
               setMergeError('Data sync encountered an issue');
             } finally {
               setIsMergingData(false);
             }
           }
 
+          // Update user state with authenticated account
           setUserId(session.user.id);
           setLocalUserId(session.user.id);
 
+          // Load user name from authenticated account
           const existingName = await getAuthUserName(session.user.id);
           if (existingName) {
             setName(existingName);
@@ -662,16 +985,21 @@ export default function Home() {
     handleAuthStateChange();
   }, [contentReady]);
 
-  // Handle data recovery redirect
+  /**
+   * Data recovery redirect handler
+   * Processes recovery completion and refreshes data
+   */
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const justRecovered = urlParams.get('recovered');
 
     if (justRecovered && userId && contentReady) {
+      // Clean up URL
       window.history.replaceState({}, '', '/');
 
       const refreshData = async () => {
         try {
+          // Refresh user name from server
           const nameResponse = await fetch(`/api/user/name?user_id=${userId}`);
           if (nameResponse.ok) {
             const nameData = await nameResponse.json();
@@ -682,8 +1010,10 @@ export default function Home() {
             }
           }
 
+          // Refresh meal data
           fetchLoggedMeals(userId);
 
+          // Show success message
           setShowMergeSuccess(true);
           setTimeout(() => setShowMergeSuccess(false), 3000);
         } catch (error) {
@@ -695,116 +1025,13 @@ export default function Home() {
     }
   }, [userId, contentReady]);
 
-  const fetchQuote = (nameToUse: string): void => {
-    setLoading(true);
-    setQuote('');
-    fetch(
-      `/api/gpt/quote?ts=${Date.now()}&name=${encodeURIComponent(nameToUse)}`,
-    )
-      .then((res: Response) => res.json())
-      .then((data: QuoteResponse) => {
-        let safeQuote = typeof data.quote === 'string' ? data.quote : '';
-        if (
-          !safeQuote ||
-          safeQuote.toLowerCase().includes('undefined') ||
-          safeQuote.length < 8
-        ) {
-          safeQuote = "You're doing amazing! One step at a time.";
-        }
-        setQuote(safeQuote);
-      })
-      .catch(() => setQuote("You're doing amazing! One step at a time."))
-      .finally(() => setLoading(false));
-  };
-
-  interface MealLog {
-    id: string;
-    user_id: string;
-    date: string;
-    breakfast?: boolean;
-    lunch?: boolean;
-    dinner?: boolean;
-    created_at: string;
-  }
-
-  interface MealLogResponse {
-    mealLog?: MealLog;
-  }
-
-  const fetchLoggedMeals = async (user_id: string): Promise<void> => {
-    try {
-      const now = new Date();
-      const todayEst = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/New_York',
-      }).format(now);
-
-      const url = `/api/meals/check?user_id=${encodeURIComponent(user_id)}&date=${encodeURIComponent(todayEst)}&timestamp=${Date.now()}`;
-
-      const res = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`HTTP error! status: ${res.status} - ${errorText}`);
-      }
-
-      const data: MealLogResponse = await res.json();
-
-      if (data?.mealLog) {
-        const meals: string[] = [];
-
-        if (data.mealLog.breakfast) meals.push('breakfast');
-        if (data.mealLog.lunch) meals.push('lunch');
-        if (data.mealLog.dinner) meals.push('dinner');
-
-        setLoggedMeals(meals);
-      } else {
-        setLoggedMeals([]);
-      }
-    } catch (error) {
-      console.error('Error fetching meals:', error);
-      setLoggedMeals([]);
-    }
-  };
-
-  const handleSaveName = async () => {
-    if (!tempName.trim() || !userId) return;
-    const success = await saveUserName(userId, tempName.trim());
-    if (success) {
-      setName(tempName.trim());
-      setShowNameSaved(true);
-      setTimeout(() => {
-        setAskName(false);
-        fetchQuote(tempName.trim());
-        fetchLoggedMeals(userId);
-      }, 1200);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      setUserId(null);
-      setName('');
-      setAskName(false);
-      setLoggedMeals([]);
-      localStorage.removeItem('user_id');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const handleRecoverData = () => {
-    router.push('/recover');
-  };
+  // ========================================================================
+  // RENDER
+  // ========================================================================
 
   return (
     <>
+      {/* External CSS dependencies */}
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -813,13 +1040,16 @@ export default function Home() {
         referrerPolicy="no-referrer"
       />
 
+      {/* Loading screen overlay */}
       <LoadingScreen isVisible={showLoadingScreen} />
 
+      {/* Login modal */}
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
 
+      {/* Data merging progress overlay */}
       {isMergingData && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -843,6 +1073,7 @@ export default function Home() {
         </motion.div>
       )}
 
+      {/* Merge error notification */}
       {mergeError && (
         <motion.div
           initial={{ opacity: 0, y: -50 }}
@@ -867,6 +1098,7 @@ export default function Home() {
         </motion.div>
       )}
 
+      {/* Success notification */}
       {showMergeSuccess && (
         <motion.div
           initial={{ opacity: 0, y: -50 }}
@@ -888,6 +1120,7 @@ export default function Home() {
         </motion.div>
       )}
 
+      {/* Main app content */}
       <AnimatePresence>
         {contentReady && (
           <motion.main
@@ -902,28 +1135,29 @@ export default function Home() {
               paddingTop: 'max(env(safe-area-inset-top), 2rem)',
             }}
           >
+            {/* ================================================================ */}
+            {/* ANIMATED GRADIENT BACKGROUND */}
+            {/* ================================================================ */}
             <div
-              className="fixed -z-10"
+              className="fixed inset-0 pointer-events-none"
               style={{
-                top: 'calc(-1 * env(safe-area-inset-top, 0px))',
-                left: 'calc(-1 * env(safe-area-inset-left, 0px))',
-                right: 'calc(-1 * env(safe-area-inset-right, 0px))',
-                bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
-                width:
-                  'calc(100vw + env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px))',
-                height:
-                  'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
-                minHeight:
-                  'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
+                zIndex: -10,
+                width: '100vw',
+                height: '100vh',
+                minHeight: '100vh',
               }}
             >
+              {/* Base gradient layer - always visible */}
               <div className="absolute inset-0 bg-gradient-to-br from-[#f5ede6] via-[#f7edf5] to-[#d8d8f0]" />
-              <div className="absolute inset-0 opacity-0 animate-gradient-1 bg-gradient-to-tr from-[#f7edf5] via-[#d8d8f0] to-[#f2e8e8]" />
-              <div className="absolute inset-0 opacity-0 animate-gradient-2 bg-gradient-to-bl from-[#d8d8f0] via-[#f2e8e8] to-[#f5ede6]" />
-              <div className="absolute inset-0 opacity-0 animate-gradient-3 bg-gradient-to-tl from-[#f2e8e8] via-[#f5ede6] to-[#f7edf5]" />
+
+              {/* Animated overlay gradients - fade in and out */}
+              <div className="absolute inset-0 animate-gradient-1 bg-gradient-to-tr from-[#f7edf5] via-[#d8d8f0] to-[#f2e8e8]" />
+              <div className="absolute inset-0 animate-gradient-2 bg-gradient-to-bl from-[#d8d8f0] via-[#f2e8e8] to-[#f5ede6]" />
+              <div className="absolute inset-0 animate-gradient-3 bg-gradient-to-tl from-[#f2e8e8] via-[#f5ede6] to-[#f7edf5]" />
             </div>
 
-            <style jsx>{`
+            {/* Global styles for gradient animations */}
+            <style jsx global>{`
               @keyframes gradient-fade-1 {
                 0%,
                 100% {
@@ -965,17 +1199,25 @@ export default function Home() {
 
               .animate-gradient-1 {
                 animation: gradient-fade-1 12s ease-in-out infinite;
+                opacity: 0;
               }
 
               .animate-gradient-2 {
                 animation: gradient-fade-2 12s ease-in-out infinite 4s;
+                opacity: 0;
               }
 
               .animate-gradient-3 {
                 animation: gradient-fade-3 12s ease-in-out infinite 8s;
+                opacity: 0;
               }
             `}</style>
 
+            {/* ================================================================ */}
+            {/* AUTHENTICATION FLOW */}
+            {/* ================================================================ */}
+
+            {/* Show auth prompt if no user ID and login modal is closed */}
             {!userId && !showLoginModal && (
               <AuthPrompt
                 onContinueAsGuest={handleContinueAsGuest}
@@ -983,6 +1225,7 @@ export default function Home() {
               />
             )}
 
+            {/* Name input flow for new users */}
             {askName && !showNameSaved && userId && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -1032,6 +1275,7 @@ export default function Home() {
                       Save My Name 💌
                     </button>
 
+                    {/* Data recovery option for authenticated users */}
                     {isUserAuthenticated && (
                       <div className="text-center">
                         <div className="mb-3 text-xs text-gray-500">or</div>
@@ -1059,6 +1303,7 @@ export default function Home() {
               </motion.div>
             )}
 
+            {/* Name saved confirmation */}
             {askName && showNameSaved && userId && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -1078,8 +1323,13 @@ export default function Home() {
               </motion.div>
             )}
 
+            {/* ================================================================ */}
+            {/* MAIN APP INTERFACE */}
+            {/* ================================================================ */}
+
             {!askName && userId && (
               <>
+                {/* Header with greeting and profile */}
                 <div className="w-full max-w-lg mx-auto px-4 flex flex-row items-center justify-between mb-8">
                   <div className="flex flex-col">
                     <span className="text-[1.5rem] font-bold text-gray-900 leading-snug flex items-center gap-1">
@@ -1092,6 +1342,7 @@ export default function Home() {
                         'Hello! 👋'
                       )}
                     </span>
+                    {/* Streak indicator */}
                     {!streakLoading && streak > 0 && (
                       <motion.span
                         key={streak}
@@ -1112,7 +1363,9 @@ export default function Home() {
                     )}
                   </div>
 
+                  {/* Action buttons and profile */}
                   <div className="flex items-center gap-3 relative">
+                    {/* Notification bell - only show if not enabled */}
                     {!notificationsEnabled && userId && (
                       <button
                         onClick={(e) => {
@@ -1137,6 +1390,7 @@ export default function Home() {
                       </button>
                     )}
 
+                    {/* Profile dropdown */}
                     <div className="relative">
                       <motion.button
                         ref={profileButtonRef}
@@ -1173,6 +1427,7 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Motivational quote section */}
                 <div className="w-full max-w-lg mx-auto px-4 mb-6">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -1205,8 +1460,10 @@ export default function Home() {
                   </motion.div>
                 </div>
 
+                {/* Main content area with tabs */}
                 <div className="w-full max-w-lg mx-auto px-4 flex-1 overflow-y-auto">
                   <AnimatePresence mode="wait">
+                    {/* Meals tab content */}
                     {activeTab === 'meals' && (
                       <motion.div
                         key="meals"
@@ -1300,6 +1557,7 @@ export default function Home() {
                       </motion.div>
                     )}
 
+                    {/* Progress tab content */}
                     {activeTab === 'progress' && (
                       <motion.div
                         key="progress"
@@ -1313,6 +1571,7 @@ export default function Home() {
                           Progress
                         </span>
                         <div className="flex flex-col gap-6">
+                          {/* Summaries navigation */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className={`
@@ -1354,6 +1613,7 @@ export default function Home() {
                             </span>
                           </motion.div>
 
+                          {/* Streaks navigation */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className={`
@@ -1402,9 +1662,13 @@ export default function Home() {
                   </AnimatePresence>
                 </div>
 
+                {/* ============================================================ */}
+                {/* BOTTOM NAVIGATION TABS */}
+                {/* ============================================================ */}
                 <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-2 safe-area-pb">
                   <div className="w-full max-w-lg mx-auto">
                     <div className="flex items-center justify-around">
+                      {/* Meals tab */}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setActiveTab('meals')}
@@ -1427,6 +1691,7 @@ export default function Home() {
                         </span>
                       </motion.button>
 
+                      {/* Progress tab */}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setActiveTab('progress')}
