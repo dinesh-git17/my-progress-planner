@@ -9,25 +9,69 @@ import { useEffect, useState } from 'react';
 const dmSans = DM_Sans({ subsets: ['latin'], weight: ['400', '500', '700'] });
 const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' });
 
+// ============================================================================
+// STREAK CALCULATION LOGIC
+// ============================================================================
+
+/**
+ * Calculates consecutive daily streak from sorted log dates
+ * Handles active streaks that include yesterday's logs as valid current streaks
+ *
+ * @param dates Array of date strings in YYYY-MM-DD format, sorted descending
+ * @returns Number of consecutive days from most recent log backwards
+ */
 function calculateStreak(dates: string[]): number {
   if (!dates.length) return 0;
+
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
+
   let streak = 0;
-  let compare = new Date(today);
+  let expectedDate = new Date(today);
+
+  // Determine starting point for streak calculation
+  const mostRecentDate = new Date(dates[0] + 'T00:00:00Z');
+
+  if (mostRecentDate.getTime() === today.getTime()) {
+    // User logged today - start counting from today
+    expectedDate = new Date(today);
+  } else {
+    // Check if most recent log is yesterday (still considered active streak)
+    const yesterday = new Date(today);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+
+    if (mostRecentDate.getTime() === yesterday.getTime()) {
+      expectedDate = new Date(yesterday);
+    } else {
+      // Most recent log is older than yesterday - no active streak
+      return 0;
+    }
+  }
+
+  // Count consecutive days backwards from the starting point
   for (const dateStr of dates) {
     const logDate = new Date(dateStr + 'T00:00:00Z');
-    if (logDate.getTime() === compare.getTime()) {
+
+    if (logDate.getTime() === expectedDate.getTime()) {
       streak += 1;
-      compare.setUTCDate(compare.getUTCDate() - 1);
-    } else if (logDate.getTime() < compare.getTime()) {
+      expectedDate.setUTCDate(expectedDate.getUTCDate() - 1);
+    } else if (logDate.getTime() < expectedDate.getTime()) {
+      // Gap found - streak is broken
       break;
     }
   }
+
   return streak;
 }
 
-// Streak milestones with Apple Health inspired styling
+// ============================================================================
+// MILESTONE DEFINITIONS
+// ============================================================================
+
+/**
+ * Streak milestones with Apple Health inspired styling
+ * Each milestone represents a significant achievement in user consistency
+ */
 const streakMilestones = [
   {
     days: 1,
@@ -143,17 +187,32 @@ const streakMilestones = [
   },
 ];
 
+// ============================================================================
+// CUSTOM HOOKS
+// ============================================================================
+
+/**
+ * Custom hook to fetch and manage user streak data
+ * Includes cache busting to ensure fresh data after updates
+ */
 function useUserStreak(user_id?: string) {
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user_id) return;
+    if (!user_id) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    fetch(`/api/streak?user_id=${user_id}`)
+
+    // Cache-bust to ensure fresh data, especially important for real-time updates
+    fetch(`/api/streak?user_id=${user_id}&t=${Date.now()}`)
       .then((res) => res.json())
       .then(({ dates }) => setStreak(calculateStreak(dates ?? [])))
       .catch((err) => {
+        console.error('Failed to fetch streak data:', err);
         setStreak(0);
       })
       .finally(() => setLoading(false));
@@ -162,6 +221,14 @@ function useUserStreak(user_id?: string) {
   return { streak, loading };
 }
 
+// ============================================================================
+// LAYOUT CONSTANTS
+// ============================================================================
+
+/**
+ * Header banner dimensions for consistent layout calculations
+ * These values ensure proper spacing and prevent layout shifts
+ */
 const BANNER_CURVE_HEIGHT = 44;
 const BANNER_TOP_PADDING = 32;
 const BANNER_BOTTOM_PADDING = 22;
@@ -172,6 +239,14 @@ const BANNER_TOTAL_HEIGHT =
   BANNER_BOTTOM_PADDING +
   BANNER_TEXT_HEIGHT;
 
+// ============================================================================
+// COMPONENT DEFINITIONS
+// ============================================================================
+
+/**
+ * Fixed header component with curved bottom design
+ * Uses absolute positioning to maintain consistent layout
+ */
 function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
   return (
     <header
@@ -215,7 +290,8 @@ function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
             Celebrate your consistency and unlock amazing achievements 🏆
           </div>
         </div>
-        {/* SVG flush at the bottom, curve is the mask */}
+
+        {/* Curved bottom border using SVG for precise control */}
         <svg
           className="absolute left-0 bottom-0 w-full"
           viewBox="0 0 500 44"
@@ -253,39 +329,56 @@ function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
   );
 }
 
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 export default function StreaksPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const { streak, loading } = useUserStreak(userId ?? undefined);
   const router = useRouter();
 
+  // Initialize user ID on component mount
   useEffect(() => {
     const uid = getOrCreateUserId();
     setUserId(uid);
   }, []);
 
+  /**
+   * Determines the visual status of a milestone based on current streak
+   * Provides different states for better UX feedback
+   */
   const getAwardStatus = (milestone: (typeof streakMilestones)[0]) => {
     if (streak >= milestone.days) {
       return 'earned';
     } else if (streak >= milestone.days - 3) {
-      return 'close';
+      return 'close'; // Within 3 days of earning
     } else {
       return 'locked';
     }
   };
 
+  /**
+   * Finds the next milestone the user is working towards
+   * Used for progress motivation and goal setting
+   */
   const getNextMilestone = () => {
     return streakMilestones.find((m) => m.days > streak);
   };
 
+  // Derived state for statistics and progress tracking
   const nextMilestone = getNextMilestone();
   const earnedCount = streakMilestones.filter((m) => streak >= m.days).length;
+  const completionPercentage = Math.round(
+    (earnedCount / streakMilestones.length) * 100,
+  );
 
   const BG_GRADIENT =
     'linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%)';
 
   return (
     <>
-      {/* Font Awesome CDN */}
+      {/* External dependencies */}
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -304,7 +397,7 @@ export default function StreaksPage() {
           style={{ background: BG_GRADIENT }}
         />
 
-        {/* Back Button */}
+        {/* Navigation: Back Button */}
         <motion.div
           className="absolute left-4 top-4 z-40"
           initial={{ opacity: 0, x: -10 }}
@@ -381,6 +474,7 @@ export default function StreaksPage() {
                         Day{streak !== 1 ? 's' : ''} in a row
                       </div>
 
+                      {/* Next milestone progress indicator */}
                       {nextMilestone && (
                         <div className="text-sm text-gray-500">
                           <span className="font-medium">
@@ -396,7 +490,7 @@ export default function StreaksPage() {
                     </div>
                   </motion.div>
 
-                  {/* Stats */}
+                  {/* Statistics Overview */}
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -422,10 +516,7 @@ export default function StreaksPage() {
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-gray-900">
-                            {Math.round(
-                              (earnedCount / streakMilestones.length) * 100,
-                            )}
-                            %
+                            {completionPercentage}%
                           </div>
                           <div className="text-sm text-gray-600">Complete</div>
                         </div>
@@ -433,7 +524,7 @@ export default function StreaksPage() {
                     </div>
                   </motion.div>
 
-                  {/* Awards Grid */}
+                  {/* Achievement Milestones Grid */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -469,7 +560,7 @@ export default function StreaksPage() {
                               }
                             `}
                           >
-                            {/* Award Background Gradient */}
+                            {/* Award Background Gradient for earned milestones */}
                             {isEarned && (
                               <div
                                 className="absolute inset-0 rounded-2xl opacity-20"
@@ -480,12 +571,12 @@ export default function StreaksPage() {
                             )}
 
                             <div className="relative z-10 text-center">
-                              {/* Icon/Emoji */}
+                              {/* Milestone Icon */}
                               <div className="text-3xl mb-3">
                                 {isEarned ? milestone.emoji : '🔒'}
                               </div>
 
-                              {/* Days */}
+                              {/* Days Required */}
                               <div
                                 className={`text-xl font-bold mb-2 ${isEarned ? 'text-gray-900' : 'text-gray-500'}`}
                               >
@@ -493,7 +584,7 @@ export default function StreaksPage() {
                                 {milestone.days !== 1 ? 's' : ''}
                               </div>
 
-                              {/* Title */}
+                              {/* Milestone Title */}
                               <div
                                 className={`text-sm font-medium ${isEarned ? 'text-gray-800' : 'text-gray-500'}`}
                               >
@@ -508,7 +599,7 @@ export default function StreaksPage() {
                                 </div>
                               )}
 
-                              {/* Earned indicator */}
+                              {/* Earned checkmark indicator */}
                               {isEarned && (
                                 <motion.div
                                   initial={{ scale: 0 }}
@@ -530,7 +621,7 @@ export default function StreaksPage() {
                     </div>
                   </motion.div>
 
-                  {/* Motivational Message */}
+                  {/* Motivational Message based on current progress */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
