@@ -13,7 +13,7 @@ import {
 import { getUserName, saveUserName } from '@/utils/user';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // ============================================================================
 // CONSTANTS & DATA STRUCTURES
@@ -47,11 +47,12 @@ function getInitials(name = '') {
     .slice(0, 2);
 }
 
+// Replace the calculateStreak function in your homepage with this:
+
 /**
- * Calculates consecutive day streak from an array of date strings
- * Counts backwards from today, breaking on first gap
- * @param {string[]} dates - Array of ISO date strings (YYYY-MM-DD)
- * @returns {number} Number of consecutive days
+ * Calculates consecutive daily streak from sorted log dates
+ * @param dates Array of date strings in YYYY-MM-DD format, sorted descending
+ * @returns Number of consecutive days from most recent log backwards
  */
 function calculateStreak(dates: string[]): number {
   if (!dates.length) return 0;
@@ -60,14 +61,36 @@ function calculateStreak(dates: string[]): number {
   today.setUTCHours(0, 0, 0, 0);
 
   let streak = 0;
-  let compare = new Date(today);
+  let expectedDate = new Date(today);
 
+  // Check if they logged today first
+  const mostRecentDate = new Date(dates[0] + 'T00:00:00Z');
+
+  // If most recent log is today, start counting from today
+  if (mostRecentDate.getTime() === today.getTime()) {
+    expectedDate = new Date(today);
+  } else {
+    // If most recent log is yesterday, start counting from yesterday
+    const yesterday = new Date(today);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+
+    if (mostRecentDate.getTime() === yesterday.getTime()) {
+      expectedDate = new Date(yesterday);
+    } else {
+      // If most recent log is older than yesterday, no current streak
+      return 0;
+    }
+  }
+
+  // Now count consecutive days backwards
   for (const dateStr of dates) {
     const logDate = new Date(dateStr + 'T00:00:00Z');
-    if (logDate.getTime() === compare.getTime()) {
+
+    if (logDate.getTime() === expectedDate.getTime()) {
       streak += 1;
-      compare.setUTCDate(compare.getUTCDate() - 1);
-    } else if (logDate.getTime() < compare.getTime()) {
+      expectedDate.setUTCDate(expectedDate.getUTCDate() - 1);
+    } else if (logDate.getTime() < expectedDate.getTime()) {
+      // Found a gap - streak is broken
       break;
     }
   }
@@ -176,30 +199,97 @@ interface QuoteResponse {
 // ============================================================================
 
 /**
- * Custom hook to fetch and manage user streak data
- * Automatically refetches when user_id changes
- * @param {string} user_id - Current user identifier
- * @returns {Object} Streak count and loading state
+ * Custom hook to fetch and calculate user's current meal logging streak
+ * Handles data recovery scenarios with retry logic and manual refresh capability
  */
-function useUserStreak(user_id?: string) {
+function useUserStreak(user_id?: string, isAfterRecovery = false) {
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  /**
+   * Manual refresh function that can be called to refetch streak data
+   * Useful for triggering updates after data changes
+   */
+  const refreshStreak = useCallback(() => {
+    setRefreshTrigger((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
-    if (!user_id) return;
+    if (!user_id) {
+      setLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchStreakWithRetry = async (attempt = 1): Promise<void> => {
+      try {
+        // For users who just recovered data, add delay to ensure backend sync completion
+        if (isAfterRecovery && attempt === 1) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+
+        // Cache-bust to ensure fresh data, especially important after recovery
+        const timestamp = Date.now();
+        const response = await fetch(
+          `/api/streak?user_id=${user_id}&t=${timestamp}`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const { dates } = await response.json();
+
+        if (isCancelled) return;
+
+        const calculatedStreak = calculateStreak(dates ?? []);
+
+        // Recovery scenario: If we get 0 streak but have date data, the sync might be incomplete
+        // Retry up to 2 additional times with exponential backoff
+        if (
+          isAfterRecovery &&
+          calculatedStreak === 0 &&
+          dates?.length > 0 &&
+          attempt < 3
+        ) {
+          const backoffDelay = attempt * 1500; // 1.5s, then 3s
+          await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+          return fetchStreakWithRetry(attempt + 1);
+        }
+
+        setStreak(calculatedStreak);
+      } catch (error) {
+        console.error('Failed to fetch user streak:', error);
+
+        // Retry once on network/server errors, but not for recovery scenarios
+        if (!isAfterRecovery && attempt === 1) {
+          setTimeout(() => fetchStreakWithRetry(2), 1000);
+          return;
+        }
+
+        // Fallback to 0 on persistent failures
+        if (!isCancelled) {
+          setStreak(0);
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    };
 
     setLoading(true);
-    fetch(`/api/streak?user_id=${user_id}`)
-      .then((res) => res.json())
-      .then(({ dates }) => setStreak(calculateStreak(dates ?? [])))
-      .catch((err) => {
-        console.error('Failed to fetch streak:', err);
-        setStreak(0);
-      })
-      .finally(() => setLoading(false));
-  }, [user_id]);
+    fetchStreakWithRetry();
 
-  return { streak, loading };
+    // Cleanup function to prevent state updates on unmounted component
+    return () => {
+      isCancelled = true;
+    };
+  }, [user_id, isAfterRecovery, refreshTrigger]); // Added refreshTrigger to dependencies
+
+  return { streak, loading, refreshStreak };
 }
 
 // ============================================================================
@@ -534,6 +624,9 @@ export default function Home() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
 
+  // Recovery state tracking
+  const [isAfterRecovery, setIsAfterRecovery] = useState(false);
+
   // Meal tracking state
   const [loggedMeals, setLoggedMeals] = useState<string[]>([]);
 
@@ -552,7 +645,14 @@ export default function Home() {
   // Refs and hooks
   const profileButtonRef = useRef<HTMLButtonElement>(null);
   const hasFetchedMeals = useRef(false);
-  const { streak, loading: streakLoading } = useUserStreak(userId ?? undefined);
+
+  // Use the enhanced streak hook with recovery awareness and refresh capability
+  const {
+    streak,
+    loading: streakLoading,
+    refreshStreak,
+  } = useUserStreak(userId ?? undefined, isAfterRecovery);
+
   const router = useRouter();
 
   // ========================================================================
@@ -633,7 +733,7 @@ export default function Home() {
       setTimeout(() => {
         setAskName(false);
         fetchQuote(tempName.trim());
-        fetchLoggedMeals(userId);
+        fetchLoggedMealsAndRefreshStreak(userId);
       }, 1200);
     }
   };
@@ -648,6 +748,7 @@ export default function Home() {
       setName('');
       setAskName(false);
       setLoggedMeals([]);
+      setIsAfterRecovery(false);
       localStorage.removeItem('user_id');
     } catch (error) {
       console.error('Logout error:', error);
@@ -746,6 +847,19 @@ export default function Home() {
     }
   };
 
+  /**
+   * Enhanced meal refresh that also updates streak
+   */
+  const fetchLoggedMealsAndRefreshStreak = async (
+    user_id: string,
+  ): Promise<void> => {
+    // Fetch meals first
+    await fetchLoggedMeals(user_id);
+
+    // Then refresh streak to get latest data
+    refreshStreak();
+  };
+
   // ========================================================================
   // EFFECT HOOKS
   // ========================================================================
@@ -796,17 +910,6 @@ export default function Home() {
   }, [userId]);
 
   /**
-   * User ID initialization from localStorage
-   * Restores user session on app start
-   */
-  useEffect(() => {
-    const localUserId = getLocalUserId();
-    if (localUserId) {
-      setUserId(localUserId);
-    }
-  }, []);
-
-  /**
    * App data initialization effect
    * Loads user data once userId and content are ready
    */
@@ -826,7 +929,7 @@ export default function Home() {
       } else {
         setName(existingName);
         fetchQuote(existingName);
-        fetchLoggedMeals(userId);
+        fetchLoggedMealsAndRefreshStreak(userId);
       }
 
       // Check for existing push subscription
@@ -850,35 +953,35 @@ export default function Home() {
     };
 
     init();
-  }, [userId, contentReady]);
+  }, [userId, contentReady, refreshStreak]);
 
   /**
-   * Meal data refresh effect
+   * Enhanced meal data refresh effect with streak refresh
    * Handles real-time updates when app regains focus
    */
   useEffect(() => {
     if (!userId || !contentReady) return;
 
-    const refreshMeals = () => {
-      fetchLoggedMeals(userId);
+    const refreshMealsAndStreak = () => {
+      fetchLoggedMealsAndRefreshStreak(userId);
     };
 
     // Initial fetch
-    refreshMeals();
+    refreshMealsAndStreak();
 
     // Set up event listeners for app state changes
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        refreshMeals();
+        refreshMealsAndStreak();
       }
     };
 
     const handleFocus = () => {
-      refreshMeals();
+      refreshMealsAndStreak();
     };
 
     const handlePageShow = (event: PageTransitionEvent) => {
-      refreshMeals();
+      refreshMealsAndStreak();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -888,7 +991,7 @@ export default function Home() {
     // Periodic refresh for real-time updates
     const interval = setInterval(() => {
       if (!document.hidden) {
-        refreshMeals();
+        refreshMealsAndStreak();
       }
     }, 50000);
 
@@ -898,7 +1001,7 @@ export default function Home() {
       window.removeEventListener('pageshow', handlePageShow);
       clearInterval(interval);
     };
-  }, [userId, contentReady]);
+  }, [userId, contentReady, refreshStreak]);
 
   /**
    * Initial meal fetch effect
@@ -906,7 +1009,7 @@ export default function Home() {
    */
   useEffect(() => {
     if (userId && !hasFetchedMeals.current && contentReady) {
-      fetchLoggedMeals(userId);
+      fetchLoggedMealsAndRefreshStreak(userId);
       hasFetchedMeals.current = true;
     }
   });
@@ -923,24 +1026,29 @@ export default function Home() {
    * Handles guest user data migration when user authenticates
    */
   useEffect(() => {
-    const handleAuthStateChange = async () => {
+    const initializeUser = async () => {
       if (!contentReady) {
         return;
       }
 
       try {
+        // 1. FIRST: Check if user is authenticated
         const session = await getCurrentSession();
         const localUserId = getLocalUserId();
 
         if (session?.user) {
+          // User is authenticated - use their auth user ID
+          console.log(
+            '🔐 User is authenticated, using auth ID:',
+            session.user.id,
+          );
+
           setShowLoginModal(false);
           setIsUserAuthenticated(true);
+          setUserId(session.user.id); // Set the correct user ID
+          setLocalUserId(session.user.id); // Update localStorage
 
-          // IMPORTANT: Update user state with authenticated account FIRST
-          setUserId(session.user.id);
-          setLocalUserId(session.user.id);
-
-          // Check if user had existing guest data that needs to be merged
+          // Handle data migration if needed
           if (localUserId && localUserId !== session.user.id) {
             setIsMergingData(true);
             setMergeError(null);
@@ -978,39 +1086,55 @@ export default function Home() {
           }
 
           // Fetch meals using the authenticated user ID
-          fetchLoggedMeals(session.user.id);
+          fetchLoggedMealsAndRefreshStreak(session.user.id);
         } else {
-          // No authenticated session
+          // 2. ONLY if not authenticated, use localStorage
+          console.log('👤 User not authenticated, checking localStorage');
           setIsUserAuthenticated(false);
 
-          // If we have a local user ID, use it
           if (localUserId) {
+            console.log('📱 Using local user ID:', localUserId);
             setUserId(localUserId);
+          } else {
+            console.log('❌ No user ID found');
+            // No user ID at all - will show auth prompt
           }
         }
       } catch (error) {
-        console.error('Error checking auth state:', error);
+        console.error('Error during user initialization:', error);
         setIsUserAuthenticated(false);
+
+        // Fallback to localStorage on error
+        const localUserId = getLocalUserId();
+        if (localUserId) {
+          setUserId(localUserId);
+        }
       }
     };
 
-    handleAuthStateChange();
-  }, [contentReady]);
+    initializeUser();
+  }, [contentReady, refreshStreak]);
 
   /**
-   * Data recovery redirect handler
-   * Processes recovery completion and refreshes data
+   * Enhanced data recovery redirect handler with streak refresh
+   * Processes recovery completion and refreshes data with proper timing
    */
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const justRecovered = urlParams.get('recovered');
 
     if (justRecovered && contentReady) {
+      // Set recovery flag BEFORE cleaning URL to ensure streak hook gets the flag
+      setIsAfterRecovery(true);
+
       // Clean up URL
       window.history.replaceState({}, '', '/');
 
       const refreshData = async () => {
         try {
+          // Add initial delay to ensure backend processing is complete
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+
           // First, check if user is authenticated and get their actual user ID
           const session = await getCurrentSession();
           let actualUserId = userId;
@@ -1041,20 +1165,26 @@ export default function Home() {
             }
           }
 
-          // Refresh meal data using the correct user ID
-          fetchLoggedMeals(actualUserId);
+          // Refresh meals AND streak together
+          await fetchLoggedMealsAndRefreshStreak(actualUserId);
 
           // Show success message
           setShowMergeSuccess(true);
-          setTimeout(() => setShowMergeSuccess(false), 3000);
+          setTimeout(() => {
+            setShowMergeSuccess(false);
+            // Reset recovery flag after everything is loaded and success message is shown
+            setIsAfterRecovery(false);
+          }, 3000);
         } catch (error) {
           console.error('Error refreshing after recovery:', error);
+          // Reset recovery flag on error too
+          setIsAfterRecovery(false);
         }
       };
 
       refreshData();
     }
-  }, [contentReady]);
+  }, [contentReady, userId, refreshStreak]);
 
   // ========================================================================
   // RENDER
