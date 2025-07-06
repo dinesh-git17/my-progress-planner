@@ -12,6 +12,7 @@ Use the person's name: "${name}" naturally in the message to make it feel person
 Avoid using em-dashes (—) or en-dashes (–) completely.
 Do NOT mention or reference the random string. Just use it for uniqueness: "${randomizer}"
 The tone should feel like a caring message meant to lift "${name}" up with affection and positivity.
+Do not use any dashes or special characters in the quote. 
 `;
 
   try {
