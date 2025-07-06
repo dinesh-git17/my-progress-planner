@@ -934,6 +934,11 @@ export default function Home() {
 
         if (session?.user) {
           setShowLoginModal(false);
+          setIsUserAuthenticated(true);
+
+          // IMPORTANT: Update user state with authenticated account FIRST
+          setUserId(session.user.id);
+          setLocalUserId(session.user.id);
 
           // Check if user had existing guest data that needs to be merged
           if (localUserId && localUserId !== session.user.id) {
@@ -962,10 +967,6 @@ export default function Home() {
             }
           }
 
-          // Update user state with authenticated account
-          setUserId(session.user.id);
-          setLocalUserId(session.user.id);
-
           // Load user name from authenticated account
           const existingName = await getAuthUserName(session.user.id);
           if (existingName) {
@@ -976,10 +977,20 @@ export default function Home() {
             setAskName(true);
           }
 
+          // Fetch meals using the authenticated user ID
           fetchLoggedMeals(session.user.id);
+        } else {
+          // No authenticated session
+          setIsUserAuthenticated(false);
+
+          // If we have a local user ID, use it
+          if (localUserId) {
+            setUserId(localUserId);
+          }
         }
       } catch (error) {
         console.error('Error checking auth state:', error);
+        setIsUserAuthenticated(false);
       }
     };
 
@@ -994,14 +1005,33 @@ export default function Home() {
     const urlParams = new URLSearchParams(window.location.search);
     const justRecovered = urlParams.get('recovered');
 
-    if (justRecovered && userId && contentReady) {
+    if (justRecovered && contentReady) {
       // Clean up URL
       window.history.replaceState({}, '', '/');
 
       const refreshData = async () => {
         try {
-          // Refresh user name from server
-          const nameResponse = await fetch(`/api/user/name?user_id=${userId}`);
+          // First, check if user is authenticated and get their actual user ID
+          const session = await getCurrentSession();
+          let actualUserId = userId;
+
+          if (session?.user) {
+            // User is authenticated, use their auth user ID
+            actualUserId = session.user.id;
+            setUserId(session.user.id);
+            setLocalUserId(session.user.id);
+            setIsUserAuthenticated(true);
+          }
+
+          if (!actualUserId) {
+            console.error('No user ID available for data refresh');
+            return;
+          }
+
+          // Refresh user name from server using the correct user ID
+          const nameResponse = await fetch(
+            `/api/user/name?user_id=${actualUserId}`,
+          );
           if (nameResponse.ok) {
             const nameData = await nameResponse.json();
             if (nameData.name) {
@@ -1011,8 +1041,8 @@ export default function Home() {
             }
           }
 
-          // Refresh meal data
-          fetchLoggedMeals(userId);
+          // Refresh meal data using the correct user ID
+          fetchLoggedMeals(actualUserId);
 
           // Show success message
           setShowMergeSuccess(true);
@@ -1024,7 +1054,7 @@ export default function Home() {
 
       refreshData();
     }
-  }, [userId, contentReady]);
+  }, [contentReady]);
 
   // ========================================================================
   // RENDER
