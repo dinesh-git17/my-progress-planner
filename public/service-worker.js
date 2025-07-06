@@ -3,8 +3,8 @@ self.addEventListener('push', function (event) {
   const title = data.title || 'Progress Planner';
   const options = {
     body: data.body || 'Gentle reminder: log your meal, love! 💖',
-    icon: '/apple-touch-icon.png', // adjust to your app icon
-    badge: '/apple-touch-icon.png',
+    icon: '/public/apple-touch-icon.png',
+    badge: '/public/apple-touch-icon.png',
     data: data.url || '/',
   };
   event.waitUntil(self.registration.showNotification(title, options));
