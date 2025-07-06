@@ -298,6 +298,7 @@ function ProfileDropdown({
   onLogout: () => Promise<void>;
 }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Handle clicks outside dropdown to close it
   useEffect(() => {
@@ -339,7 +340,7 @@ function ProfileDropdown({
   };
 
   const handleSettings = () => {
-    // TODO: Implement settings page navigation
+    router.push('/recover');
     onClose();
   };
 
