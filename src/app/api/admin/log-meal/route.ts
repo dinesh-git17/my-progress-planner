@@ -23,7 +23,22 @@ export async function GET() {
     }
 
     console.log(`[ADMIN_LOG_MEAL] Fetched ${data.length} logs successfully.`);
-    return NextResponse.json({ logs: data });
+
+    // Create response with comprehensive no-cache headers
+    const response = NextResponse.json({ logs: data });
+
+    // Prevent caching at all levels
+    response.headers.set(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, proxy-revalidate',
+    );
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('Surrogate-Control', 'no-store');
+    response.headers.set('CDN-Cache-Control', 'no-store');
+    response.headers.set('Vercel-CDN-Cache-Control', 'no-store');
+
+    return response;
   } catch (err) {
     console.error('[ADMIN_LOG_MEAL] Unexpected error:', err);
     return NextResponse.json(

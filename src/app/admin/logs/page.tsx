@@ -81,14 +81,34 @@ export default function AdminPage() {
 
   useEffect(() => {
     const fetchLogs = () => {
-      const timestamp = new Date().getTime();
+      // Multiple cache-busting parameters
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(7);
       setLastRefresh(new Date());
 
-      fetch(`/api/admin/log-meal?timestamp=${timestamp}`)
-        .then((res) => res.json())
+      fetch(`/api/admin/log-meal?timestamp=${timestamp}&r=${random}`, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          return res.json();
+        })
         .then((data) => {
+          console.log(
+            `[ADMIN_LOGS] Fetched ${data.logs?.length || 0} logs at ${new Date().toISOString()}`,
+          );
           const logsData = data.logs || [];
           setLogs(logsData);
+        })
+        .catch((error) => {
+          console.error('Error fetching logs:', error);
         })
         .finally(() => setLoading(false));
     };
