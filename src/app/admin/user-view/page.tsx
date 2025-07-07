@@ -174,7 +174,6 @@ function highlightQuote(quote: string): string {
   return highlighted;
 }
 
-// User Landing Page Component (simplified version of your main page)
 function UserLandingPage({
   userId,
   userName,

@@ -412,9 +412,8 @@ export default function AdminPage() {
                           {log.name || 'Unknown User'}
                         </h2>
                         <p className="text-sm text-gray-500">
-                          {log.date
-                            ? formatDate(log.date)
-                            : formatDate(log.created_at)}
+                          {/* ✅ Always use the date field consistently */}
+                          {formatDate(log.date)}
                         </p>
                       </div>
                     </div>

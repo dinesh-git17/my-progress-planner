@@ -4,9 +4,9 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     const { data, error } = await supabase
-      .from('meal_logs_with_users') // ✅ pre-joined view with user names
+      .from('meal_logs_with_users')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('date', { ascending: false })
       .limit(100);
 
     if (error) {
