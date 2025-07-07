@@ -624,6 +624,8 @@ export default function Home() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
 
+  const [showNotificationTooltip, setShowNotificationTooltip] = useState(false);
+
   // Recovery state tracking
   const [isAfterRecovery, setIsAfterRecovery] = useState(false);
 
@@ -869,12 +871,22 @@ export default function Home() {
    * Handles loading screen timing and content readiness
    */
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowLoadingScreen(false);
-      setTimeout(() => setContentReady(true), 100);
-    }, 2000);
+    const hasShownLoadingScreen = sessionStorage.getItem('mealapp_has_loaded');
 
-    return () => clearTimeout(timer);
+    if (!hasShownLoadingScreen) {
+      // First time loading - show loading screen
+      const timer = setTimeout(() => {
+        setShowLoadingScreen(false);
+        sessionStorage.setItem('mealapp_has_loaded', 'true');
+        setTimeout(() => setContentReady(true), 100);
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    } else {
+      // Already loaded before - skip loading screen
+      setShowLoadingScreen(false);
+      setContentReady(true);
+    }
   }, []);
 
   /**
@@ -1185,6 +1197,37 @@ export default function Home() {
       refreshData();
     }
   }, [contentReady, userId, refreshStreak]);
+
+  useEffect(() => {
+    if (!notificationsEnabled && userId && contentReady) {
+      const hasShownTooltip = sessionStorage.getItem(
+        'mealapp_notification_tooltip_shown',
+      );
+
+      if (!hasShownTooltip) {
+        const showTimer = setTimeout(() => {
+          setShowNotificationTooltip(true);
+          sessionStorage.setItem('mealapp_notification_tooltip_shown', 'true');
+        }, 1000);
+
+        const hideTimer = setTimeout(() => {
+          setShowNotificationTooltip(false);
+        }, 6000);
+
+        return () => {
+          clearTimeout(showTimer);
+          clearTimeout(hideTimer);
+        };
+      }
+    }
+  }, [notificationsEnabled, userId, contentReady]);
+
+  // Hide tooltip when notifications get enabled
+  useEffect(() => {
+    if (notificationsEnabled) {
+      setShowNotificationTooltip(false);
+    }
+  }, [notificationsEnabled]);
 
   // ========================================================================
   // RENDER
@@ -1527,28 +1570,110 @@ export default function Home() {
                   {/* Action buttons and profile */}
                   <div className="flex items-center gap-3 relative">
                     {/* Notification bell - only show if not enabled */}
+                    {/* Notification bell - only show if not enabled */}
                     {!notificationsEnabled && userId && (
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleNotificationClick();
-                        }}
-                        className="
-                          w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 
-                          flex items-center justify-center shadow-lg 
-                          cursor-pointer hover:scale-110 active:scale-95 transition-transform
-                          border-none outline-none focus:ring-2 focus:ring-pink-300
-                        "
-                        style={{
-                          zIndex: 10000,
-                          WebkitTapHighlightColor: 'transparent',
-                        }}
-                        type="button"
-                        aria-label="Enable notifications"
-                      >
-                        <i className="fas fa-bell text-white text-xs pointer-events-none"></i>
-                      </button>
+                      <div className="relative">
+                        <motion.button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setShowNotificationTooltip(false); // Hide tooltip on click
+                            handleNotificationClick();
+                          }}
+                          className="
+          w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 
+          flex items-center justify-center shadow-lg 
+          cursor-pointer hover:scale-110 active:scale-95 transition-transform
+          border-none outline-none focus:ring-2 focus:ring-pink-300
+        "
+                          animate={{
+                            y: [0, -4, 0],
+                            scale: [1, 1.05, 1],
+                          }}
+                          transition={{
+                            duration: 0.8,
+                            repeat: Infinity,
+                            repeatDelay: 3,
+                            ease: [0.4, 0, 0.6, 1],
+                          }}
+                          whileHover={{
+                            scale: 1.15,
+                            transition: { duration: 0.2 },
+                          }}
+                          whileTap={{ scale: 0.95 }}
+                          style={{
+                            zIndex: 10000,
+                            WebkitTapHighlightColor: 'transparent',
+                          }}
+                          type="button"
+                          aria-label="Enable notifications"
+                        >
+                          <i className="fas fa-bell text-white text-xs pointer-events-none"></i>
+                        </motion.button>
+
+                        {/* Cursive tooltip with curvy arrow */}
+                        {/* Cursive tooltip with curvy arrow */}
+                        <AnimatePresence>
+                          {showNotificationTooltip && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                              transition={{
+                                duration: 0.5,
+                                ease: [0.4, 0, 0.2, 1],
+                                type: 'spring',
+                                stiffness: 300,
+                                damping: 30,
+                              }}
+                              className="absolute top-12 -left-32 z-50 pointer-events-none"
+                            >
+                              <div className="relative">
+                                {/* Just the text without background */}
+                                <p
+                                  className="text-pink-700 text-sm whitespace-nowrap font-medium"
+                                  style={{
+                                    fontFamily:
+                                      "'Dancing Script', 'Brush Script MT', cursive",
+                                    fontSize: '16px',
+                                    letterSpacing: '0.5px',
+                                    textShadow:
+                                      '0 1px 3px rgba(255, 255, 255, 0.8)',
+                                  }}
+                                >
+                                  click here to allow notifications ✨
+                                </p>
+
+                                {/* Arrow pointing up to bell - flipped 180 degrees */}
+                                <svg
+                                  className="absolute -top-4 left-28"
+                                  width="30"
+                                  height="20"
+                                  viewBox="0 0 30 20"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <motion.path
+                                    d="M6 16 C 10 16, 16 12, 24 4 L 20 2 M 24 4 L 22 8"
+                                    stroke="#ec4899"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    fill="none"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: 1 }}
+                                    transition={{
+                                      duration: 1,
+                                      delay: 0.3,
+                                      ease: 'easeInOut',
+                                    }}
+                                  />
+                                </svg>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     )}
 
                     {/* Profile dropdown */}
