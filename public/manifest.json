@@ -1,29 +1,56 @@
 {
-  "name": "Progress Planner",
+  "name": "Progress Planner - Meal Tracker",
   "short_name": "Meal Tracker",
-  "description": "A loving meal log and motivation app.",
+  "description": "A loving meal tracker and motivation app to help you build healthy eating habits.",
   "start_url": "/",
-  "display": "fullscreen",
-  "display_override": ["fullscreen", "standalone"],
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#f5ede6",
-  "theme_color": "#f5ede6",
-  "orientation": "portrait",
+  "theme_color": "#fda085",
+  "orientation": "portrait-primary",
   "scope": "/",
-  "lang": "en",
-  "categories": ["health", "lifestyle", "productivity"],
+  "lang": "en-US",
+  "categories": ["health", "lifestyle", "productivity", "food"],
   "prefer_related_applications": false,
-  "screenshots": [
+  "shortcuts": [
     {
-      "src": "/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
+      "name": "Log Breakfast",
+      "short_name": "Breakfast",
+      "description": "Quick access to log your breakfast",
+      "url": "/breakfast",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
-      "src": "/screenshot-narrow.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
+      "name": "Log Lunch",
+      "short_name": "Lunch",
+      "description": "Quick access to log your lunch",
+      "url": "/lunch",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Log Dinner",
+      "short_name": "Dinner",
+      "description": "Quick access to log your dinner",
+      "url": "/dinner",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ],
   "icons": [
@@ -31,13 +58,25 @@
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
