@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // Loading Screen Component
 function LoadingScreen({ isVisible }: { isVisible: boolean }) {
@@ -52,13 +52,11 @@ function LoadingScreen({ isVisible }: { isVisible: boolean }) {
 }
 
 export default function AdminLandingPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [contentReady, setContentReady] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    'logs' | 'analytics' | 'notifications'
+  >('logs');
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -67,17 +65,16 @@ export default function AdminLandingPage() {
     lastUpdated: null as string | null,
   });
   const [statsLoading, setStatsLoading] = useState(false);
+  // Push notification states
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushBody, setPushBody] = useState('');
+  const [pushUrl, setPushUrl] = useState('/');
+  const [pushSending, setPushSending] = useState(false);
+  const [pushStatus, setPushStatus] = useState<string | null>(null);
   const router = useRouter();
 
-  // Handle loading screen timing and authentication check together
+  // Handle loading screen timing
   useEffect(() => {
-    // Check authentication status immediately
-    const authStatus = sessionStorage.getItem('admin_authenticated');
-    if (authStatus === 'true') {
-      setIsAuthenticated(true);
-    }
-    setAuthChecked(true);
-
     // Always show loading screen for minimum duration for smooth experience
     const timer = setTimeout(() => {
       setShowLoadingScreen(false);
@@ -88,15 +85,15 @@ export default function AdminLandingPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch stats when authenticated and content is ready
+  // Fetch stats when content is ready
   useEffect(() => {
-    if (isAuthenticated && contentReady) {
+    if (contentReady) {
       fetchStats();
       // Refresh stats every 30 seconds
       const interval = setInterval(fetchStats, 30000);
       return () => clearInterval(interval);
     }
-  }, [isAuthenticated, contentReady]);
+  }, [contentReady]);
 
   const fetchStats = async () => {
     setStatsLoading(true);
@@ -126,46 +123,52 @@ export default function AdminLandingPage() {
     }
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/admin/landing', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
-      });
-
-      if (response.ok) {
-        sessionStorage.setItem('admin_authenticated', 'true');
-        setIsAuthenticated(true);
-        setPassword('');
-      } else {
-        setError('Invalid password. Please try again.');
-      }
-    } catch (err) {
-      setError('Authentication failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleLogout = () => {
     sessionStorage.removeItem('admin_authenticated');
-    setIsAuthenticated(false);
-    setPassword('');
-    setError('');
-    setStats({
-      totalUsers: 0,
-      activeUsers: 0,
-      totalMeals: 0,
-      todayMeals: 0,
-      lastUpdated: null,
-    });
+    router.push('/admin');
+    window.location.reload();
+  };
+
+  const handleSendPush = async () => {
+    if (!pushTitle.trim() || !pushBody.trim()) {
+      setPushStatus('Error: Title and message are required');
+      return;
+    }
+
+    setPushSending(true);
+    setPushStatus(null);
+    try {
+      // Get the admin password from environment or use a default
+      const adminPassword =
+        process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'changeme';
+
+      const res = await fetch('/api/admin/send-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: adminPassword,
+          title: pushTitle,
+          body: pushBody,
+          url: pushUrl,
+        }),
+      });
+      const data = await res.json();
+      setPushStatus(
+        data.ok
+          ? `Push notification sent successfully to ${data.sent} devices! 🎉`
+          : `Error: ${data.error}`,
+      );
+      if (data.ok) {
+        // Clear form on success
+        setPushTitle('');
+        setPushBody('');
+        setPushUrl('/');
+      }
+    } catch (error) {
+      setPushStatus('Failed to send notification. Please try again.');
+    } finally {
+      setPushSending(false);
+    }
   };
 
   const adminNavItems = [
@@ -194,12 +197,12 @@ export default function AdminLandingPage() {
       hoverColor: 'hover:bg-blue-50',
     },
     {
-      title: 'System Settings',
-      description: 'Configure app settings and preferences',
-      icon: '⚙️',
-      path: '/admin/settings',
-      color: 'from-gray-400 to-gray-500',
-      hoverColor: 'hover:bg-gray-50',
+      title: 'User View',
+      description: 'See how the app looks for any user',
+      icon: '👤',
+      path: '/admin/user-view',
+      color: 'from-green-400 to-green-500',
+      hoverColor: 'hover:bg-green-50',
     },
   ];
 
@@ -219,7 +222,7 @@ export default function AdminLandingPage() {
 
       {/* Main Content */}
       <AnimatePresence>
-        {contentReady && authChecked && (
+        {contentReady && (
           <motion.main
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -310,282 +313,393 @@ export default function AdminLandingPage() {
               }
             `}</style>
 
-            {/* Authentication Flow */}
-            {!isAuthenticated ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
-                className="flex items-center justify-center flex-1 px-4"
-              >
-                <div className="w-full max-w-md">
-                  <div className="flex flex-col items-center mb-8">
-                    <div className="mb-4 text-6xl">🔐</div>
-                    <h1 className="text-center text-2xl font-bold text-pink-600 mb-3 tracking-tight">
-                      Admin Portal Access
-                    </h1>
-                    <p className="text-center text-lg text-gray-600 mb-0.5">
-                      Enter admin password to continue
-                    </p>
-                  </div>
-
-                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/40">
-                    <form onSubmit={handlePasswordSubmit}>
-                      <input
-                        type="password"
-                        className="
-                          w-full px-6 py-4 mb-6 rounded-2xl border-none shadow-inner
-                          bg-white/90 text-gray-800 text-xl
-                          focus:ring-2 focus:ring-pink-300/40 outline-none transition
-                          placeholder:text-gray-400
-                        "
-                        placeholder="Admin password…"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        autoFocus
-                        disabled={isLoading}
-                      />
-
-                      {error && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="mb-4 text-red-500 text-sm text-center"
-                        >
-                          {error}
-                        </motion.div>
-                      )}
-
-                      <button
-                        type="submit"
-                        disabled={!password.trim() || isLoading}
-                        className="
-                          w-full py-4 rounded-2xl bg-gradient-to-r from-pink-400 via-pink-500 to-purple-400
-                          text-white text-xl font-bold shadow-lg transition 
-                          hover:scale-[1.02] active:scale-[0.98]
-                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
-                          tracking-wide focus:outline-none focus:ring-2 focus:ring-pink-300/40
-                        "
-                      >
-                        {isLoading ? (
-                          <div className="flex items-center justify-center">
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{
-                                duration: 1,
-                                repeat: Infinity,
-                                ease: 'linear',
-                              }}
-                              className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
-                            />
-                            Authenticating...
-                          </div>
-                        ) : (
-                          'Access Admin Portal 🔑'
-                        )}
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              /* Admin Dashboard */
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
-                className="flex flex-col h-full"
-              >
-                {/* Top Header Bar */}
-                <div className="w-full max-w-lg mx-auto px-4 flex flex-row items-center justify-between mb-8">
-                  <div className="flex flex-col">
-                    <span className="text-[1.5rem] font-bold text-gray-900 leading-snug flex items-center gap-1">
-                      Admin Portal <span className="ml-1">⚡</span>
-                    </span>
-                    <span className="text-sm text-gray-600 mt-1">
-                      Manage your meal tracking application
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {/* Logout Button */}
-                    <button
-                      onClick={handleLogout}
-                      className="w-10 h-10 rounded-full bg-gradient-to-r from-red-400 to-red-500 flex items-center justify-center shadow-lg cursor-pointer text-white hover:scale-105 transition-transform"
-                    >
-                      <i className="fas fa-sign-out-alt text-sm"></i>
-                    </button>
-
-                    {/* Admin Icon */}
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg select-none">
-                      👨🏽‍💻
-                    </div>
-                  </div>
-                </div>
-
-                {/* Welcome Card */}
-                <div className="w-full max-w-lg mx-auto px-4 mb-6">
-                  <div
-                    className="
-                      relative flex items-start px-6 py-5 rounded-2xl shadow-xl shadow-pink-100/40
-                      bg-gradient-to-tr from-[#fff3fc] via-[#f9f3fd] to-[#e7ffe7] border border-white/60
-                      min-h-[72px] z-10 w-full
-                      before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-2xl
-                      before:bg-gradient-to-tr before:from-pink-200/40 before:via-purple-100/40 before:to-yellow-100/40
-                      before:blur-2xl
-                    "
-                  >
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-50 text-xl mr-4 ml-0 flex-shrink-0 mt-0.5">
-                      🎯
-                    </span>
-                    <span className="font-semibold text-[1.11rem] sm:text-lg leading-snug text-gray-800 break-words flex-1">
-                      Welcome to the admin dashboard! Manage users, view
-                      analytics, and monitor system health.
-                    </span>
-                  </div>
-                </div>
-
-                {/* Navigation Cards */}
-                <div className="w-full max-w-lg mx-auto px-4 flex-1 overflow-y-auto pb-8">
-                  <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
-                    Admin Functions
+            {/* Admin Dashboard */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="flex flex-col h-full"
+            >
+              {/* Top Header Bar */}
+              <div className="w-full max-w-lg mx-auto px-4 flex flex-row items-center justify-between mb-8">
+                <div className="flex flex-col">
+                  <span className="text-[1.5rem] font-bold text-gray-900 leading-snug flex items-center gap-1">
+                    Admin Portal <span className="ml-1">⚡</span>
                   </span>
-                  <div className="flex flex-col gap-6">
-                    {adminNavItems.map((item, index) => (
-                      <motion.div
-                        key={item.path}
-                        whileTap={{ scale: 0.98 }}
-                        className={`
-                          flex items-center px-6 py-5 rounded-2xl transition
-                          bg-white/95 border border-gray-100 shadow-sm
-                          ${item.hoverColor} hover:shadow-lg
-                          cursor-pointer
-                        `}
-                        onClick={() => router.push(item.path)}
-                        tabIndex={0}
-                        role="button"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            router.push(item.path);
-                          }
-                        }}
-                      >
-                        <span className="text-2xl">{item.icon}</span>
-                        <div className="flex-1 flex flex-col ml-4">
-                          <span className="text-base font-semibold text-gray-900">
-                            {item.title}
-                          </span>
-                          <span className="text-xs text-gray-400 mt-1">
-                            {item.description}
-                          </span>
-                        </div>
-                        <span className="ml-2 text-gray-300 group-hover:text-gray-600 transition">
-                          <svg
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="w-5 h-5"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </span>
-                      </motion.div>
-                    ))}
-                  </div>
+                  <span className="text-sm text-gray-600 mt-1">
+                    Manage your meal tracking application
+                  </span>
+                </div>
 
-                  {/* Quick Stats Card */}
-                  <div className="mt-8">
-                    <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
-                      Quick Stats
-                    </span>
-                    <div
-                      className="
-                        bg-gradient-to-r from-purple-100 via-pink-50 to-yellow-100
-                        border border-purple-200/50 rounded-2xl p-6 shadow-sm
-                      "
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-gray-800">
-                          System Overview
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          {statsLoading && (
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{
-                                duration: 1,
-                                repeat: Infinity,
-                                ease: 'linear',
-                              }}
-                              className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"
-                            />
-                          )}
-                          <span className="text-2xl">📈</span>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-center mb-4">
-                        <div className="bg-white/60 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-purple-600">
-                            {statsLoading
-                              ? '--'
-                              : (stats?.activeUsers || 0).toLocaleString()}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            Active Users
-                          </div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            Last 7 days
-                          </div>
-                        </div>
-                        <div className="bg-white/60 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-pink-600">
-                            {statsLoading
-                              ? '--'
-                              : (stats?.totalMeals || 0).toLocaleString()}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            Total Meals
-                          </div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            All time
-                          </div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-center">
-                        <div className="bg-white/60 rounded-xl p-3">
-                          <div className="text-xl font-bold text-blue-600">
-                            {statsLoading
-                              ? '--'
-                              : (stats?.totalUsers || 0).toLocaleString()}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            Total Users
-                          </div>
-                        </div>
-                        <div className="bg-white/60 rounded-xl p-3">
-                          <div className="text-xl font-bold text-green-600">
-                            {statsLoading
-                              ? '--'
-                              : (stats?.todayMeals || 0).toLocaleString()}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            Today's Meals
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 text-xs text-center text-gray-500">
-                        {stats?.lastUpdated
-                          ? `Last updated: ${new Date(stats.lastUpdated).toLocaleTimeString()}`
-                          : 'Statistics updated every 30 seconds'}
-                      </div>
-                    </div>
+                <div className="flex items-center gap-3">
+                  {/* Logout Button */}
+                  <button
+                    onClick={handleLogout}
+                    className="w-10 h-10 rounded-full bg-gradient-to-r from-red-400 to-red-500 flex items-center justify-center shadow-lg cursor-pointer text-white hover:scale-105 transition-transform"
+                  >
+                    <i className="fas fa-sign-out-alt text-sm"></i>
+                  </button>
+
+                  {/* Admin Icon */}
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg select-none">
+                    👨🏽‍💻
                   </div>
                 </div>
-              </motion.div>
-            )}
+              </div>
+
+              {/* Tab Content */}
+              <div className="w-full max-w-lg mx-auto px-4 flex-1 overflow-y-auto">
+                <AnimatePresence mode="wait">
+                  {activeTab === 'logs' && (
+                    <motion.div
+                      key="logs"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="pb-24"
+                    >
+                      <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                        Admin Functions
+                      </span>
+                      <div className="flex flex-col gap-6">
+                        {adminNavItems.map((item, index) => (
+                          <motion.div
+                            key={item.path}
+                            whileTap={{ scale: 0.98 }}
+                            className={`
+                              flex items-center px-6 py-5 rounded-2xl transition
+                              bg-white/95 border border-gray-100 shadow-sm
+                              ${item.hoverColor} hover:shadow-lg
+                              cursor-pointer
+                            `}
+                            onClick={() => router.push(item.path)}
+                            tabIndex={0}
+                            role="button"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                router.push(item.path);
+                              }
+                            }}
+                          >
+                            <span className="text-2xl">{item.icon}</span>
+                            <div className="flex-1 flex flex-col ml-4">
+                              <span className="text-base font-semibold text-gray-900">
+                                {item.title}
+                              </span>
+                              <span className="text-xs text-gray-400 mt-1">
+                                {item.description}
+                              </span>
+                            </div>
+                            <span className="ml-2 text-gray-300 group-hover:text-gray-600 transition">
+                              <svg
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </span>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {activeTab === 'analytics' && (
+                    <motion.div
+                      key="analytics"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.3 }}
+                      className="pb-24"
+                    >
+                      <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                        System Analytics
+                      </span>
+                      <div className="flex flex-col gap-6">
+                        {/* Quick Stats Card */}
+                        <div
+                          className="
+                            bg-gradient-to-r from-purple-100 via-pink-50 to-yellow-100
+                            border border-purple-200/50 rounded-2xl p-6 shadow-sm
+                          "
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-gray-800">
+                              System Overview
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              {statsLoading && (
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{
+                                    duration: 1,
+                                    repeat: Infinity,
+                                    ease: 'linear',
+                                  }}
+                                  className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"
+                                />
+                              )}
+                              <span className="text-2xl">📈</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-center mb-4">
+                            <div className="bg-white/60 rounded-xl p-3">
+                              <div className="text-2xl font-bold text-purple-600">
+                                {statsLoading
+                                  ? '--'
+                                  : (stats?.activeUsers || 0).toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                Active Users
+                              </div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                Last 7 days
+                              </div>
+                            </div>
+                            <div className="bg-white/60 rounded-xl p-3">
+                              <div className="text-2xl font-bold text-pink-600">
+                                {statsLoading
+                                  ? '--'
+                                  : (stats?.totalMeals || 0).toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                Total Meals
+                              </div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                All time
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-center">
+                            <div className="bg-white/60 rounded-xl p-3">
+                              <div className="text-xl font-bold text-blue-600">
+                                {statsLoading
+                                  ? '--'
+                                  : (stats?.totalUsers || 0).toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                Total Users
+                              </div>
+                            </div>
+                            <div className="bg-white/60 rounded-xl p-3">
+                              <div className="text-xl font-bold text-green-600">
+                                {statsLoading
+                                  ? '--'
+                                  : (stats?.todayMeals || 0).toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                Today's Meals
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-4 text-xs text-center text-gray-500">
+                            {stats?.lastUpdated
+                              ? `Last updated: ${new Date(stats.lastUpdated).toLocaleTimeString()}`
+                              : 'Statistics updated every 30 seconds'}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {activeTab === 'notifications' && (
+                    <motion.div
+                      key="notifications"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.3 }}
+                      className="pb-24"
+                    >
+                      <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                        Push Notifications
+                      </span>
+                      <div className="flex flex-col gap-6">
+                        {/* Send Push Notification Card */}
+                        <div
+                          className="
+                            bg-gradient-to-r from-blue-100 via-indigo-50 to-purple-100
+                            border border-blue-200/50 rounded-2xl p-6 shadow-sm
+                          "
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-gray-800">
+                              Send Push Notification
+                            </h3>
+                            <span className="text-2xl">📢</span>
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Title
+                              </label>
+                              <input
+                                type="text"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/60 focus:ring-2 focus:ring-blue-300/40 outline-none transition"
+                                placeholder="Notification title..."
+                                value={pushTitle}
+                                onChange={(e) => setPushTitle(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Message
+                              </label>
+                              <textarea
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/60 focus:ring-2 focus:ring-blue-300/40 outline-none transition resize-none"
+                                placeholder="Notification message body..."
+                                value={pushBody}
+                                onChange={(e) => setPushBody(e.target.value)}
+                                rows={3}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Action URL (optional)
+                              </label>
+                              <input
+                                type="text"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/60 focus:ring-2 focus:ring-blue-300/40 outline-none transition"
+                                placeholder="e.g., /breakfast, /summaries..."
+                                value={pushUrl}
+                                onChange={(e) => setPushUrl(e.target.value)}
+                              />
+                            </div>
+                            <button
+                              onClick={handleSendPush}
+                              disabled={
+                                !pushTitle.trim() ||
+                                !pushBody.trim() ||
+                                pushSending
+                              }
+                              className="
+                                w-full py-3 rounded-xl bg-gradient-to-r from-blue-400 to-purple-500
+                                text-white font-semibold shadow-lg transition 
+                                hover:scale-[1.02] active:scale-[0.98]
+                                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                              "
+                            >
+                              {pushSending ? (
+                                <div className="flex items-center justify-center">
+                                  <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{
+                                      duration: 1,
+                                      repeat: Infinity,
+                                      ease: 'linear',
+                                    }}
+                                    className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
+                                  />
+                                  Sending...
+                                </div>
+                              ) : (
+                                'Send Push Notification 🚀'
+                              )}
+                            </button>
+                            {pushStatus && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`text-center text-sm font-medium ${
+                                  pushStatus.includes('Error')
+                                    ? 'text-red-500'
+                                    : 'text-green-600'
+                                }`}
+                              >
+                                {pushStatus}
+                              </motion.div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Bottom Tab Navigation */}
+              <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-2 safe-area-pb">
+                <div className="w-full max-w-lg mx-auto">
+                  <div className="flex items-center justify-around">
+                    {/* Logs Tab */}
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setActiveTab('logs')}
+                      className={`
+                        flex flex-col items-center justify-center py-3 px-6 rounded-2xl transition-all duration-300
+                        ${
+                          activeTab === 'logs'
+                            ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }
+                      `}
+                    >
+                      <i
+                        className={`fas fa-cogs text-xl mb-1 ${activeTab === 'logs' ? 'text-white' : 'text-gray-400'}`}
+                      ></i>
+                      <span
+                        className={`text-xs font-medium ${activeTab === 'logs' ? 'text-white' : 'text-gray-400'}`}
+                      >
+                        Admin
+                      </span>
+                    </motion.button>
+
+                    {/* Analytics Tab */}
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setActiveTab('analytics')}
+                      className={`
+                        flex flex-col items-center justify-center py-3 px-6 rounded-2xl transition-all duration-300
+                        ${
+                          activeTab === 'analytics'
+                            ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }
+                      `}
+                    >
+                      <i
+                        className={`fas fa-chart-line text-xl mb-1 ${activeTab === 'analytics' ? 'text-white' : 'text-gray-400'}`}
+                      ></i>
+                      <span
+                        className={`text-xs font-medium ${activeTab === 'analytics' ? 'text-white' : 'text-gray-400'}`}
+                      >
+                        Analytics
+                      </span>
+                    </motion.button>
+
+                    {/* Notifications Tab */}
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setActiveTab('notifications')}
+                      className={`
+                        flex flex-col items-center justify-center py-3 px-6 rounded-2xl transition-all duration-300
+                        ${
+                          activeTab === 'notifications'
+                            ? 'bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-lg'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }
+                      `}
+                    >
+                      <i
+                        className={`fas fa-bell text-xl mb-1 ${activeTab === 'notifications' ? 'text-white' : 'text-gray-400'}`}
+                      ></i>
+                      <span
+                        className={`text-xs font-medium ${activeTab === 'notifications' ? 'text-white' : 'text-gray-400'}`}
+                      >
+                        Notifications
+                      </span>
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </motion.main>
         )}
       </AnimatePresence>
