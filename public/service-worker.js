@@ -27,7 +27,7 @@ const API_CACHE_PATTERNS = {
     /\/api\/streak/,
     /\/api\/summaries/,
   ],
-  NETWORK_FIRST: [/\/api\/log-meal/, /\/api\/gpt\/meal-chat/, /\/api\/admin\//],
+  NETWORK_FIRST: [/\/api\/log-meal/, /\/api\/gpt\/meal-chat/],
 };
 
 // Background sync tag names
@@ -72,373 +72,195 @@ async function cleanupOldCaches() {
   const cacheNames = await caches.keys();
   const currentCaches = Object.values(CACHE_NAMES);
 
-  const deletions = cacheNames
-    .filter((cacheName) => !currentCaches.includes(cacheName))
-    .map((cacheName) => {
-      log(`Deleting old cache: ${cacheName}`);
-      return caches.delete(cacheName);
-    });
-
-  return Promise.all(deletions);
+  await Promise.all(
+    cacheNames
+      .filter((cacheName) => !currentCaches.includes(cacheName))
+      .map((cacheName) => {
+        log(`Deleting old cache: ${cacheName}`);
+        return caches.delete(cacheName);
+      }),
+  );
 }
 
-async function precacheAppShell() {
-  const cache = await caches.open(CACHE_NAMES.APP_SHELL);
-
-  try {
-    // Cache app shell resources
-    await cache.addAll(APP_SHELL_URLS);
-    log('App shell precached successfully');
-  } catch (error) {
-    log('Failed to precache some app shell resources:', error);
-    // Try to cache individually to identify problematic URLs
-    for (const url of APP_SHELL_URLS) {
-      try {
-        await cache.add(url);
-        log(`Cached: ${url}`);
-      } catch (err) {
-        log(`Failed to cache: ${url}`, err);
-      }
-    }
-  }
-}
-
-// Caching strategies
-async function cacheFirstStrategy(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cachedResponse = await cache.match(request);
-
-  if (cachedResponse) {
-    log(`Cache hit: ${request.url}`);
-    return cachedResponse;
-  }
-
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
-      log(`Cached from network: ${request.url}`);
-    }
-    return networkResponse;
-  } catch (error) {
-    log(`Network failed for: ${request.url}`, error);
-    throw error;
-  }
-}
-
-async function staleWhileRevalidateStrategy(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cachedResponse = await cache.match(request);
-
-  // Always try to fetch from network in the background
-  const networkPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        cache.put(request, response.clone());
-        log(`Updated cache: ${request.url}`);
-      }
-      return response;
-    })
-    .catch((error) => {
-      log(`Background fetch failed: ${request.url}`, error);
-      return null;
-    });
-
-  // Return cached version immediately if available
-  if (cachedResponse) {
-    log(`Serving from cache: ${request.url}`);
-    return cachedResponse;
-  }
-
-  // Wait for network if no cache available
-  return networkPromise;
-}
-
-async function networkFirstStrategy(request, cacheName) {
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(cacheName);
-      cache.put(request, networkResponse.clone());
-      log(`Network first success: ${request.url}`);
-    }
-    return networkResponse;
-  } catch (error) {
-    log(`Network first failed, trying cache: ${request.url}`, error);
-    const cache = await caches.open(cacheName);
-    const cachedResponse = await cache.match(request);
-
-    if (cachedResponse) {
-      log(`Fallback to cache: ${request.url}`);
-      return cachedResponse;
-    }
-
-    throw error;
-  }
-}
-
-// Background sync handlers
-async function handleMealLogSync() {
-  log('Processing meal log background sync');
-
-  try {
-    // Get pending meal logs from IndexedDB
-    const pendingLogs = await getPendingMealLogs();
-
-    for (const logData of pendingLogs) {
-      try {
-        const response = await fetch('/api/log-meal', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(logData.data),
-        });
-
-        if (response.ok) {
-          await removePendingMealLog(logData.id);
-          log(`Synced meal log: ${logData.id}`);
-        }
-      } catch (error) {
-        log(`Failed to sync meal log: ${logData.id}`, error);
-      }
-    }
-  } catch (error) {
-    log('Background sync failed:', error);
-    throw error;
-  }
-}
-
-// IndexedDB helpers for background sync
-async function getPendingMealLogs() {
-  return new Promise((resolve) => {
-    const request = indexedDB.open('MealTrackerOfflineDB', 1);
-
-    request.onsuccess = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains('pendingMealLogs')) {
-        resolve([]);
-        return;
-      }
-
-      const transaction = db.transaction(['pendingMealLogs'], 'readonly');
-      const store = transaction.objectStore('pendingMealLogs');
-      const getAllRequest = store.getAll();
-
-      getAllRequest.onsuccess = () => {
-        resolve(getAllRequest.result || []);
-      };
-
-      getAllRequest.onerror = () => {
-        resolve([]);
-      };
-    };
-
-    request.onerror = () => {
-      resolve([]);
-    };
-  });
-}
-
-async function removePendingMealLog(id) {
-  return new Promise((resolve) => {
-    const request = indexedDB.open('MealTrackerOfflineDB', 1);
-
-    request.onsuccess = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains('pendingMealLogs')) {
-        resolve();
-        return;
-      }
-
-      const transaction = db.transaction(['pendingMealLogs'], 'readwrite');
-      const store = transaction.objectStore('pendingMealLogs');
-      const deleteRequest = store.delete(id);
-
-      deleteRequest.onsuccess = () => {
-        log(`Removed pending log: ${id}`);
-        resolve();
-      };
-
-      deleteRequest.onerror = () => {
-        resolve(); // Don't fail the sync
-      };
-    };
-
-    request.onerror = () => {
-      resolve(); // Don't fail the sync
-    };
-  });
-}
-
-// Service Worker Event Handlers
-
+// Install event - cache app shell
 self.addEventListener('install', (event) => {
   log('Installing service worker');
 
   event.waitUntil(
-    (async () => {
-      await precacheAppShell();
-      await self.skipWaiting(); // Take control immediately
-    })(),
+    Promise.all([
+      caches.open(CACHE_NAMES.APP_SHELL).then((cache) => {
+        log('Caching app shell resources');
+        return cache.addAll(APP_SHELL_URLS);
+      }),
+      cleanupOldCaches(),
+    ]),
   );
+
+  // Take control immediately
+  self.skipWaiting();
 });
 
+// Activate event - cleanup and take control
 self.addEventListener('activate', (event) => {
   log('Activating service worker');
 
-  event.waitUntil(
-    (async () => {
-      await cleanupOldCaches();
-      await self.clients.claim(); // Take control of all pages
-    })(),
-  );
+  event.waitUntil(Promise.all([cleanupOldCaches(), self.clients.claim()]));
 });
 
+// Fetch event - handle all network requests
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
   // Skip non-http requests
   if (!shouldCacheRequest(request)) {
     return;
   }
 
-  // Handle navigation requests (page loads)
+  // Handle different types of requests
   if (isNavigationRequest(request)) {
-    event.respondWith(
-      (async () => {
-        try {
-          // Try network first for navigation
-          const networkResponse = await fetch(request);
-          return networkResponse;
-        } catch (error) {
-          log('Navigation request failed, serving app shell', error);
-          // Serve cached app shell as fallback
-          const cache = await caches.open(CACHE_NAMES.APP_SHELL);
-          const cachedResponse = await cache.match('/');
-          return cachedResponse || new Response('Offline', { status: 503 });
-        }
-      })(),
-    );
-    return;
-  }
-
-  // Handle API requests
-  if (request.url.includes('/api/')) {
-    const strategy = getApiCacheStrategy(request.url);
-
-    event.respondWith(
-      (async () => {
-        switch (strategy) {
-          case 'CACHE_FIRST':
-            return cacheFirstStrategy(request, CACHE_NAMES.API_CACHE);
-
-          case 'STALE_WHILE_REVALIDATE':
-            return staleWhileRevalidateStrategy(request, CACHE_NAMES.API_CACHE);
-
-          case 'NETWORK_FIRST':
-            return networkFirstStrategy(request, CACHE_NAMES.API_CACHE);
-
-          default:
-            // Network only for unknown APIs
-            return fetch(request);
-        }
-      })(),
-    );
-    return;
-  }
-
-  // Handle static assets (images, etc.)
-  if (request.destination === 'image') {
-    event.respondWith(cacheFirstStrategy(request, CACHE_NAMES.IMAGES));
-    return;
-  }
-
-  // Handle other static resources
-  if (request.method === 'GET') {
-    event.respondWith(
-      staleWhileRevalidateStrategy(request, CACHE_NAMES.STATIC),
-    );
-    return;
+    event.respondWith(handleNavigationRequest(request));
+  } else if (url.pathname.startsWith('/api/')) {
+    event.respondWith(handleApiRequest(request));
+  } else if (request.destination === 'image') {
+    event.respondWith(handleImageRequest(request));
+  } else {
+    event.respondWith(handleStaticRequest(request));
   }
 });
 
-// Background sync
-self.addEventListener('sync', (event) => {
-  log(`Background sync triggered: ${event.tag}`);
+// Navigation request handler - always serve app shell
+async function handleNavigationRequest(request) {
+  try {
+    const cache = await caches.open(CACHE_NAMES.APP_SHELL);
+    return (await cache.match('/')) || fetch(request);
+  } catch (error) {
+    log('Navigation request failed', error);
+    return new Response('App offline', { status: 503 });
+  }
+}
 
-  switch (event.tag) {
-    case SYNC_TAGS.MEAL_LOG:
-      event.waitUntil(handleMealLogSync());
-      break;
+// API request handler - strategy based on endpoint
+async function handleApiRequest(request) {
+  const strategy = getApiCacheStrategy(request.url);
+  const cache = await caches.open(CACHE_NAMES.API_CACHE);
 
+  switch (strategy) {
+    case 'CACHE_FIRST':
+      return handleCacheFirst(request, cache);
+    case 'STALE_WHILE_REVALIDATE':
+      return handleStaleWhileRevalidate(request, cache);
+    case 'NETWORK_FIRST':
+      return handleNetworkFirst(request, cache);
     default:
-      log(`Unknown sync tag: ${event.tag}`);
+      return fetch(request);
+  }
+}
+
+// Cache strategies
+async function handleCacheFirst(request, cache) {
+  try {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    return cache.match(request) || new Response('Offline', { status: 503 });
+  }
+}
+
+async function handleStaleWhileRevalidate(request, cache) {
+  const cached = await cache.match(request);
+  const fetchPromise = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        cache.put(request, response.clone());
+      }
+      return response;
+    })
+    .catch(() => cached);
+
+  return cached || fetchPromise;
+}
+
+async function handleNetworkFirst(request, cache) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    return cache.match(request) || new Response('Offline', { status: 503 });
+  }
+}
+
+// Image request handler
+async function handleImageRequest(request) {
+  const cache = await caches.open(CACHE_NAMES.IMAGES);
+  const cached = await cache.match(request);
+
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    return new Response('Image offline', { status: 503 });
+  }
+}
+
+// Static resource handler
+async function handleStaticRequest(request) {
+  const cache = await caches.open(CACHE_NAMES.STATIC);
+  const cached = await cache.match(request);
+
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    return cached || new Response('Resource offline', { status: 503 });
+  }
+}
+
+// Background sync for offline actions
+self.addEventListener('sync', (event) => {
+  log(`Background sync: ${event.tag}`);
+
+  if (event.tag === SYNC_TAGS.MEAL_LOG) {
+    event.waitUntil(syncMealLogs());
+  } else if (event.tag === SYNC_TAGS.USER_DATA) {
+    event.waitUntil(syncUserData());
   }
 });
 
-// Push notifications (keeping your existing functionality)
-self.addEventListener('push', (event) => {
-  const data = event.data?.json() || {};
-  const title = data.title || 'Progress Planner';
-  const options = {
-    body: data.body || 'Gentle reminder: log your meal, love! 💖',
-    icon: '/apple-touch-icon.png',
-    badge: '/apple-touch-icon.png',
-    data: data.url || '/',
-    actions: [
-      {
-        action: 'open',
-        title: 'Open App',
-        icon: '/icon-192.png',
-      },
-      {
-        action: 'close',
-        title: 'Close',
-      },
-    ],
-    vibrate: [200, 100, 200],
-    tag: 'meal-reminder',
-    renotify: true,
-  };
-
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
-  if (event.action === 'close') {
-    return;
+// Sync functions
+async function syncMealLogs() {
+  try {
+    // Implementation for syncing offline meal logs
+    log('Syncing meal logs');
+  } catch (error) {
+    log('Meal log sync failed', error);
   }
+}
 
-  const urlToOpen = event.notification.data || '/';
-
-  event.waitUntil(
-    self.clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
-        // If app is already open, focus it
-        for (const client of clientList) {
-          if (client.url.includes(self.location.origin)) {
-            return client.focus();
-          }
-        }
-        // Otherwise open new window
-        return self.clients.openWindow(urlToOpen);
-      }),
-  );
-});
-
-// Handle service worker updates
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
+async function syncUserData() {
+  try {
+    // Implementation for syncing user data
+    log('Syncing user data');
+  } catch (error) {
+    log('User data sync failed', error);
   }
-
-  if (event.data && event.data.type === 'GET_VERSION') {
-    event.ports[0].postMessage({ version: CACHE_VERSION });
-  }
-});
-
-log('Service worker script loaded');
+}
