@@ -1857,15 +1857,15 @@ export default function Home() {
                           Progress
                         </span>
                         <div className="flex flex-col gap-6">
-                          {/* Summaries navigation */}
+                          {/* View My Summaries - Original */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className={`
-                              flex items-center px-6 py-5 rounded-2xl transition
-                              bg-white/95 border border-gray-100 shadow-sm
-                              hover:bg-pink-50 hover:shadow-lg
-                              cursor-pointer
-                            `}
+                            flex items-center px-6 py-5 rounded-2xl transition
+                            bg-white/95 border border-gray-100 shadow-sm
+                            hover:bg-pink-50 hover:shadow-lg
+                            cursor-pointer
+                          `}
                             onClick={() => router.push('/summaries')}
                             tabIndex={0}
                             role="button"
@@ -1884,7 +1884,7 @@ export default function Home() {
                                 See your AI-powered meal recaps!
                               </span>
                             </div>
-                            <span className="ml-2 text-gray-300 group-hover:text-pink-400 transition">
+                            <span className="text-gray-300">
                               <svg
                                 viewBox="0 0 20 20"
                                 fill="currentColor"
@@ -1892,22 +1892,64 @@ export default function Home() {
                               >
                                 <path
                                   fillRule="evenodd"
-                                  d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z"
+                                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
                                   clipRule="evenodd"
                                 />
                               </svg>
                             </span>
                           </motion.div>
 
-                          {/* Streaks navigation */}
+                          {/* NEW: Nutritional Analysis */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className={`
                               flex items-center px-6 py-5 rounded-2xl transition
                               bg-white/95 border border-gray-100 shadow-sm
-                              hover:bg-orange-50 hover:shadow-lg
+                              hover:bg-green-50 hover:shadow-lg
                               cursor-pointer
                             `}
+                            onClick={() => router.push('/meals')}
+                            tabIndex={0}
+                            role="button"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                router.push('/nutrition');
+                              }
+                            }}
+                          >
+                            <span className="text-2xl">🥗</span>
+                            <div className="flex-1 flex flex-col ml-4">
+                              <span className="text-base font-semibold text-gray-900">
+                                Nutritional Analysis
+                              </span>
+                              <span className="text-xs text-gray-400 mt-1">
+                                Detailed nutrition insights for your meals
+                              </span>
+                            </div>
+                            <span className="text-gray-300">
+                              <svg
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </span>
+                          </motion.div>
+
+                          {/* View My Streaks - Existing */}
+                          <motion.div
+                            whileTap={{ scale: 0.98 }}
+                            className={`
+          flex items-center px-6 py-5 rounded-2xl transition
+          bg-white/95 border border-gray-100 shadow-sm
+          hover:bg-orange-50 hover:shadow-lg
+          cursor-pointer
+        `}
                             onClick={() => router.push('/streaks')}
                             tabIndex={0}
                             role="button"
@@ -1923,12 +1965,12 @@ export default function Home() {
                                 View My Streaks
                               </span>
                               <span className="text-xs text-gray-400 mt-1">
-                                {!streakLoading && streak > 0
+                                {streak > 0
                                   ? `Current streak: ${streak} day${streak > 1 ? 's' : ''}!`
                                   : 'See all your achievement milestones!'}
                               </span>
                             </div>
-                            <span className="ml-2 text-gray-300 group-hover:text-orange-400 transition">
+                            <span className="text-gray-300">
                               <svg
                                 viewBox="0 0 20 20"
                                 fill="currentColor"
@@ -1936,7 +1978,7 @@ export default function Home() {
                               >
                                 <path
                                   fillRule="evenodd"
-                                  d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z"
+                                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
                                   clipRule="evenodd"
                                 />
                               </svg>
