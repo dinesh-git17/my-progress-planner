@@ -1,62 +1,50 @@
-// src/components/ServiceWorkerRegister.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 
-// Extend ServiceWorkerRegistration interface to include sync
-/* eslint-disable no-unused-vars */
-declare global {
-  interface ServiceWorkerRegistration {
-    sync?: {
-      register(tag: string): Promise<void>;
-    };
-  }
-}
-/* eslint-enable no-unused-vars */
-
 interface ServiceWorkerState {
-  isSupported: boolean;
   isRegistered: boolean;
   isOnline: boolean;
   updateAvailable: boolean;
-  registration: ServiceWorkerRegistration | null;
 }
 
 export default function ServiceWorkerRegister() {
   const [swState, setSwState] = useState<ServiceWorkerState>({
-    isSupported: false,
     isRegistered: false,
     isOnline: true,
     updateAvailable: false,
-    registration: null,
   });
-
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
 
   useEffect(() => {
-    // Check if service workers are supported
-    if (!('serviceWorker' in navigator)) {
-      console.warn('Service Workers not supported');
+    // 🔥 CRITICAL: Skip service worker entirely in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        '🚫 Development mode: Service worker disabled to prevent caching issues',
+      );
+
+      // Unregister any existing service workers in development
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister();
+            console.log('🗑️ Unregistered existing service worker');
+          });
+        });
+      }
+
       return;
     }
 
-    setSwState((prev) => ({ ...prev, isSupported: true }));
-
-    // Register service worker
-    registerServiceWorker();
-
-    // Setup online/offline detection
-    setupOnlineOfflineDetection();
-
-    // Cleanup function
-    return () => {
-      // Remove event listeners if needed
-    };
+    // Only register in production
+    if ('serviceWorker' in navigator) {
+      registerServiceWorker();
+    }
   }, []);
 
   const registerServiceWorker = async () => {
     try {
-      console.log('🔧 Registering service worker...');
+      console.log('🔄 Registering service worker (production only)...');
 
       const registration = await navigator.serviceWorker.register(
         '/service-worker.js',
@@ -66,34 +54,23 @@ export default function ServiceWorkerRegister() {
         },
       );
 
-      console.log('✅ Service worker registered successfully');
+      console.log('✅ Service worker registered:', registration.scope);
+      setSwState((prev) => ({ ...prev, isRegistered: true }));
 
-      setSwState((prev) => ({
-        ...prev,
-        isRegistered: true,
-        registration,
-      }));
-
-      // Setup update detection
+      // Set up update detection
       setupUpdateDetection(registration);
-
-      // Setup messaging with service worker
       setupServiceWorkerMessaging(registration);
+      setupOnlineOfflineDetection();
     } catch (error) {
       console.error('❌ Service worker registration failed:', error);
     }
   };
 
   const setupUpdateDetection = (registration: ServiceWorkerRegistration) => {
-    // Check for updates on page load
-    registration.update();
-
-    // Listen for new service worker installing
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;
-
       if (newWorker) {
-        console.log('🔄 New service worker found, installing...');
+        console.log('🆕 New service worker installing...');
 
         newWorker.addEventListener('statechange', () => {
           if (
@@ -108,14 +85,12 @@ export default function ServiceWorkerRegister() {
       }
     });
 
-    // Listen for service worker taking control
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       console.log('🔄 Service worker controller changed');
-      // Reload the page to ensure latest version
       window.location.reload();
     });
 
-    // Check for updates periodically (every 30 minutes)
+    // Check for updates every 30 minutes
     setInterval(
       () => {
         registration.update();
@@ -127,7 +102,6 @@ export default function ServiceWorkerRegister() {
   const setupServiceWorkerMessaging = (
     registration: ServiceWorkerRegistration,
   ) => {
-    // Listen for messages from service worker
     navigator.serviceWorker.addEventListener('message', (event) => {
       console.log('📨 Message from service worker:', event.data);
 
@@ -139,9 +113,6 @@ export default function ServiceWorkerRegister() {
         console.log('🔄 Background sync completed');
       }
     });
-
-    // Log registration for debugging
-    console.log('🔗 Service worker messaging setup for:', registration.scope);
   };
 
   const setupOnlineOfflineDetection = () => {
@@ -151,105 +122,81 @@ export default function ServiceWorkerRegister() {
 
       if (isOnline) {
         console.log('🌐 App is online');
-        // Trigger background sync when coming back online
         triggerBackgroundSync();
       } else {
         console.log('📴 App is offline');
       }
     };
 
-    // Initial status
     updateOnlineStatus();
-
-    // Listen for online/offline events
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
+
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    };
   };
 
-  const triggerBackgroundSync = () => {
-    if ('serviceWorker' in navigator && swState.registration?.sync) {
-      navigator.serviceWorker.ready
-        .then((reg) => {
-          return reg.sync?.register('meal-log-sync');
-        })
-        .catch((error) => {
-          console.warn('Background sync not supported or failed:', error);
-        });
+  const triggerBackgroundSync = async () => {
+    if (
+      'serviceWorker' in navigator &&
+      'sync' in window.ServiceWorkerRegistration.prototype
+    ) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        if (registration.sync) {
+          await registration.sync.register('meal-log-sync');
+          console.log('🔄 Background sync registered');
+        }
+      } catch (error) {
+        console.error('Failed to register background sync:', error);
+      }
     }
   };
 
   const handleUpdateApp = async () => {
-    if (swState.registration?.waiting) {
-      // Tell the waiting service worker to skip waiting
-      swState.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration?.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       setShowUpdatePrompt(false);
     }
   };
 
   const handleDismissUpdate = () => {
     setShowUpdatePrompt(false);
-    setSwState((prev) => ({ ...prev, updateAvailable: false }));
   };
 
-  // Only render update prompt if there's an update available
-  if (!showUpdatePrompt) {
-    return null;
-  }
-
-  return (
-    <>
-      {/* Update Available Prompt */}
-      <div className="fixed top-4 left-4 right-4 z-50 max-w-sm mx-auto">
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-white/60">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">✨</div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-800 text-sm mb-1">
-                App Update Available
-              </h3>
-              <p className="text-xs text-gray-600 mb-3">
-                A new version of the app is ready with improvements and bug
-                fixes.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleUpdateApp}
-                  className="
-                    px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 
-                    text-white text-xs font-medium rounded-lg 
-                    hover:scale-105 transition-transform
-                  "
-                >
-                  Update Now
-                </button>
-                <button
-                  onClick={handleDismissUpdate}
-                  className="
-                    px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium 
-                    rounded-lg hover:bg-gray-200 transition-colors
-                  "
-                >
-                  Later
-                </button>
-              </div>
-            </div>
+  // Show update prompt only in production
+  if (showUpdatePrompt && process.env.NODE_ENV === 'production') {
+    return (
+      <div className="fixed top-4 left-4 right-4 z-50 bg-blue-600 text-white p-4 rounded-lg shadow-lg">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="font-semibold">Update Available</h3>
+            <p className="text-sm opacity-90">
+              A new version of the app is ready. Restart to get the latest
+              features.
+            </p>
+          </div>
+          <div className="flex gap-2 ml-4">
+            <button
+              onClick={handleUpdateApp}
+              className="bg-white text-blue-600 px-3 py-1 rounded text-sm font-medium"
+            >
+              Update
+            </button>
+            <button
+              onClick={handleDismissUpdate}
+              className="text-white/80 hover:text-white px-2 py-1 text-sm"
+            >
+              ×
+            </button>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Offline Indicator */}
-      {!swState.isOnline && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 max-w-sm mx-auto">
-          <div className="bg-orange-100 border border-orange-200 rounded-xl p-3 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-orange-700">
-                You're offline - changes will sync when connected
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return null;
 }
