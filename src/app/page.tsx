@@ -48,6 +48,16 @@ function getInitials(name = '') {
     .slice(0, 2);
 }
 
+/**
+ * Formats friend code for display (e.g., "ABC123" -> "AB:C1:23")
+ * @param {string} code - Raw friend code
+ * @returns {string} Formatted friend code
+ */
+function formatFriendCode(code: string): string {
+  if (!code || code.length !== 6) return '--:--:--';
+  return `${code.slice(0, 2)}:${code.slice(2, 4)}:${code.slice(4, 6)}`;
+}
+
 // Replace the calculateStreak function in your homepage with this:
 
 /**
@@ -207,6 +217,34 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  /**
+   * Fetches user's friend code from the backend
+   * @param {string} user_id - Current user identifier
+   */
+  const fetchFriendCode = async (user_id: string): Promise<void> => {
+    try {
+      const response = await fetch(
+        `/api/friends/my-code?user_id=${encodeURIComponent(user_id)}`,
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.friendCode) {
+        setFriendCode(data.friendCode);
+      } else {
+        console.log('No friend code found for user');
+        setFriendCode('');
+      }
+    } catch (error) {
+      console.error('Error fetching friend code:', error);
+      setFriendCode('');
+    }
+  };
 
   /**
    * Manual refresh function that can be called to refetch streak data
@@ -615,7 +653,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [contentReady, setContentReady] = useState(false);
-  const [activeTab, setActiveTab] = useState<'meals' | 'progress'>('meals');
+  const [activeTab, setActiveTab] = useState<'meals' | 'progress' | 'friends'>(
+    'meals',
+  );
 
   // User and authentication state
   const [name, setName] = useState('');
@@ -632,6 +672,9 @@ export default function Home() {
 
   // Meal tracking state
   const [loggedMeals, setLoggedMeals] = useState<string[]>([]);
+
+  // Friends state
+  const [friendCode, setFriendCode] = useState<string>('');
 
   // Notifications and features state
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -661,8 +704,44 @@ export default function Home() {
   const router = useRouter();
 
   // ========================================================================
-  // EVENT HANDLERS
+  // DATA FETCHING FUNCTIONS
   // ========================================================================
+
+  /**
+   * Fetches user's friend code from the backend
+   * @param {string} user_id - Current user identifier
+   */
+  const fetchFriendCode = useCallback(
+    async (user_id: string): Promise<void> => {
+      try {
+        const response = await fetch(
+          `/api/user/friend-code?user_id=${encodeURIComponent(user_id)}`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        console.log('Friend code API response:', data); // Debug log
+
+        if (data.success && data.friendCode) {
+          setFriendCode(data.friendCode);
+          console.log('Friend code set:', data.friendCode); // Debug log
+        } else {
+          console.log('No friend code found for user');
+          setFriendCode('');
+        }
+      } catch (error) {
+        console.error('Error fetching friend code:', error);
+        setFriendCode('');
+      }
+    },
+    [],
+  );
+
+  /**
 
   /**
    * Handles guest user continuation flow
@@ -945,6 +1024,7 @@ export default function Home() {
         setName(existingName);
         fetchQuote(existingName);
         fetchLoggedMealsAndRefreshStreak(userId);
+        fetchFriendCode(userId); // Fetch friend code when user data is loaded
       }
 
       // Check for existing push subscription
@@ -1102,6 +1182,7 @@ export default function Home() {
 
           // Fetch meals using the authenticated user ID
           fetchLoggedMealsAndRefreshStreak(session.user.id);
+          fetchFriendCode(session.user.id); // Also fetch friend code for authenticated users
         } else {
           // 2. ONLY if not authenticated, use localStorage
           console.log('👤 User not authenticated, checking localStorage');
@@ -1182,6 +1263,7 @@ export default function Home() {
 
           // Refresh meals AND streak together
           await fetchLoggedMealsAndRefreshStreak(actualUserId);
+          fetchFriendCode(actualUserId); // Also refresh friend code after recovery
 
           // Show success message
           setShowMergeSuccess(true);
@@ -1917,6 +1999,129 @@ export default function Home() {
                         </div>
                       </motion.div>
                     )}
+
+                    {/* NEW: Friends tab content */}
+                    {activeTab === 'friends' && (
+                      <motion.div
+                        key="friends"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.3 }}
+                        className="pb-24"
+                      >
+                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                          Friends & Support
+                        </span>
+                        <div className="flex flex-col gap-6">
+                          {/* Manage Friends */}
+                          <motion.div
+                            whileTap={{ scale: 0.98 }}
+                            className={`
+                              flex items-center px-6 py-5 rounded-2xl transition
+                              bg-white/95 border border-gray-100 shadow-sm
+                              hover:bg-blue-50 hover:shadow-lg
+                              cursor-pointer
+                            `}
+                            onClick={() => router.push('/friends')}
+                            tabIndex={0}
+                            role="button"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                router.push('/friends');
+                              }
+                            }}
+                          >
+                            <span className="text-2xl">👥</span>
+                            <div className="flex-1 flex flex-col ml-4">
+                              <span className="text-base font-semibold text-gray-900">
+                                Manage Friends
+                              </span>
+                              <span className="text-xs text-gray-400 mt-1">
+                                Add friends, share your code, and view
+                                connections
+                              </span>
+                            </div>
+                            <span className="text-gray-300">
+                              <svg
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </span>
+                          </motion.div>
+
+                          {/* Encouragement Notes */}
+                          <motion.div
+                            whileTap={{ scale: 0.98 }}
+                            className={`
+                              flex items-center px-6 py-5 rounded-2xl transition
+                              bg-white/95 border border-gray-100 shadow-sm
+                              hover:bg-pink-50 hover:shadow-lg
+                              cursor-pointer
+                            `}
+                            onClick={() => router.push('/notes')}
+                            tabIndex={0}
+                            role="button"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                router.push('/notes');
+                              }
+                            }}
+                          >
+                            <span className="text-2xl">💌</span>
+                            <div className="flex-1 flex flex-col ml-4">
+                              <span className="text-base font-semibold text-gray-900">
+                                Encouragement Notes
+                              </span>
+                              <span className="text-xs text-gray-400 mt-1">
+                                View supportive messages from your friends
+                              </span>
+                            </div>
+                            <span className="text-gray-300">
+                              <svg
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </span>
+                          </motion.div>
+
+                          {/* Friend Code Preview */}
+                          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
+                            <div className="text-center">
+                              <p className="text-sm text-gray-600 mb-2">
+                                Your Friend Code
+                              </p>
+                              <div className="bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg p-3 border-2 border-dashed border-indigo-300 mb-3">
+                                <div className="text-lg font-bold tracking-wider text-gray-800">
+                                  {friendCode
+                                    ? formatFriendCode(friendCode)
+                                    : '--:--:--'}
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {friendCode
+                                  ? 'Share this code with friends to connect!'
+                                  : 'Tap "Manage Friends" to generate your code'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
                   </AnimatePresence>
                 </div>
 
@@ -1931,7 +2136,7 @@ export default function Home() {
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setActiveTab('meals')}
                         className={`
-                          flex flex-col items-center justify-center py-3 px-6 rounded-2xl transition-all duration-300
+                          flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
                           ${
                             activeTab === 'meals'
                               ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg'
@@ -1954,7 +2159,7 @@ export default function Home() {
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setActiveTab('progress')}
                         className={`
-                          flex flex-col items-center justify-center py-3 px-6 rounded-2xl transition-all duration-300
+                          flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
                           ${
                             activeTab === 'progress'
                               ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg'
@@ -1969,6 +2174,29 @@ export default function Home() {
                           className={`text-xs font-medium ${activeTab === 'progress' ? 'text-white' : 'text-gray-400'}`}
                         >
                           Progress
+                        </span>
+                      </motion.button>
+
+                      {/* NEW: Friends tab */}
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setActiveTab('friends')}
+                        className={`
+                          flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
+                          ${
+                            activeTab === 'friends'
+                              ? 'bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-lg'
+                              : 'text-gray-400 hover:text-gray-600'
+                          }
+                        `}
+                      >
+                        <i
+                          className={`fas fa-users text-xl mb-1 ${activeTab === 'friends' ? 'text-white' : 'text-gray-400'}`}
+                        ></i>
+                        <span
+                          className={`text-xs font-medium ${activeTab === 'friends' ? 'text-white' : 'text-gray-400'}`}
+                        >
+                          Friends
                         </span>
                       </motion.button>
                     </div>
