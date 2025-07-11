@@ -219,34 +219,6 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   /**
-   * Fetches user's friend code from the backend
-   * @param {string} user_id - Current user identifier
-   */
-  const fetchFriendCode = async (user_id: string): Promise<void> => {
-    try {
-      const response = await fetch(
-        `/api/friends/my-code?user_id=${encodeURIComponent(user_id)}`,
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success && data.friendCode) {
-        setFriendCode(data.friendCode);
-      } else {
-        console.log('No friend code found for user');
-        setFriendCode('');
-      }
-    } catch (error) {
-      console.error('Error fetching friend code:', error);
-      setFriendCode('');
-    }
-  };
-
-  /**
    * Manual refresh function that can be called to refetch streak data
    * Useful for triggering updates after data changes
    */
@@ -673,7 +645,7 @@ export default function Home() {
   // Meal tracking state
   const [loggedMeals, setLoggedMeals] = useState<string[]>([]);
 
-  // Friends state
+  // FIXED: Single declaration of friendCode state
   const [friendCode, setFriendCode] = useState<string>('');
 
   // Notifications and features state
@@ -740,8 +712,6 @@ export default function Home() {
     },
     [],
   );
-
-  /**
 
   /**
    * Handles guest user continuation flow
@@ -1048,7 +1018,7 @@ export default function Home() {
     };
 
     init();
-  }, [userId, contentReady, refreshStreak]);
+  }, [userId, contentReady, refreshStreak, fetchFriendCode]);
 
   /**
    * Enhanced meal data refresh effect with streak refresh
@@ -1075,7 +1045,7 @@ export default function Home() {
       refreshMealsAndStreak();
     };
 
-    const handlePageShow = (event: PageTransitionEvent) => {
+    const handlePageShow = () => {
       refreshMealsAndStreak();
     };
 
@@ -1209,7 +1179,7 @@ export default function Home() {
     };
 
     initializeUser();
-  }, [contentReady, refreshStreak]);
+  }, [contentReady, refreshStreak, fetchFriendCode]);
 
   /**
    * Enhanced data recovery redirect handler with streak refresh
@@ -1281,7 +1251,7 @@ export default function Home() {
 
       refreshData();
     }
-  }, [contentReady, userId, refreshStreak]);
+  }, [contentReady, userId, refreshStreak, fetchFriendCode]);
 
   useEffect(() => {
     if (!notificationsEnabled && userId && contentReady) {
