@@ -179,17 +179,10 @@ export async function GET(req: NextRequest) {
     );
     const currentStreak = calculateStreak(uniqueDates);
 
-    // Step 5: Get friend notes for this date
+    // Step 5: Get friend notes for this date WITH sender names
     const { data: notesData, error: notesError } = await supabase
       .from('friend_notes')
-      .select(
-        `
-        id,
-        from_user_id,
-        note,
-        created_at
-      `,
-      )
+      .select('id, from_user_id, note, created_at')
       .eq('to_user_id', friend_id)
       .eq('date', date)
       .order('created_at', { ascending: true });
@@ -198,6 +191,26 @@ export async function GET(req: NextRequest) {
       console.error('Notes fetch error:', notesError);
       // Continue without notes
     }
+
+    // Get sender names for each note
+    const notesWithNames = await Promise.all(
+      (notesData || []).map(async (note) => {
+        // Get sender name from users table
+        const { data: senderData } = await supabase
+          .from('users')
+          .select('name')
+          .eq('user_id', note.from_user_id)
+          .single();
+
+        return {
+          id: note.id,
+          note: note.note,
+          created_at: note.created_at,
+          from_user_id: note.from_user_id,
+          from_name: senderData?.name || 'Friend',
+        };
+      }),
+    );
 
     // Step 6: Calculate progress metrics
     const mealsCompleted = [
@@ -235,7 +248,7 @@ export async function GET(req: NextRequest) {
         dates: uniqueDates.slice(0, 30), // Last 30 days for performance
       },
       progress,
-      notes: notesData || [],
+      notes: notesWithNames || [],
       metadata: {
         has_data: !!summaryData,
         last_updated: summaryData?.created_at || null,
