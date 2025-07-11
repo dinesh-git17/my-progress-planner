@@ -14,6 +14,7 @@ import { getUserName, saveUserName } from '@/utils/user';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useUserInitialization } from '../../hooks/useUserInitialization';
 
 // ============================================================================
 // CONSTANTS & DATA STRUCTURES
@@ -654,6 +655,8 @@ export default function Home() {
     loading: streakLoading,
     refreshStreak,
   } = useUserStreak(userId ?? undefined, isAfterRecovery);
+
+  useUserInitialization(userId);
 
   const router = useRouter();
 
