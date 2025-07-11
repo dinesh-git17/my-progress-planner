@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "kill-cache": "node scripts/kill-cache.js",
+    "fresh-dev": "npm run kill-cache && npm run dev",
+    "clean": "rm -rf .next && npm run kill-cache",
+    "dev:clean": "npm run clean && npm run dev",
+    "build:clean": "npm run clean && npm run build",
+    "test:pwa": "npm run build && npm run start"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.6",
@@ -15,6 +21,7 @@
     "autoprefixer": "^10.4.21",
     "clsx": "^2.1.1",
     "framer-motion": "^12.22.0",
+    "lucide-react": "^0.525.0",
     "luxon": "^3.6.1",
     "next": "14.2.30",
     "next-pwa": "^5.6.0",

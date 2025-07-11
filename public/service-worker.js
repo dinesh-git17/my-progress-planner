@@ -2,6 +2,11 @@
 // Industry-standard service worker for meal tracking PWA
 
 const CACHE_VERSION = 'v1.0.0';
+const IS_DEVELOPMENT =
+  self.location.hostname === 'localhost' ||
+  self.location.hostname === '127.0.0.1' ||
+  self.location.port === '3000';
+
 const CACHE_NAMES = {
   APP_SHELL: `app-shell-${CACHE_VERSION}`,
   API_CACHE: `api-cache-${CACHE_VERSION}`,
@@ -27,7 +32,7 @@ const API_CACHE_PATTERNS = {
     /\/api\/streak/,
     /\/api\/summaries/,
   ],
-  NETWORK_FIRST: [/\/api\/log-meal/, /\/api\/gpt\/meal-chat/],
+  NETWORK_FIRST: [/\/api\/log-meal/, /\/api\/gpt\/meal-chat/, /\/api\/admin\//],
 };
 
 // Background sync tag names
@@ -45,6 +50,7 @@ function isNavigationRequest(request) {
   return (
     request.mode === 'navigate' ||
     (request.method === 'GET' &&
+      request.headers.get('accept') &&
       request.headers.get('accept').includes('text/html'))
   );
 }
@@ -54,7 +60,9 @@ function shouldCacheRequest(request) {
   return (
     request.url.startsWith('http') &&
     !request.url.includes('chrome-extension') &&
-    !request.url.includes('chrome://')
+    !request.url.includes('chrome://') &&
+    !request.url.includes('_next/webpack-hmr') && // Skip Next.js HMR
+    !request.url.includes('_next/static/chunks/hmr/') // Skip HMR chunks
   );
 }
 
@@ -72,195 +80,340 @@ async function cleanupOldCaches() {
   const cacheNames = await caches.keys();
   const currentCaches = Object.values(CACHE_NAMES);
 
-  await Promise.all(
-    cacheNames
-      .filter((cacheName) => !currentCaches.includes(cacheName))
-      .map((cacheName) => {
-        log(`Deleting old cache: ${cacheName}`);
-        return caches.delete(cacheName);
-      }),
-  );
+  const deletions = cacheNames
+    .filter((cacheName) => !currentCaches.includes(cacheName))
+    .map((cacheName) => {
+      log(`Deleting old cache: ${cacheName}`);
+      return caches.delete(cacheName);
+    });
+
+  return Promise.all(deletions);
 }
 
-// Install event - cache app shell
+async function precacheAppShell() {
+  // Skip precaching in development to avoid conflicts with Next.js dev server
+  if (IS_DEVELOPMENT) {
+    log('Development mode: Skipping app shell precaching');
+    return;
+  }
+
+  const cache = await caches.open(CACHE_NAMES.APP_SHELL);
+
+  try {
+    // Cache app shell resources
+    await cache.addAll(APP_SHELL_URLS);
+    log('App shell precached successfully');
+  } catch (error) {
+    log('Failed to precache some app shell resources:', error);
+    // Try to cache individually to identify problematic URLs
+    for (const url of APP_SHELL_URLS) {
+      try {
+        await cache.add(url);
+        log(`Cached: ${url}`);
+      } catch (err) {
+        log(`Failed to cache: ${url}`, err);
+      }
+    }
+  }
+}
+
+// Caching strategies
+async function cacheFirstStrategy(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cachedResponse = await cache.match(request);
+
+  if (cachedResponse) {
+    log(`Cache hit: ${request.url}`);
+    return cachedResponse;
+  }
+
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      cache.put(request, networkResponse.clone());
+      log(`Cached from network: ${request.url}`);
+    }
+    return networkResponse;
+  } catch (error) {
+    log(`Network failed for: ${request.url}`, error);
+    throw error;
+  }
+}
+
+async function staleWhileRevalidateStrategy(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cachedResponse = await cache.match(request);
+
+  // Always try to fetch from network in the background
+  const networkPromise = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        cache.put(request, response.clone());
+        log(`Background updated cache: ${request.url}`);
+      }
+      return response;
+    })
+    .catch((error) => {
+      log(`Background fetch failed: ${request.url}`, error);
+    });
+
+  // Return cached response immediately if available
+  if (cachedResponse) {
+    log(`Serving from cache: ${request.url}`);
+    networkPromise; // Update in background
+    return cachedResponse;
+  }
+
+  // Otherwise wait for network
+  log(`Fetching from network: ${request.url}`);
+  return networkPromise;
+}
+
+async function networkFirstStrategy(request, cacheName) {
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, networkResponse.clone());
+      log(`Network response cached: ${request.url}`);
+    }
+    return networkResponse;
+  } catch (error) {
+    log(`Network failed, trying cache: ${request.url}`, error);
+    const cache = await caches.open(cacheName);
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) {
+      log(`Served from cache: ${request.url}`);
+      return cachedResponse;
+    }
+    throw error;
+  }
+}
+
+// Service worker event listeners
 self.addEventListener('install', (event) => {
   log('Installing service worker');
 
   event.waitUntil(
-    Promise.all([
-      caches.open(CACHE_NAMES.APP_SHELL).then((cache) => {
-        log('Caching app shell resources');
-        return cache.addAll(APP_SHELL_URLS);
-      }),
-      cleanupOldCaches(),
-    ]),
+    (async () => {
+      await precacheAppShell();
+      await self.skipWaiting(); // Take control immediately
+    })(),
   );
-
-  // Take control immediately
-  self.skipWaiting();
 });
 
-// Activate event - cleanup and take control
 self.addEventListener('activate', (event) => {
   log('Activating service worker');
 
-  event.waitUntil(Promise.all([cleanupOldCaches(), self.clients.claim()]));
+  event.waitUntil(
+    (async () => {
+      await cleanupOldCaches();
+      await self.clients.claim(); // Take control of all pages
+    })(),
+  );
 });
 
-// Fetch event - handle all network requests
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  const url = new URL(request.url);
 
-  // Skip non-http requests
+  // Skip non-http requests and development-specific requests
   if (!shouldCacheRequest(request)) {
     return;
   }
 
-  // Handle different types of requests
+  // 🔥 DEVELOPMENT MODE: Completely bypass service worker
+  if (IS_DEVELOPMENT) {
+    log('🚫 Development mode: Service worker bypassing all requests');
+    return; // Let browser handle everything normally
+  }
+
+  // Handle navigation requests (page loads) - PRODUCTION ONLY
   if (isNavigationRequest(request)) {
-    event.respondWith(handleNavigationRequest(request));
-  } else if (url.pathname.startsWith('/api/')) {
-    event.respondWith(handleApiRequest(request));
-  } else if (request.destination === 'image') {
-    event.respondWith(handleImageRequest(request));
-  } else {
-    event.respondWith(handleStaticRequest(request));
+    event.respondWith(
+      (async () => {
+        try {
+          // Try network first for navigation
+          const networkResponse = await fetch(request);
+          return networkResponse;
+        } catch (error) {
+          log('Navigation request failed, serving app shell', error);
+          // Serve cached app shell as fallback
+          const cache = await caches.open(CACHE_NAMES.APP_SHELL);
+          const cachedResponse = await cache.match('/');
+          return cachedResponse || new Response('Offline', { status: 503 });
+        }
+      })(),
+    );
+    return;
+  }
+
+  // Handle API requests - even in development for offline functionality
+  if (request.url.includes('/api/')) {
+    const strategy = getApiCacheStrategy(request.url);
+
+    event.respondWith(
+      (async () => {
+        switch (strategy) {
+          case 'CACHE_FIRST':
+            return cacheFirstStrategy(request, CACHE_NAMES.API_CACHE);
+
+          case 'STALE_WHILE_REVALIDATE':
+            return staleWhileRevalidateStrategy(request, CACHE_NAMES.API_CACHE);
+
+          case 'NETWORK_FIRST':
+            return networkFirstStrategy(request, CACHE_NAMES.API_CACHE);
+
+          default:
+            // Network only for unknown APIs
+            return fetch(request);
+        }
+      })(),
+    );
+    return;
+  }
+
+  // Handle static assets (images, etc.) - lighter caching in development
+  if (request.destination === 'image') {
+    event.respondWith(
+      IS_DEVELOPMENT
+        ? fetch(request) // No caching in development
+        : cacheFirstStrategy(request, CACHE_NAMES.IMAGES),
+    );
+    return;
+  }
+
+  // Handle other static resources - lighter caching in development
+  if (request.method === 'GET') {
+    event.respondWith(
+      IS_DEVELOPMENT
+        ? fetch(request) // No caching in development
+        : staleWhileRevalidateStrategy(request, CACHE_NAMES.STATIC),
+    );
+    return;
   }
 });
 
-// Navigation request handler - always serve app shell
-async function handleNavigationRequest(request) {
-  try {
-    const cache = await caches.open(CACHE_NAMES.APP_SHELL);
-    return (await cache.match('/')) || fetch(request);
-  } catch (error) {
-    log('Navigation request failed', error);
-    return new Response('App offline', { status: 503 });
-  }
-}
-
-// API request handler - strategy based on endpoint
-async function handleApiRequest(request) {
-  const strategy = getApiCacheStrategy(request.url);
-  const cache = await caches.open(CACHE_NAMES.API_CACHE);
-
-  switch (strategy) {
-    case 'CACHE_FIRST':
-      return handleCacheFirst(request, cache);
-    case 'STALE_WHILE_REVALIDATE':
-      return handleStaleWhileRevalidate(request, cache);
-    case 'NETWORK_FIRST':
-      return handleNetworkFirst(request, cache);
-    default:
-      return fetch(request);
-  }
-}
-
-// Cache strategies
-async function handleCacheFirst(request, cache) {
-  try {
-    const cached = await cache.match(request);
-    if (cached) return cached;
-
-    const response = await fetch(request);
-    if (response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (error) {
-    return cache.match(request) || new Response('Offline', { status: 503 });
-  }
-}
-
-async function handleStaleWhileRevalidate(request, cache) {
-  const cached = await cache.match(request);
-  const fetchPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        cache.put(request, response.clone());
-      }
-      return response;
-    })
-    .catch(() => cached);
-
-  return cached || fetchPromise;
-}
-
-async function handleNetworkFirst(request, cache) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (error) {
-    return cache.match(request) || new Response('Offline', { status: 503 });
-  }
-}
-
-// Image request handler
-async function handleImageRequest(request) {
-  const cache = await caches.open(CACHE_NAMES.IMAGES);
-  const cached = await cache.match(request);
-
-  if (cached) return cached;
-
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (error) {
-    return new Response('Image offline', { status: 503 });
-  }
-}
-
-// Static resource handler
-async function handleStaticRequest(request) {
-  const cache = await caches.open(CACHE_NAMES.STATIC);
-  const cached = await cache.match(request);
-
-  if (cached) return cached;
-
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (error) {
-    return cached || new Response('Resource offline', { status: 503 });
-  }
-}
-
-// Background sync for offline actions
+// Background sync
 self.addEventListener('sync', (event) => {
-  log(`Background sync: ${event.tag}`);
+  log(`Background sync triggered: ${event.tag}`);
 
-  if (event.tag === SYNC_TAGS.MEAL_LOG) {
-    event.waitUntil(syncMealLogs());
-  } else if (event.tag === SYNC_TAGS.USER_DATA) {
-    event.waitUntil(syncUserData());
+  switch (event.tag) {
+    case SYNC_TAGS.MEAL_LOG:
+      event.waitUntil(handleMealLogSync());
+      break;
+
+    default:
+      log(`Unknown sync tag: ${event.tag}`);
   }
 });
 
-// Sync functions
-async function syncMealLogs() {
+// Handle meal log synchronization
+async function handleMealLogSync() {
   try {
-    // Implementation for syncing offline meal logs
-    log('Syncing meal logs');
+    log('Starting meal log sync...');
+
+    // Get pending meal logs from IndexedDB
+    const pendingLogs = await getPendingMealLogs();
+
+    for (const logEntry of pendingLogs) {
+      try {
+        const response = await fetch('/api/log-meal', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(logEntry.data),
+        });
+
+        if (response.ok) {
+          await removePendingMealLog(logEntry.id);
+          log(`Successfully synced meal log: ${logEntry.id}`);
+        } else {
+          log(`Failed to sync meal log: ${logEntry.id}`, response.status);
+        }
+      } catch (error) {
+        log(`Error syncing meal log: ${logEntry.id}`, error);
+      }
+    }
+
+    log('Meal log sync completed');
   } catch (error) {
-    log('Meal log sync failed', error);
+    log('Meal log sync failed:', error);
   }
 }
 
-async function syncUserData() {
-  try {
-    // Implementation for syncing user data
-    log('Syncing user data');
-  } catch (error) {
-    log('User data sync failed', error);
-  }
+// IndexedDB helpers for offline functionality
+async function getPendingMealLogs() {
+  // Implementation would go here
+  return [];
 }
+
+async function removePendingMealLog(id) {
+  // Implementation would go here
+}
+
+// Push notifications (keeping your existing functionality)
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() || {};
+  const title = data.title || 'Progress Planner';
+  const options = {
+    body: data.body || 'Gentle reminder: log your meal, love! 💖',
+    icon: '/apple-touch-icon.png',
+    badge: '/apple-touch-icon.png',
+    data: data.url || '/',
+    actions: [
+      {
+        action: 'open',
+        title: 'Open App',
+        icon: '/icon-192.png',
+      },
+      {
+        action: 'close',
+        title: 'Close',
+      },
+    ],
+    vibrate: [200, 100, 200],
+    tag: 'meal-reminder',
+    renotify: true,
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'close') {
+    return;
+  }
+
+  const urlToOpen = event.notification.data || '/';
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // If app is already open, focus it
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin)) {
+            return client.focus();
+          }
+        }
+        // Otherwise open new window
+        return self.clients.openWindow(urlToOpen);
+      }),
+  );
+});
+
+// Handle service worker updates
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.ports[0].postMessage({ version: CACHE_VERSION });
+  }
+});
+
+log(`Service worker script loaded - Development mode: ${IS_DEVELOPMENT}`);

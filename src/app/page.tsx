@@ -425,7 +425,7 @@ function ProfileDropdown({
   };
 
   const handleEditProfile = () => {
-    // TODO: Implement profile editing functionality
+    router.push('/friends');
     onClose();
   };
 
