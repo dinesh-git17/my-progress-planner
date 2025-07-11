@@ -92,22 +92,41 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* Primary PWA manifest - must be in <head> for proper discovery */}
         <link rel="manifest" href="/manifest.json" />
 
-        {/* Updated theme color to match your gradient - was #fda085, now matches your app */}
+        {/* Updated theme color to match your gradient */}
         <meta name="theme-color" content="#f5ede6" />
         <meta name="msapplication-TileColor" content="#f5ede6" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
 
         {/* ==============================================
-            APPLE iOS PWA OPTIMIZATION WITH NOTCH SUPPORT
-            Critical for iOS home screen installation and notch extension
+            CRITICAL: APPLE iOS PWA OPTIMIZATION WITH NOTCH SUPPORT
+            These direct meta tags are essential for notch extension
             ============================================== */}
 
         <meta name="apple-mobile-web-app-capable" content="yes" />
+
+        {/* CRITICAL: Direct meta tag for status bar style - ESSENTIAL for notch extension */}
         <meta
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
+
         <meta name="apple-mobile-web-app-title" content="Progress Planner" />
+
+        {/* ==============================================
+            VIEWPORT AND DISPLAY OPTIMIZATION
+            Critical for responsive design, PWA behavior, and NOTCH EXTENSION
+            ============================================== */}
+
+        {/* 
+          CRITICAL: Enhanced viewport configuration for notch extension:
+          - viewport-fit=cover: ESSENTIAL for extending into notch area
+          - user-scalable=no: Prevents zoom issues in PWA mode
+          - minimum/maximum-scale: Ensures consistent experience
+        */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+        />
 
         {/* Apple Touch Icons - Multiple sizes for different devices and contexts */}
         <link
@@ -182,22 +201,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="Progress Planner" />
-
-        {/* ==============================================
-            VIEWPORT AND DISPLAY OPTIMIZATION
-            Critical for responsive design, PWA behavior, and NOTCH EXTENSION
-            ============================================== */}
-
-        {/* 
-          CRITICAL: Enhanced viewport configuration for notch extension:
-          - viewport-fit=cover: ESSENTIAL for extending into notch area
-          - user-scalable=no: Prevents zoom issues in PWA mode
-          - minimum/maximum-scale: Ensures consistent experience
-        */}
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-        />
 
         {/* ==============================================
             PERFORMANCE AND SECURITY OPTIMIZATIONS
@@ -373,6 +376,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             `,
           }}
         />
+
+        {/* ==============================================
+            GRADIENT NOTCH EXTENSION SCRIPT
+            External JavaScript file for gradient rendering in notch area
+            ============================================== */}
+        <script src="/gradient-fix.js" async />
 
         {/* ==============================================
             PERFORMANCE MONITORING (Optional)

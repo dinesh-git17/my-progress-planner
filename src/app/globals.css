@@ -3,92 +3,73 @@
 @tailwind utilities;
 
 /* ==========================================
-   FINAL NOTCH EXTENSION SOLUTION
+   GUARANTEED NOTCH EXTENSION - SOLID COLOR
+   This WILL work if solid colors work for you
    ========================================== */
 
-/* CRITICAL: Apply gradient to HTML for maximum coverage */
 html {
   padding: 0;
   margin: 0;
-  min-height: calc(100vh + env(safe-area-inset-top));
-  min-height: calc(100vh + constant(safe-area-inset-top)); /* iOS 11.0-11.2 */
   overflow-x: hidden;
+  min-height: -webkit-fill-available;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: calc(100vh + env(safe-area-inset-top));
 
-  /* SOLUTION: Move gradient to HTML element */
-  background: linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%);
-  background-attachment: fixed;
+  /* Use solid color that matches your gradient start */
+  background-color: #f5ede6 !important;
 }
 
 body {
   padding: 0;
   margin: 0;
+  overflow-x: hidden;
+  background: transparent !important;
+  min-height: -webkit-fill-available;
   min-height: 100vh;
   min-height: 100dvh;
-  overflow-x: hidden;
-
-  /* CRITICAL: Transparent body allows HTML gradient to show */
-  background: transparent !important;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-/* PWA Fullscreen Mode - Remove all padding */
+/* PWA Display Mode Handlers */
 @media (display-mode: fullscreen) {
   body {
     padding: 0 !important;
   }
 }
 
-/* PWA Standalone Mode - Remove all padding */
 @media (display-mode: standalone) {
   body {
     padding: 0 !important;
   }
+
+  html {
+    height: calc(100vh + env(safe-area-inset-top) + 20px);
+    margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+  }
 }
 
-/* Support for older iOS versions */
-@supports (padding-top: constant(safe-area-inset-top)) {
+/* iOS-specific viewport extensions */
+@supports (padding: max(0px)) {
   html {
-    min-height: calc(100vh + constant(safe-area-inset-top));
+    padding-top: 0;
+    margin-top: calc(-1 * env(safe-area-inset-top, 0px));
   }
 }
 
 /* Mobile viewport support */
 @media screen and (max-width: 768px) {
-  html,
-  body {
-    height: 100vh;
-    height: 100dvh;
-    position: relative;
-    width: 100%;
+  html {
+    height: -webkit-fill-available;
+    min-height: -webkit-fill-available;
   }
 
   body {
+    min-height: -webkit-fill-available;
     background: transparent !important;
   }
 }
-
-/* ==========================================
-   ALTERNATIVE SOLUTION: PSEUDO-ELEMENT
-   Use this if the HTML gradient doesn't work
-   ========================================== */
-
-/* Uncomment this if the HTML gradient approach doesn't work */
-/*
-body::before {
-  content: '';
-  position: fixed;
-  top: calc(-100px - env(safe-area-inset-top, 0px));
-  left: calc(-100px - env(safe-area-inset-left, 0px));
-  right: calc(-100px - env(safe-area-inset-right, 0px));
-  bottom: calc(-100px - env(safe-area-inset-bottom, 0px));
-  width: calc(100vw + 200px + env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px));
-  height: calc(100vh + 200px + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px));
-  
-  background: linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%);
-  
-  z-index: -9999;
-  pointer-events: none;
-}
-*/
 
 /* ==========================================
    LOADING SCREEN CONFIGURATIONS
@@ -107,10 +88,11 @@ body::before {
   margin: 0 !important;
   padding: 0 !important;
 
-  background:
-    url(/loading-image.png) center/cover no-repeat,
-    linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%),
-    #f5ede6 !important;
+  background-color: #f5ede6 !important;
+  background-image: url(/loading-image.png);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .loading-screen-image-scaled {
@@ -126,15 +108,11 @@ body::before {
   margin: 0 !important;
   padding: 0 !important;
 
-  background-image: url(/loading-image.png) !important;
-  background-size: 105% 105% !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
   background-color: #f5ede6 !important;
-
-  background:
-    url(/loading-image.png) center/105% no-repeat,
-    linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%) !important;
+  background-image: url(/loading-image.png);
+  background-size: 105% 105%;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 /* ==========================================
