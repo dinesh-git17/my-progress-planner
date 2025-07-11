@@ -2,58 +2,98 @@
 @tailwind components;
 @tailwind utilities;
 
-/* PWA Full Screen Support - Aggressive approach */
-html,
+/* ==========================================
+   FINAL NOTCH EXTENSION SOLUTION
+   ========================================== */
+
+/* CRITICAL: Apply gradient to HTML for maximum coverage */
+html {
+  padding: 0;
+  margin: 0;
+  min-height: calc(100vh + env(safe-area-inset-top));
+  min-height: calc(100vh + constant(safe-area-inset-top)); /* iOS 11.0-11.2 */
+  overflow-x: hidden;
+
+  /* SOLUTION: Move gradient to HTML element */
+  background: linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%);
+  background-attachment: fixed;
+}
+
 body {
   padding: 0;
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
-  background-color: #f5ede6; /* Match your app background */
+
+  /* CRITICAL: Transparent body allows HTML gradient to show */
+  background: transparent !important;
 }
 
-/* Force full screen coverage including status bar area */
-html {
-  background-color: #f5ede6;
-}
-
-body {
-  background-color: #f5ede6;
-}
-
-/* Ensure PWA fills entire screen with safe area support */
-@supports (padding: max(0px)) {
+/* PWA Fullscreen Mode - Remove all padding */
+@media (display-mode: fullscreen) {
   body {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  /* Extend background into status bar area */
-  html {
-    padding-top: env(safe-area-inset-top);
-    margin-top: calc(-1 * env(safe-area-inset-top));
-    background-color: #f5ede6;
+    padding: 0 !important;
   }
 }
 
-/* Mobile viewport meta tag support */
+/* PWA Standalone Mode - Remove all padding */
+@media (display-mode: standalone) {
+  body {
+    padding: 0 !important;
+  }
+}
+
+/* Support for older iOS versions */
+@supports (padding-top: constant(safe-area-inset-top)) {
+  html {
+    min-height: calc(100vh + constant(safe-area-inset-top));
+  }
+}
+
+/* Mobile viewport support */
 @media screen and (max-width: 768px) {
   html,
   body {
     height: 100vh;
     height: 100dvh;
-    position: fixed;
+    position: relative;
     width: 100%;
-    background-color: #f5ede6;
   }
 
   body {
-    position: relative;
+    background: transparent !important;
   }
 }
 
-/* Loading screen with image - enhanced approach */
+/* ==========================================
+   ALTERNATIVE SOLUTION: PSEUDO-ELEMENT
+   Use this if the HTML gradient doesn't work
+   ========================================== */
+
+/* Uncomment this if the HTML gradient approach doesn't work */
+/*
+body::before {
+  content: '';
+  position: fixed;
+  top: calc(-100px - env(safe-area-inset-top, 0px));
+  left: calc(-100px - env(safe-area-inset-left, 0px));
+  right: calc(-100px - env(safe-area-inset-right, 0px));
+  bottom: calc(-100px - env(safe-area-inset-bottom, 0px));
+  width: calc(100vw + 200px + env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px));
+  height: calc(100vh + 200px + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px));
+  
+  background: linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%);
+  
+  z-index: -9999;
+  pointer-events: none;
+}
+*/
+
+/* ==========================================
+   LOADING SCREEN CONFIGURATIONS
+   ========================================== */
+
 .loading-screen-image {
   position: fixed !important;
   top: 0 !important;
@@ -67,22 +107,12 @@ body {
   margin: 0 !important;
   padding: 0 !important;
 
-  /* Multi-layer approach for seamless coverage */
-  background: 
-    /* Primary image */
-    url(/loading-image.png) center/cover no-repeat,
-    /* Fallback gradient that matches image edges */
-      linear-gradient(135deg, #ffeaa7 0%, #fab1a0 50%, #fd79a8 100%),
-    /* Final fallback color */ #f5ede6 !important;
-
-  /* Alternative: If your image has specific edge colors, match them */
-  /* background: 
+  background:
     url(/loading-image.png) center/cover no-repeat,
     linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%),
-    #f5ede6 !important; */
+    #f5ede6 !important;
 }
 
-/* Enhanced version with image scaling */
 .loading-screen-image-scaled {
   position: fixed !important;
   top: 0 !important;
@@ -96,25 +126,25 @@ body {
   margin: 0 !important;
   padding: 0 !important;
 
-  /* Scale image slightly larger to ensure edge coverage */
   background-image: url(/loading-image.png) !important;
-  background-size: 105% 105% !important; /* Slightly oversized */
+  background-size: 105% 105% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
   background-color: #f5ede6 !important;
 
-  /* Fallback gradient */
   background:
     url(/loading-image.png) center/105% no-repeat,
     linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%) !important;
 }
 
-/* Remove any default margins/padding and ensure proper box-sizing */
+/* ==========================================
+   GENERAL STYLES
+   ========================================== */
+
 * {
   box-sizing: border-box;
 }
 
-/* Optional: smooth transitions for specific elements */
 button,
 a {
   transition:

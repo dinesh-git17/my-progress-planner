@@ -1342,83 +1342,12 @@ export default function Home() {
               paddingTop: 'max(env(safe-area-inset-top), 2rem)',
             }}
           >
-            {/* ================================================================ */}
-            {/* ANIMATED GRADIENT BACKGROUND */}
-            {/* ================================================================ */}
-            <div
-              className="fixed inset-0 pointer-events-none"
-              style={{
-                zIndex: -10,
-                width: '100vw',
-                height: '100vh',
-                minHeight: '100vh',
-              }}
-            >
-              {/* Base gradient layer - always visible */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#f5ede6] via-[#f7edf5] to-[#d8d8f0]" />
-
-              {/* Animated overlay gradients - fade in and out */}
-              <div className="absolute inset-0 animate-gradient-1 bg-gradient-to-tr from-[#f7edf5] via-[#d8d8f0] to-[#f2e8e8]" />
-              <div className="absolute inset-0 animate-gradient-2 bg-gradient-to-bl from-[#d8d8f0] via-[#f2e8e8] to-[#f5ede6]" />
-              <div className="absolute inset-0 animate-gradient-3 bg-gradient-to-tl from-[#f2e8e8] via-[#f5ede6] to-[#f7edf5]" />
-            </div>
-
-            {/* Global styles for gradient animations */}
-            <style jsx global>{`
-              @keyframes gradient-fade-1 {
-                0%,
-                100% {
-                  opacity: 0;
-                }
-                25% {
-                  opacity: 0.6;
-                }
-                50% {
-                  opacity: 0;
-                }
-              }
-
-              @keyframes gradient-fade-2 {
-                0%,
-                100% {
-                  opacity: 0;
-                }
-                50% {
-                  opacity: 0.5;
-                }
-                75% {
-                  opacity: 0;
-                }
-              }
-
-              @keyframes gradient-fade-3 {
-                0%,
-                25% {
-                  opacity: 0;
-                }
-                75% {
-                  opacity: 0.7;
-                }
-                100% {
-                  opacity: 0;
-                }
-              }
-
-              .animate-gradient-1 {
-                animation: gradient-fade-1 12s ease-in-out infinite;
-                opacity: 0;
-              }
-
-              .animate-gradient-2 {
-                animation: gradient-fade-2 12s ease-in-out infinite 4s;
-                opacity: 0;
-              }
-
-              .animate-gradient-3 {
-                animation: gradient-fade-3 12s ease-in-out infinite 8s;
-                opacity: 0;
-              }
-            `}</style>
+            {/* 
+              GRADIENT BACKGROUNDS REMOVED:
+              All gradient background divs have been removed from here.
+              The gradient is now handled by the HTML element in globals.css 
+              for proper notch extension.
+            */}
 
             {/* ================================================================ */}
             {/* AUTHENTICATION FLOW */}
@@ -1573,7 +1502,6 @@ export default function Home() {
                   {/* Action buttons and profile */}
                   <div className="flex items-center gap-3 relative">
                     {/* Notification bell - only show if not enabled */}
-                    {/* Notification bell - only show if not enabled */}
                     {!notificationsEnabled && userId && (
                       <div className="relative">
                         <motion.button
@@ -1584,11 +1512,11 @@ export default function Home() {
                             handleNotificationClick();
                           }}
                           className="
-          w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 
-          flex items-center justify-center shadow-lg 
-          cursor-pointer hover:scale-110 active:scale-95 transition-transform
-          border-none outline-none focus:ring-2 focus:ring-pink-300
-        "
+                            w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 
+                            flex items-center justify-center shadow-lg 
+                            cursor-pointer hover:scale-110 active:scale-95 transition-transform
+                            border-none outline-none focus:ring-2 focus:ring-pink-300
+                          "
                           animate={{
                             y: [0, -4, 0],
                             scale: [1, 1.05, 1],
@@ -1614,7 +1542,6 @@ export default function Home() {
                           <i className="fas fa-bell text-white text-xs pointer-events-none"></i>
                         </motion.button>
 
-                        {/* Cursive tooltip with curvy arrow */}
                         {/* Cursive tooltip with curvy arrow */}
                         <AnimatePresence>
                           {showNotificationTooltip && (
@@ -1948,11 +1875,11 @@ export default function Home() {
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className={`
-          flex items-center px-6 py-5 rounded-2xl transition
-          bg-white/95 border border-gray-100 shadow-sm
-          hover:bg-orange-50 hover:shadow-lg
-          cursor-pointer
-        `}
+                              flex items-center px-6 py-5 rounded-2xl transition
+                              bg-white/95 border border-gray-100 shadow-sm
+                              hover:bg-orange-50 hover:shadow-lg
+                              cursor-pointer
+                            `}
                             onClick={() => router.push('/streaks')}
                             tabIndex={0}
                             role="button"

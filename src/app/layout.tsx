@@ -92,14 +92,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* Primary PWA manifest - must be in <head> for proper discovery */}
         <link rel="manifest" href="/manifest.json" />
 
-        {/* Theme color for browser chrome and status bars */}
-        <meta name="theme-color" content="#fda085" />
-        <meta name="msapplication-TileColor" content="#fda085" />
+        {/* Updated theme color to match your gradient - was #fda085, now matches your app */}
+        <meta name="theme-color" content="#f5ede6" />
+        <meta name="msapplication-TileColor" content="#f5ede6" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
 
         {/* ==============================================
-            APPLE iOS PWA OPTIMIZATION
-            Critical for iOS home screen installation
+            APPLE iOS PWA OPTIMIZATION WITH NOTCH SUPPORT
+            Critical for iOS home screen installation and notch extension
             ============================================== */}
 
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -185,12 +185,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         {/* ==============================================
             VIEWPORT AND DISPLAY OPTIMIZATION
-            Critical for responsive design and PWA behavior
+            Critical for responsive design, PWA behavior, and NOTCH EXTENSION
             ============================================== */}
 
         {/* 
-          Enhanced viewport configuration:
-          - viewport-fit=cover: Handles notched devices (iPhone X+)
+          CRITICAL: Enhanced viewport configuration for notch extension:
+          - viewport-fit=cover: ESSENTIAL for extending into notch area
           - user-scalable=no: Prevents zoom issues in PWA mode
           - minimum/maximum-scale: Ensures consistent experience
         */}
