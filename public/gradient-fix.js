@@ -7,12 +7,12 @@
 (function () {
   'use strict';
 
-  // Configuration
+  // Configuration - UPDATED COLORS
   const GRADIENT_CONFIG = {
     colors: [
-      { stop: 0, color: '#f5ede6' },
-      { stop: 0.54, color: '#f7edf5' },
-      { stop: 1, color: '#d8d8f0' },
+      { stop: 0, color: '#f3e4f0' }, // Updated to match globals.css
+      { stop: 0.54, color: '#ead1ea' }, // Light pink
+      { stop: 1, color: '#ddbfe0' }, // Light lavender
     ],
     canvasSize: 300, // Higher resolution for better quality
     direction: 135, // degrees
@@ -96,7 +96,7 @@
       bottom: calc(-100px - env(safe-area-inset-bottom, 0px)) !important;
       width: calc(100vw + 200px + env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)) !important;
       height: calc(100vh + 200px + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)) !important;
-      background: linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%) !important;
+      background: linear-gradient(135deg, #f3e4f0 0%, #ead1ea 54%, #ddbfe0 100%) !important;
       z-index: -10000 !important;
       pointer-events: none !important;
     `;
@@ -171,9 +171,9 @@
     } catch (error) {
       console.error('Gradient fix initialization failed:', error);
 
-      // Ultimate fallback: ensure solid color is applied
+      // Ultimate fallback: ensure solid color is applied - UPDATED COLOR
       try {
-        document.documentElement.style.backgroundColor = '#f5ede6';
+        document.documentElement.style.backgroundColor = '#f3e4f0';
         document.documentElement.style.minHeight = '-webkit-fill-available';
         console.log('🎨 Applied solid color fallback');
       } catch (fallbackError) {

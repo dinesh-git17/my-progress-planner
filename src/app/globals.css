@@ -2,79 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ==========================================
-   GUARANTEED NOTCH EXTENSION - SOLID COLOR
-   This WILL work if solid colors work for you
-   ========================================== */
-
-html {
-  padding: 0;
-  margin: 0;
-  overflow-x: hidden;
-  min-height: -webkit-fill-available;
-  min-height: 100vh;
-  min-height: 100dvh;
-  min-height: calc(100vh + env(safe-area-inset-top));
-
-  /* Use solid color that matches your gradient start */
-  background-color: #f5ede6 !important;
-}
-
+/* PWA Full Screen Support - Aggressive approach */
+html,
 body {
   padding: 0;
   margin: 0;
-  overflow-x: hidden;
-  background: transparent !important;
-  min-height: -webkit-fill-available;
   min-height: 100vh;
   min-height: 100dvh;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
-    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overflow-x: hidden;
+  /* Updated to better darker pink */
+  background-color: #f3e4f0;
 }
 
-/* PWA Display Mode Handlers */
-@media (display-mode: fullscreen) {
-  body {
-    padding: 0 !important;
-  }
+/* Force full screen coverage including status bar area */
+html {
+  background-color: #f3e4f0;
 }
 
-@media (display-mode: standalone) {
-  body {
-    padding: 0 !important;
-  }
-
-  html {
-    height: calc(100vh + env(safe-area-inset-top) + 20px);
-    margin-top: calc(-1 * env(safe-area-inset-top, 0px));
-  }
+body {
+  background-color: #f3e4f0;
 }
 
-/* iOS-specific viewport extensions */
+/* Ensure PWA fills entire screen with safe area support */
 @supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Extend background into status bar area */
   html {
-    padding-top: 0;
-    margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top);
+    margin-top: calc(-1 * env(safe-area-inset-top));
+    background-color: #f3e4f0;
   }
 }
 
-/* Mobile viewport support */
+/* Mobile viewport meta tag support */
 @media screen and (max-width: 768px) {
-  html {
-    height: -webkit-fill-available;
-    min-height: -webkit-fill-available;
+  html,
+  body {
+    height: 100vh;
+    height: 100dvh;
+    position: fixed;
+    width: 100%;
+    background-color: #f3e4f0;
   }
 
   body {
-    min-height: -webkit-fill-available;
-    background: transparent !important;
+    position: relative;
   }
 }
 
-/* ==========================================
-   LOADING SCREEN CONFIGURATIONS
-   ========================================== */
-
+/* Loading screen with image - enhanced approach */
 .loading-screen-image {
   position: fixed !important;
   top: 0 !important;
@@ -88,13 +68,16 @@ body {
   margin: 0 !important;
   padding: 0 !important;
 
-  background-color: #f5ede6 !important;
-  background-image: url(/loading-image.png);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  /* Multi-layer approach for seamless coverage */
+  background: 
+    /* Primary image */
+    url(/loading-image.png) center/cover no-repeat,
+    /* Fallback gradient that matches updated theme */
+      linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%),
+    /* Final fallback color - matches new darker pink background */ #f3e4f0 !important;
 }
 
+/* Enhanced version with image scaling */
 .loading-screen-image-scaled {
   position: fixed !important;
   top: 0 !important;
@@ -108,21 +91,25 @@ body {
   margin: 0 !important;
   padding: 0 !important;
 
-  background-color: #f5ede6 !important;
-  background-image: url(/loading-image.png);
-  background-size: 105% 105%;
-  background-position: center;
-  background-repeat: no-repeat;
+  /* Scale image slightly larger to ensure edge coverage */
+  background-image: url(/loading-image.png) !important;
+  background-size: 105% 105% !important; /* Slightly oversized */
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: #f3e4f0 !important;
+
+  /* Fallback gradient */
+  background:
+    url(/loading-image.png) center/105% no-repeat,
+    linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%) !important;
 }
 
-/* ==========================================
-   GENERAL STYLES
-   ========================================== */
-
+/* Remove any default margins/padding and ensure proper box-sizing */
 * {
   box-sizing: border-box;
 }
 
+/* Optional: smooth transitions for specific elements */
 button,
 a {
   transition:
