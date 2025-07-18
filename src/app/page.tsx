@@ -1391,7 +1391,7 @@ export default function Home() {
               relative pt-8 md:pt-12 flex flex-col
             "
             style={{
-              paddingTop: 'max(env(safe-area-inset-top), 2rem)',
+              paddingTop: '2rem',
             }}
           >
             {/* 
