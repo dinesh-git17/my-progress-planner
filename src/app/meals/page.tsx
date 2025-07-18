@@ -548,7 +548,7 @@ export default function MealsPage() {
       </p>
       <button
         onClick={() => router.push('/')}
-        className="bg-gradient-to-r from-orange-400 to-pink-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-orange-300/40"
+        className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
       >
         Log Your First Meal
       </button>

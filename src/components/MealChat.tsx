@@ -412,26 +412,11 @@ export default function MealChat({
         background: '#fdf6e3',
       }}
     >
-      {/* Background Gradient */}
-      <div
-        className="fixed inset-0 z-0 pointer-events-none"
-        style={{
-          background:
-            'linear-gradient(135deg, #fdf6e3 0%, #fff5fa 54%, #e6e6fa 100%)',
-        }}
-      />
-
       {/* Header */}
       <div
         className="flex-shrink-0 h-11 flex items-center justify-center z-20 sticky top-0"
         style={{
-          background: 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'saturate(180%) blur(30px)',
-          WebkitBackdropFilter: 'saturate(180%) blur(30px)',
-          borderBottom: '0.5px solid rgba(232, 164, 201, 0.15)',
-          fontFamily: SYSTEM_FONT,
-          boxShadow:
-            '0 1px 10px rgba(232, 164, 201, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02)',
+          background: 'rgba(255, 255, 255, 0.95)',
         }}
       >
         <div className="flex items-center justify-between w-full px-4">
