@@ -2,7 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* PWA Full Screen Support - Aggressive approach */
+/* ============================================================================
+   GLOBAL RESET & BASE STYLES
+   ============================================================================ */
+
+/* Clean PWA foundation - no notch extensions */
 html,
 body {
   padding: 0;
@@ -10,109 +14,243 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
-  /* Updated to better darker pink */
-  background-color: #f3e4f0;
+  background-color: #f5ede6; /* Your clean theme color */
 }
 
-/* Force full screen coverage including status bar area */
-html {
-  background-color: #f3e4f0;
+/* Universal box-sizing for predictable layouts */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-body {
-  background-color: #f3e4f0;
-}
+/* ============================================================================
+   PWA MOBILE OPTIMIZATIONS
+   ============================================================================ */
 
-/* Ensure PWA fills entire screen with safe area support */
-@supports (padding: max(0px)) {
-  body {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  /* Extend background into status bar area */
-  html {
-    padding-top: env(safe-area-inset-top);
-    margin-top: calc(-1 * env(safe-area-inset-top));
-    background-color: #f3e4f0;
-  }
-}
-
-/* Mobile viewport meta tag support */
+/* Standard responsive design - no complex positioning */
 @media screen and (max-width: 768px) {
   html,
   body {
     height: 100vh;
     height: 100dvh;
-    position: fixed;
     width: 100%;
-    background-color: #f3e4f0;
-  }
-
-  body {
-    position: relative;
   }
 }
 
-/* Loading screen with image - enhanced approach */
+/* ============================================================================
+   LOADING SCREEN (SIMPLIFIED)
+   ============================================================================ */
+
+/* Simple loading screen without complex gradients */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 99999;
+  background-color: #f5ede6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Loading screen with image (if you have a loading image) */
 .loading-screen-image {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-  z-index: 99999 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-
-  /* Multi-layer approach for seamless coverage */
-  background: 
-    /* Primary image */
-    url(/loading-image.png) center/cover no-repeat,
-    /* Fallback gradient that matches updated theme */
-      linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%),
-    /* Final fallback color - matches new darker pink background */ #f3e4f0 !important;
-}
-
-/* Enhanced version with image scaling */
-.loading-screen-image-scaled {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-  z-index: 99999 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-
-  /* Scale image slightly larger to ensure edge coverage */
-  background-image: url(/loading-image.png) !important;
-  background-size: 105% 105% !important; /* Slightly oversized */
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-color: #f3e4f0 !important;
-
-  /* Fallback gradient */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 99999;
   background:
-    url(/loading-image.png) center/105% no-repeat,
-    linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%) !important;
+    url(/loading-image.png) center/cover no-repeat,
+    #f5ede6; /* Simple fallback color */
 }
 
-/* Remove any default margins/padding and ensure proper box-sizing */
-* {
-  box-sizing: border-box;
-}
+/* ============================================================================
+   SMOOTH INTERACTIONS
+   ============================================================================ */
 
-/* Optional: smooth transitions for specific elements */
+/* Smooth transitions for interactive elements */
 button,
-a {
+a,
+[role='button'] {
   transition:
-    background-color 0.2s,
-    color 0.2s;
+    background-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+/* Focus states for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   TYPOGRAPHY IMPROVEMENTS
+   ============================================================================ */
+
+/* Better text rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Prevent text size adjustment on orientation change */
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+/* Hide scrollbars while maintaining functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area utilities for components that need them */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ============================================================================
+   THEME SUPPORT
+   ============================================================================ */
+
+/* CSS custom properties for theme switching */
+:root {
+  --background: #f5ede6;
+  --foreground: #1f2937;
+  --primary: #8b5cf6;
+  --secondary: #f3e8ff;
+  --accent: #ec4899;
+  --muted: #f9fafb;
+  --border: #e5e7eb;
+}
+
+[data-theme='dark'] {
+  --background: #1f2937;
+  --foreground: #f9fafb;
+  --primary: #a78bfa;
+  --secondary: #374151;
+  --accent: #f472b6;
+  --muted: #374151;
+  --border: #4b5563;
+}
+
+/* Apply theme colors */
+[data-theme='dark'] body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* ============================================================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================================================ */
+
+/* Improve scroll performance */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* GPU acceleration for transforms */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* ============================================================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================================================ */
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  button,
+  a {
+    border: 2px solid currentColor;
+  }
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+
+  img {
+    page-break-inside: avoid;
+  }
+
+  p,
+  h2,
+  h3 {
+    orphans: 3;
+    widows: 3;
+  }
+
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
 }

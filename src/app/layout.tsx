@@ -1,19 +1,29 @@
-import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
+import type { Metadata, Viewport } from 'next';
+import { DM_Sans } from 'next/font/google';
+import React from 'react';
 import './globals.css';
 
-/**
- * Production-grade metadata configuration for SEO and PWA optimization
- * Following Next.js 13+ App Router best practices
- */
+// ============================================================================
+// FONT CONFIGURATION
+// ============================================================================
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  display: 'swap',
+  preload: true,
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+});
+
+// ============================================================================
+// METADATA CONFIGURATION
+// ============================================================================
 export const metadata: Metadata = {
   title: {
-    default: 'Progress Planner',
-    template: '%s | Progress Planner',
+    default: 'My Progress Planner',
+    template: '%s | My Progress Planner',
   },
   description:
-    'Track your meals and build healthy habits with Progress Planner - your personal nutrition companion.',
+    'Track your meals with love and support - your personal nutrition companion',
   keywords: [
     'meal tracking',
     'nutrition',
@@ -23,47 +33,62 @@ export const metadata: Metadata = {
     'wellness',
     'food diary',
   ],
-  authors: [{ name: 'Progress Planner Team' }],
-  creator: 'Progress Planner',
-  publisher: 'Progress Planner',
+  authors: [{ name: 'My Progress Planner Team' }],
+  creator: 'My Progress Planner',
+  publisher: 'My Progress Planner',
 
-  // Prevent automatic formatting of contact info - critical for mobile UX
+  // PWA manifest
+  manifest: '/manifest.json',
+
+  // Prevent automatic formatting of contact info
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
 
-  // PWA-specific metadata that integrates with manifest.json
-  manifest: '/manifest.json',
-
-  // Apple-specific PWA configuration
+  // Apple PWA configuration (simplified)
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'Progress Planner',
+    statusBarStyle: 'default',
+    title: 'My Progress',
   },
 
-  // Social media and Open Graph optimization
+  // Icons configuration
+  icons: {
+    icon: [
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
+      { url: '/apple-touch-icon-152x152.png', sizes: '152x152' },
+      { url: '/apple-touch-icon-144x144.png', sizes: '144x144' },
+    ],
+  },
+
+  // Theme colors
+  themeColor: '#f5ede6',
+
+  // Open Graph for social sharing
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://my-progress-planner-5kbt.vercel.app/recover',
-    siteName: 'Progress Planner',
-    title: 'Progress Planner - Track Your Nutrition Journey',
+    siteName: 'My Progress Planner',
+    title: 'My Progress Planner - Track Your Nutrition Journey',
     description:
       'Build healthy eating habits with our intuitive meal tracking app',
     images: [
       {
-        url: '/og-image.png', // 1200x630 recommended
+        url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Progress Planner - Meal Tracking App',
+        alt: 'My Progress Planner - Meal Tracking App',
       },
     ],
   },
 
-  // Robots and indexing configuration
+  // Robots configuration
   robots: {
     index: true,
     follow: true,
@@ -77,140 +102,33 @@ export const metadata: Metadata = {
   },
 };
 
-/**
- * Root layout component that provides the foundation for all pages
- * Implements industry-standard PWA patterns and performance optimizations
- */
-export default function RootLayout({ children }: { children: ReactNode }) {
+// ============================================================================
+// VIEWPORT CONFIGURATION (CLEANED - NO NOTCH EXTENSIONS)
+// ============================================================================
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  // REMOVED: viewportFit: 'cover' - this was for notch extension
+};
+
+// ============================================================================
+// ROOT LAYOUT COMPONENT
+// ============================================================================
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={dmSans.className} suppressHydrationWarning>
       <head>
         {/* ==============================================
-            PWA CORE CONFIGURATION
+            PERFORMANCE OPTIMIZATION
             ============================================== */}
 
-        {/* Primary PWA manifest - must be in <head> for proper discovery */}
-        <link rel="manifest" href="/manifest.json" />
-
-        {/* Updated theme color to match your gradient */}
-        <meta name="theme-color" content="#f5ede6" />
-        <meta name="msapplication-TileColor" content="#f5ede6" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
-
-        {/* ==============================================
-            CRITICAL: APPLE iOS PWA OPTIMIZATION WITH NOTCH SUPPORT
-            These direct meta tags are essential for notch extension
-            ============================================== */}
-
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-
-        {/* CRITICAL: Direct meta tag for status bar style - ESSENTIAL for notch extension */}
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
-
-        <meta name="apple-mobile-web-app-title" content="Progress Planner" />
-
-        {/* ==============================================
-            VIEWPORT AND DISPLAY OPTIMIZATION
-            Critical for responsive design, PWA behavior, and NOTCH EXTENSION
-            ============================================== */}
-
-        {/* 
-          CRITICAL: Enhanced viewport configuration for notch extension:
-          - viewport-fit=cover: ESSENTIAL for extending into notch area
-          - user-scalable=no: Prevents zoom issues in PWA mode
-          - minimum/maximum-scale: Ensures consistent experience
-        */}
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-        />
-
-        {/* Apple Touch Icons - Multiple sizes for different devices and contexts */}
-        <link
-          rel="apple-touch-icon"
-          sizes="180x180"
-          href="/apple-touch-icon.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="152x152"
-          href="/apple-touch-icon-152x152.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="144x144"
-          href="/apple-touch-icon-144x144.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="120x120"
-          href="/apple-touch-icon-120x120.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="114x114"
-          href="/apple-touch-icon-114x114.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="76x76"
-          href="/apple-touch-icon-76x76.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="72x72"
-          href="/apple-touch-icon-72x72.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="60x60"
-          href="/apple-touch-icon-60x60.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="57x57"
-          href="/apple-touch-icon-57x57.png"
-        />
-
-        {/* ==============================================
-            STANDARD FAVICON CONFIGURATION
-            Ensures proper icon display across all browsers
-            ============================================== */}
-
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="32x32"
-          href="/favicon-32x32.png"
-        />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="16x16"
-          href="/favicon-16x16.png"
-        />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="shortcut icon" href="/favicon.ico" />
-
-        {/* ==============================================
-            MOBILE WEB APP CONFIGURATION
-            ============================================== */}
-
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="application-name" content="Progress Planner" />
-
-        {/* ==============================================
-            PERFORMANCE AND SECURITY OPTIMIZATIONS
-            ============================================== */}
-
-        {/* DNS prefetch for external resources - improves loading performance */}
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-
-        {/* Preconnect to font providers for faster font loading */}
+        {/* Preconnect to external domains for better font loading */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -218,26 +136,97 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           crossOrigin=""
         />
 
-        {/* Prevent automatic phone number detection - improves mobile UX */}
+        {/* ==============================================
+            MOBILE OPTIMIZATION
+            ============================================== */}
+
+        {/* Prevent automatic phone number detection */}
         <meta
           name="format-detection"
           content="telephone=no, date=no, address=no, email=no"
         />
 
-        {/* Edge compatibility header */}
+        {/* Edge compatibility */}
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
 
-        {/* Content Security Policy - enhanced for CDNs, Supabase and external APIs */}
+        {/* ==============================================
+            SECURITY HEADERS
+            ============================================== */}
+
+        {/* Content Security Policy - production ready */}
         <meta
           httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://api.openai.com;"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://api.openai.com; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
         />
 
         {/* ==============================================
-            APPLE SPLASH SCREENS 
-            Provides native app-like loading experience on iOS
-            Comment out if you don't have splash screen images
+            PWA THEME COLORS
             ============================================== */}
+
+        <meta name="theme-color" content="#f5ede6" />
+        <meta name="msapplication-TileColor" content="#f5ede6" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+
+        {/* ==============================================
+            APPLE SPLASH SCREENS (OPTIONAL)
+            Remove this section if you don't have splash images
+            ============================================== */}
+
+        {/* iPhone 15 Pro Max, 14 Pro Max, 14 Plus, 13 Pro Max, 12 Pro Max */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash-1290x2796.png"
+          media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+        />
+
+        {/* iPhone 15 Pro, 15, 14 Pro */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash-1179x2556.png"
+          media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+        />
+
+        {/* iPhone 14, 13, 13 Pro, 12, 12 Pro */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash-1170x2532.png"
+          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+        />
+
+        {/* iPhone 13 mini, 12 mini, 11 Pro, XS, X */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash-1125x2436.png"
+          media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+        />
+
+        {/* iPhone 11 Pro Max, XS Max */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash-1242x2688.png"
+          media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+        />
+
+        {/* iPhone 11, XR */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash-828x1792.png"
+          media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+        />
+
+        {/* iPhone 8 Plus, 7 Plus, 6s Plus, 6 Plus */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash-1242x2208.png"
+          media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+        />
+
+        {/* iPhone 8, 7, 6s, 6, SE (2nd gen) */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash-750x1334.png"
+          media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+        />
 
         {/* iPad Pro 12.9" */}
         <link
@@ -252,123 +241,34 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           href="/splash-1668x2388.png"
           media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
         />
-
-        {/* iPad Air 10.9" */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1668x2224.png"
-          media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
-        />
-
-        {/* iPad 10.2" */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1536x2048.png"
-          media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
-        />
-
-        {/* iPhone 14 Pro Max */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1290x2796.png"
-          media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 14 Pro */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1179x2556.png"
-          media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 14 Plus */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1284x2778.png"
-          media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 14 */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1170x2532.png"
-          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 13 Pro Max */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1284x2778.png"
-          media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 12 Pro Max */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1284x2778.png"
-          media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone X/XS/11 Pro */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1125x2436.png"
-          media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 6/7/8 Plus */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1242x2208.png"
-          media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 6/7/8 */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-750x1334.png"
-          media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
-        />
-
-        {/* iPhone SE */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-640x1136.png"
-          media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
-        />
       </head>
 
-      <body className="overflow-x-hidden antialiased">
-        {/* ==============================================
-            SERVICE WORKER REGISTRATION AND PWA UI
-            Handles offline functionality and app updates
-            ============================================== */}
-        <ServiceWorkerRegister />
+      {/* ==============================================
+          BODY ELEMENT - CLEAN & SIMPLE
+          ============================================== */}
+      <body className="antialiased">
+        {/* Service Worker Registration (you may need to add this component) */}
+        {/* <ServiceWorkerRegister /> */}
 
         {/* Main application content */}
         {children}
 
         {/* ==============================================
             THEME INITIALIZATION SCRIPT
-            Prevents Flash of Unstyled Content (FOUC)
-            Runs before React hydration for instant theme application
+            Prevents FOUC (Flash of Unstyled Content)
             ============================================== */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 try {
-                  // Initialize theme from localStorage or fallback to system preference
                   const savedTheme = localStorage.getItem('theme');
                   const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                   const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
                   
                   document.documentElement.setAttribute('data-theme', theme);
-                  
-                  // Set CSS custom property for theme-based calculations
                   document.documentElement.style.setProperty('--initial-theme', theme);
                 } catch (error) {
-                  // Fallback if localStorage is unavailable (incognito mode, etc.)
                   document.documentElement.setAttribute('data-theme', 'light');
                   console.warn('Theme initialization failed:', error);
                 }
@@ -378,30 +278,21 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
 
         {/* ==============================================
-            GRADIENT NOTCH EXTENSION SCRIPT
-            External JavaScript file for gradient rendering in notch area
-            ============================================== */}
-        <script src="/gradient-fix.js" async />
-
-        {/* ==============================================
-            PERFORMANCE MONITORING (Optional)
-            Uncomment and configure for production monitoring
+            WEB VITALS MONITORING (OPTIONAL)
+            Uncomment for production performance monitoring
             ============================================== */}
         {/* 
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Web Vitals monitoring
               (function() {
                 if ('PerformanceObserver' in window) {
-                  // Monitor Largest Contentful Paint
                   new PerformanceObserver((list) => {
                     const entries = list.getEntries();
                     const lastEntry = entries[entries.length - 1];
                     console.log('LCP:', lastEntry.startTime);
                   }).observe({ entryTypes: ['largest-contentful-paint'] });
                   
-                  // Monitor First Input Delay
                   new PerformanceObserver((list) => {
                     const entries = list.getEntries();
                     entries.forEach((entry) => {

@@ -2,7 +2,7 @@
 
 import { getOrCreateUserId } from '@/utils/mealLog';
 import { AnimatePresence, motion } from 'framer-motion';
-import { DM_Sans, Dancing_Script, Inter } from 'next/font/google';
+import { DM_Sans, Dancing_Script } from 'next/font/google';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
@@ -11,7 +11,6 @@ import { useEffect, useRef, useState } from 'react';
 // ============================================================================
 const dmSans = DM_Sans({ subsets: ['latin'], weight: ['500', '700'] });
 const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' });
-const inter = Inter({ subsets: ['latin'], weight: '400', style: 'normal' });
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -41,7 +40,6 @@ const STORY_TABS = [
 
 /**
  * UI timing and layout constants
- * These values control the story modal behavior and header dimensions
  */
 const UI_CONSTANTS = {
   STORY_DURATION: 20000, // ms - Auto-advance time for story slides
@@ -53,7 +51,6 @@ const UI_CONSTANTS = {
 
 /**
  * Calculated total header height for layout positioning
- * Used to position calendar content below the curved header
  */
 const BANNER_TOTAL_HEIGHT =
   UI_CONSTANTS.BANNER_CURVE_HEIGHT +
@@ -61,25 +58,18 @@ const BANNER_TOTAL_HEIGHT =
   UI_CONSTANTS.BANNER_BOTTOM_PADDING +
   UI_CONSTANTS.BANNER_TEXT_HEIGHT;
 
-// ADD THIS NEW LINE:
-const BANNER_TOTAL_HEIGHT_WITH_NOTCH = `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`;
-
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
 /**
  * Formats date string into stacked display format (Month Day / Year)
- * Handles YYYY-MM-DD format with proper timezone handling
- *
- * @param dateString - Date string in YYYY-MM-DD format
- * @returns Object with formatted month/day and year strings
  */
 function formatPrettyDateStacked(dateString: string) {
   const parts = dateString.split('-');
   if (parts.length === 3) {
     const year = parseInt(parts[0]);
-    const month = parseInt(parts[1]) - 1; // Month is 0-indexed in Date constructor
+    const month = parseInt(parts[1]) - 1;
     const day = parseInt(parts[2]);
     const date = new Date(year, month, day);
 
@@ -91,7 +81,6 @@ function formatPrettyDateStacked(dateString: string) {
     return { monthDay, year: year.toString() };
   }
 
-  // Fallback for malformed date strings
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return { monthDay: dateString, year: '' };
 
@@ -105,10 +94,6 @@ function formatPrettyDateStacked(dateString: string) {
 
 /**
  * Sanitizes and formats text content for display
- * Ensures proper capitalization and punctuation
- *
- * @param str - Raw text string (potentially null)
- * @returns Cleaned and formatted text string
  */
 function prettifyText(str: string | null): string {
   if (!str) return '';
@@ -119,14 +104,12 @@ function prettifyText(str: string | null): string {
 }
 
 // ============================================================================
-// HEADER COMPONENT
+// HEADER COMPONENT (CLEANED)
 // ============================================================================
 
 /**
  * Fixed header component with curved bottom design
- * Uses gradient background matching the global theme
- *
- * @param dancingScriptClass - CSS class for custom font styling
+ * Simplified without notch extensions
  */
 function SummariesHeader({
   dancingScriptClass,
@@ -138,37 +121,17 @@ function SummariesHeader({
       className="fixed top-0 left-0 w-full z-30"
       style={{
         height: BANNER_TOTAL_HEIGHT,
-        pointerEvents: 'none',
-        background: 'transparent',
-        border: 'none',
-        boxShadow: 'none',
-        margin: 0,
-        padding: 0,
-        // CRITICAL: Extend into notch area
-        paddingTop: 'env(safe-area-inset-top)',
-        marginTop: 'calc(-1 * env(safe-area-inset-top))',
-        minHeight: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Keep only this one
+        background: '#f5ede6', // Clean solid background
       }}
     >
       {/* Header content container */}
-      <div
-        className="relative w-full flex flex-col items-center justify-center overflow-hidden"
-        style={{
-          background: '#f0e1f0', // Your solid color
-          height: '100%',
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        {/* Text content - account for notch */}
+      <div className="relative w-full h-full flex flex-col items-center justify-center">
+        {/* Text content */}
         <div
-          className="flex flex-col items-center w-full px-4 z-10"
+          className="flex flex-col items-center w-full px-4"
           style={{
-            pointerEvents: 'auto',
-            // Add extra padding for notch area
-            paddingTop: `calc(${UI_CONSTANTS.BANNER_TOP_PADDING}px + env(safe-area-inset-top))`,
+            paddingTop: UI_CONSTANTS.BANNER_TOP_PADDING,
             paddingBottom: UI_CONSTANTS.BANNER_BOTTOM_PADDING,
-            background: 'transparent',
           }}
         >
           <div
@@ -177,21 +140,17 @@ function SummariesHeader({
               lineHeight: 1.15,
               letterSpacing: '-0.02em',
               fontWeight: 700,
-              background: 'transparent',
             }}
           >
             Summaries
           </div>
-          <div
-            className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight"
-            style={{ background: 'transparent' }}
-          >
+          <div className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
             A gentle way to track your meal journey and celebrate your daily
             wins ✨
           </div>
         </div>
 
-        {/* Curved bottom border using SVG with matching solid color */}
+        {/* Curved bottom border using SVG */}
         <svg
           className="absolute left-0 bottom-0 w-full"
           viewBox="0 0 500 44"
@@ -199,34 +158,10 @@ function SummariesHeader({
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="none"
           style={{
-            display: 'block',
-            zIndex: 11,
-            pointerEvents: 'none',
             height: UI_CONSTANTS.BANNER_CURVE_HEIGHT,
-            background: 'transparent',
-            margin: 0,
-            padding: 0,
           }}
         >
-          <defs>
-            {/* Solid color gradient (same color for seamless look) */}
-            <linearGradient
-              id="curveGradient"
-              x1="0"
-              y1="0"
-              x2="500"
-              y2="44"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="#f0e1f0" />
-              <stop offset="0.54" stopColor="#f0e1f0" />
-              <stop offset="1" stopColor="#f0e1f0" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M0 0C82 40 418 40 500 0V44H0V0Z"
-            fill="url(#curveGradient)"
-          />
+          <path d="M0 0C82 40 418 40 500 0V44H0V0Z" fill="#f5ede6" />
         </svg>
       </div>
     </header>
@@ -234,16 +169,11 @@ function SummariesHeader({
 }
 
 // ============================================================================
-// CALENDAR COMPONENT
+// CALENDAR COMPONENT (CLEANED)
 // ============================================================================
 
 /**
  * Interactive calendar component for summary navigation
- * Displays month view with clickable dates that have summary data
- * All backgrounds are transparent to show global gradient theme
- *
- * @param summaries - Array of summary data objects
- * @param onDateClick - Callback function when date is selected
  */
 function Calendar({
   summaries,
@@ -255,7 +185,7 @@ function Calendar({
   const [currentDate, setCurrentDate] = useState(new Date());
   const today = new Date();
 
-  // Create optimized lookup set for summary dates (O(1) lookup performance)
+  // Create optimized lookup set for summary dates
   const summaryDates = new Set(summaries.map((s) => s.date));
 
   // Calculate calendar grid boundaries
@@ -275,7 +205,7 @@ function Calendar({
   const endOfCalendar = new Date(endOfMonth);
   endOfCalendar.setDate(endOfCalendar.getDate() + (6 - endOfCalendar.getDay()));
 
-  // Generate calendar day array for rendering
+  // Generate calendar day array
   const calendarDays = [];
   const current = new Date(startOfCalendar);
   while (current <= endOfCalendar) {
@@ -286,10 +216,7 @@ function Calendar({
   const monthName = currentDate.toLocaleDateString('en-US', { month: 'long' });
   const year = currentDate.getFullYear();
 
-  // ============================================================================
-  // CALENDAR UTILITY FUNCTIONS
-  // ============================================================================
-
+  // Calendar utility functions
   const isToday = (date: Date): boolean =>
     date.toDateString() === today.toDateString();
   const isCurrentMonth = (date: Date): boolean =>
@@ -301,7 +228,6 @@ function Calendar({
 
   /**
    * Handles date selection and triggers summary modal
-   * Only processes clicks on dates with summary data
    */
   const handleDateClick = (date: Date): void => {
     const dateKey = formatDateKey(date);
@@ -313,7 +239,6 @@ function Calendar({
 
   /**
    * Navigation handler for month switching
-   * Updates calendar view while maintaining date selection state
    */
   const navigateMonth = (direction: 'prev' | 'next'): void => {
     setCurrentDate((prev) => {
@@ -324,18 +249,12 @@ function Calendar({
   };
 
   return (
-    <div
-      className="w-full max-w-lg mx-auto h-full flex flex-col justify-center calendar-container"
-      style={{ background: 'transparent' }}
-    >
+    <div className="w-full max-w-lg mx-auto h-full flex flex-col justify-center">
       {/* Month navigation header */}
-      <div
-        className="flex items-center justify-between mb-6 px-4"
-        style={{ background: 'transparent' }}
-      >
+      <div className="flex items-center justify-between mb-6 px-4">
         <button
           onClick={() => navigateMonth('prev')}
-          className="p-2 rounded-full hover:bg-transparent transition-colors"
+          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
           aria-label="Previous month"
         >
           <svg
@@ -361,7 +280,7 @@ function Calendar({
 
         <button
           onClick={() => navigateMonth('next')}
-          className="p-2 rounded-full hover:bg-transparent transition-colors"
+          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
           aria-label="Next month"
         >
           <svg
@@ -381,15 +300,11 @@ function Calendar({
       </div>
 
       {/* Day of week headers */}
-      <div
-        className="grid grid-cols-7 gap-1 mb-6"
-        style={{ background: 'transparent' }}
-      >
+      <div className="grid grid-cols-7 gap-1 mb-6">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
           <div
             key={index}
             className="text-center text-sm font-medium text-gray-500 py-2"
-            style={{ background: 'transparent' }}
           >
             {day}
           </div>
@@ -397,10 +312,7 @@ function Calendar({
       </div>
 
       {/* Calendar grid with date buttons */}
-      <div
-        className="grid grid-cols-7 gap-1"
-        style={{ background: 'transparent' }}
-      >
+      <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((date, index) => {
           const isCurrentMonthDay = isCurrentMonth(date);
           const isTodayDate = isToday(date);
@@ -446,13 +358,12 @@ function Calendar({
 }
 
 // ============================================================================
-// MAIN PAGE COMPONENT
+// MAIN PAGE COMPONENT (CLEANED)
 // ============================================================================
 
 /**
  * Main summaries page component
- * Manages data fetching, modal state, and story progression
- * Implements Instagram-style story modal for summary viewing
+ * Simplified without notch extensions and background transparency issues
  */
 export default function SummariesPage() {
   // ============================================================================
@@ -462,9 +373,8 @@ export default function SummariesPage() {
   const [loading, setLoading] = useState(true);
   const [activeSummary, setActiveSummary] = useState<Summary | null>(null);
   const [activeStoryIdx, setActiveStoryIdx] = useState(0);
-  const [storyAutoKey, setStoryAutoKey] = useState(0); // Forces re-render of progress animations
+  const [storyAutoKey, setStoryAutoKey] = useState(0);
 
-  // Timer reference for story auto-progression
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
@@ -474,7 +384,6 @@ export default function SummariesPage() {
 
   /**
    * Fetch summaries data on component mount
-   * Uses optimized async/await pattern with error handling
    */
   useEffect(() => {
     const fetchSummaries = async (): Promise<void> => {
@@ -490,7 +399,7 @@ export default function SummariesPage() {
         setSummaries(data.summaries || []);
       } catch (error) {
         console.error('Error fetching summaries:', error);
-        setSummaries([]); // Graceful fallback
+        setSummaries([]);
       } finally {
         setLoading(false);
       }
@@ -501,7 +410,6 @@ export default function SummariesPage() {
 
   /**
    * Reset story index when active summary changes
-   * Ensures story modal starts from beginning for each summary
    */
   useEffect(() => {
     if (activeSummary) setActiveStoryIdx(0);
@@ -509,20 +417,18 @@ export default function SummariesPage() {
 
   /**
    * Story auto-progression timer management
-   * Handles automatic advancement through story slides
    */
   useEffect(() => {
     if (!activeSummary) return;
 
     const availableStories = getAvailableStories(activeSummary);
-    setStoryAutoKey((prev) => prev + 1); // Trigger animation restart
+    setStoryAutoKey((prev) => prev + 1);
 
-    // Clear existing timer to prevent overlapping timers
     if (timerRef.current) clearTimeout(timerRef.current);
 
     timerRef.current = setTimeout(() => {
       if (activeStoryIdx >= availableStories.length - 1) {
-        setActiveSummary(null); // Close modal at end
+        setActiveSummary(null);
       } else {
         setActiveStoryIdx((idx) =>
           Math.min(idx + 1, availableStories.length - 1),
@@ -530,45 +436,21 @@ export default function SummariesPage() {
       }
     }, UI_CONSTANTS.STORY_DURATION);
 
-    // Cleanup timer on unmount or dependency change
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [activeSummary, activeStoryIdx]);
 
-  /**
-   * CRITICAL: Background transparency enforcement
-   * Ensures all calendar elements are transparent to show global gradient
-   * This effect runs after DOM rendering to override any default backgrounds
-   */
-  useEffect(() => {
-    // Primary container transparency
-    const calendarContainer = document.querySelector('.calendar-container');
-    if (calendarContainer) {
-      (calendarContainer as HTMLElement).style.background = 'transparent';
-    }
-
-    // Force transparency on all child elements
-    const calendarElements = document.querySelectorAll('.calendar-container *');
-    calendarElements.forEach((element) => {
-      const htmlElement = element as HTMLElement;
-      // Skip elements that intentionally have gradients (summary indicator buttons)
-      if (
-        !htmlElement.style.background &&
-        !htmlElement.classList.contains('bg-gradient-to-br')
-      ) {
-        htmlElement.style.background = 'transparent';
-      }
-    });
-  }, [loading]); // Re-run when loading state changes
-
   // ============================================================================
   // EVENT HANDLERS
   // ============================================================================
 
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
+
   /**
    * Filters summary data to return only available story slides
-   * Used to determine story progression and modal behavior
    */
   const getAvailableStories = (summary: Summary) => {
     return STORY_TABS.filter((tab) => summary[tab.key as keyof Summary]);
@@ -576,7 +458,6 @@ export default function SummariesPage() {
 
   /**
    * Handles story area clicks for manual progression
-   * Advances to next story or closes modal at end
    */
   const handleStoryAreaClick = (): void => {
     const availableStories = getAvailableStories(activeSummary!);
@@ -592,7 +473,6 @@ export default function SummariesPage() {
 
   /**
    * Handles direct story navigation via progress dots
-   * Allows user to jump to specific story slide
    */
   const handleDotClick = (index: number): void => {
     setActiveStoryIdx(index);
@@ -604,24 +484,13 @@ export default function SummariesPage() {
   // ============================================================================
 
   return (
-    <div
-      className={`h-screen w-full flex flex-col overflow-hidden fixed inset-0 ${dmSans.className}`}
-      style={{ background: 'transparent' }} // Critical: Allow global gradient to show
-    >
+    <div className={`min-h-screen w-full ${dmSans.className}`}>
       {/* Back navigation button */}
       <motion.div
-        className="absolute left-4 top-4 z-40"
+        className="fixed left-4 top-4 z-40"
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -10 }}
         transition={{ duration: 0.3 }}
-        style={{
-          position: 'fixed',
-          zIndex: 40,
-          top: '16px',
-          left: '16px',
-          willChange: 'opacity', // Optimization for smooth animations
-        }}
       >
         <button
           onClick={() => router.push('/')}
@@ -649,23 +518,17 @@ export default function SummariesPage() {
 
       {/* Main calendar content area */}
       <div
-        className="flex-1 w-full max-w-2xl mx-auto flex flex-col relative z-10"
+        className="w-full max-w-2xl mx-auto"
         style={{
-          marginTop: `calc(${BANNER_TOTAL_HEIGHT_WITH_NOTCH} - 100px)`,
-          height: `calc(100vh - ${BANNER_TOTAL_HEIGHT_WITH_NOTCH} + 100px)`,
-          overflow: 'hidden',
-          background: 'transparent',
+          marginTop: BANNER_TOTAL_HEIGHT,
+          minHeight: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
+          paddingTop: '2rem',
+          paddingBottom: '2rem',
         }}
       >
-        <div
-          className="h-full px-3 flex items-start justify-center"
-          style={{
-            overflow: 'hidden',
-            background: 'transparent', // Critical: Show global gradient
-          }}
-        >
+        <div className="px-4">
           {loading ? (
-            <div className="text-center text-gray-400/80 text-base font-medium animate-pulse">
+            <div className="text-center text-gray-400/80 text-base font-medium animate-pulse py-8">
               Loading summaries…
             </div>
           ) : (
@@ -674,8 +537,6 @@ export default function SummariesPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                className="h-full"
-                style={{ background: 'transparent' }} // Critical: Show global gradient
               >
                 <Calendar
                   summaries={summaries}
@@ -699,7 +560,7 @@ export default function SummariesPage() {
           >
             <motion.div
               className={`
-                w-full h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden
+                w-full h-screen max-h-screen flex flex-col overflow-hidden
                 bg-gradient-to-br from-white/85 via-[#f6e7fc]/80 to-[#fdf6fa]/90
                 select-none
                 ${dmSans.className}
@@ -708,8 +569,6 @@ export default function SummariesPage() {
               style={{
                 borderRadius: 0,
                 boxShadow: '0 12px 48px 0 rgba(120,80,140,0.08)',
-                minHeight: '100dvh',
-                maxHeight: '100dvh',
               }}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -734,7 +593,7 @@ export default function SummariesPage() {
                       {/* Active story progress bar */}
                       {i === activeStoryIdx && (
                         <div
-                          key={storyAutoKey} // Force re-render for animation restart
+                          key={storyAutoKey}
                           className="absolute inset-0 bg-gradient-to-r from-purple-300 via-pink-200 to-purple-400"
                           style={{
                             width: '0%',
@@ -752,15 +611,8 @@ export default function SummariesPage() {
                     e.stopPropagation();
                     setActiveSummary(null);
                   }}
-                  className="absolute right-2 top-3 text-gray-400 hover:text-gray-600 bg-transparent rounded-none p-2 z-20"
+                  className="absolute right-2 top-3 text-gray-400 hover:text-gray-600 p-2 z-20 text-xl"
                   aria-label="Close summary modal"
-                  style={{
-                    fontSize: '1.1rem',
-                    fontWeight: '600',
-                    color: '#888',
-                    transition: 'all 0.3s ease',
-                    cursor: 'pointer',
-                  }}
                 >
                   ×
                 </button>
