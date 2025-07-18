@@ -3,18 +3,43 @@
 @tailwind utilities;
 
 /* ============================================================================
-   GLOBAL RESET & BASE STYLES
+   🔥 NOTCH-EMBRACING PWA FOUNDATION
    ============================================================================ */
 
-/* Clean PWA foundation - no notch extensions */
-html,
-body {
-  padding: 0;
+/* 🔥 HTML: Gets the gradient background - extends into notch area */
+html {
+  /* Beautiful gradient background that extends into notch */
+  background: linear-gradient(135deg, #f5ede6 0%, #f1e8e1 50%, #ede4dd 100%);
+  background-attachment: fixed;
+  /* NO padding on HTML - let background extend everywhere */
+  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  /* Text size adjustment prevention */
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* 🔥 BODY: Transparent - lets HTML gradient show through */
+body {
+  /* CRITICAL: Transparent background so HTML gradient shows */
+  background: transparent;
+  color: #1f2937;
+  margin: 0;
+  padding: 0;
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
-  background-color: #f5ede6; /* Your clean theme color */
+  /* 🔥 INDUSTRY STANDARD: No padding on body - let containers handle safe areas */
+  
+  /* Typography improvements */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "liga" 1, "kern" 1;
 }
 
 /* Universal box-sizing for predictable layouts */
@@ -22,13 +47,115 @@ body {
 *::before,
 *::after {
   box-sizing: border-box;
+  /* Remove tap highlight for app-like experience */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ============================================================================
+   🔥 SAFE AREA UTILITIES - NOTCH SUPPORT
+   ============================================================================ */
+
+@layer utilities {
+  /* Individual safe area controls */
+  .pt-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pt-safe-top-plus-header {
+    padding-top: calc(env(safe-area-inset-top) + 80px);
+  }
+
+  .pb-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pl-safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Combined safe area utilities with minimum padding */
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .safe-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .safe-x {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .safe-y {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-all {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  /* 🔥 NOTCH-AWARE POSITIONING: For floating elements */
+  .notch-safe {
+    top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .notch-safe-left {
+    left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .notch-safe-right {
+    right: max(1rem, env(safe-area-inset-right));
+  }
+
+  /* Fixed header positioning that respects notch */
+  .fixed-header-top {
+    top: 0;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Content spacing to account for fixed header */
+  .content-below-header {
+    padding-top: calc(env(safe-area-inset-top) + 5rem);
+  }
+
+  /* Full-bleed containers that extend to edges */
+  .full-bleed {
+    margin-left: calc(-1 * max(1rem, env(safe-area-inset-left)));
+    margin-right: calc(-1 * max(1rem, env(safe-area-inset-right)));
+  }
+
+  /* Container that respects safe areas */
+  .safe-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
 }
 
 /* ============================================================================
    PWA MOBILE OPTIMIZATIONS
    ============================================================================ */
 
-/* Standard responsive design - no complex positioning */
+/* Standard responsive design optimized for PWA */
 @media screen and (max-width: 768px) {
   html,
   body {
@@ -36,13 +163,27 @@ body {
     height: 100dvh;
     width: 100%;
   }
+
+  /* Improve touch interactions on mobile */
+  button,
+  [role="button"],
+  input,
+  textarea {
+    touch-action: manipulation;
+  }
+}
+
+/* Prevent overscroll for app-like experience */
+html,
+body {
+  overscroll-behavior: none;
 }
 
 /* ============================================================================
-   LOADING SCREEN (SIMPLIFIED)
+   LOADING SCREEN (NOTCH-AWARE)
    ============================================================================ */
 
-/* Simple loading screen without complex gradients */
+/* Loading screen that extends into notch */
 .loading-screen {
   position: fixed;
   top: 0;
@@ -53,13 +194,13 @@ body {
   height: 100vh;
   height: 100dvh;
   z-index: 99999;
-  background-color: #f5ede6;
+  background: linear-gradient(135deg, #f5ede6 0%, #f1e8e1 50%, #ede4dd 100%);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Loading screen with image (if you have a loading image) */
+/* Loading screen with image that respects safe areas */
 .loading-screen-image {
   position: fixed;
   top: 0;
@@ -71,8 +212,12 @@ body {
   height: 100dvh;
   z-index: 99999;
   background:
-    url(/loading-image.png) center/cover no-repeat,
-    #f5ede6; /* Simple fallback color */
+    linear-gradient(135deg, #f5ede6 0%, #f1e8e1 50%, #ede4dd 100%),
+    url(/loading-image.png) center/cover no-repeat;
+}
+
+.loading-screen-content {
+  @apply safe-all;
 }
 
 /* ============================================================================
@@ -87,10 +232,11 @@ a,
     background-color 0.2s ease,
     color 0.2s ease,
     opacity 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-/* Focus states for accessibility */
+/* Enhanced focus states for accessibility */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -98,24 +244,7 @@ textarea:focus-visible,
 select:focus-visible {
   outline: 2px solid #8b5cf6;
   outline-offset: 2px;
-}
-
-/* ============================================================================
-   TYPOGRAPHY IMPROVEMENTS
-   ============================================================================ */
-
-/* Better text rendering */
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
-/* Prevent text size adjustment on orientation change */
-html {
-  -webkit-text-size-adjust: 100%;
-  -moz-text-size-adjust: 100%;
-  text-size-adjust: 100%;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
 }
 
 /* ============================================================================
@@ -132,8 +261,40 @@ html {
   display: none;
 }
 
+/* Improve scroll performance */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* GPU acceleration for transforms */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Glass effect utility */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Floating animation */
+.floating-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 /* ============================================================================
-   THEME SUPPORT
+   THEME SUPPORT (NOTCH-AWARE)
    ============================================================================ */
 
 /* CSS custom properties for theme switching */
@@ -145,6 +306,12 @@ html {
   --accent: #ec4899;
   --muted: #f9fafb;
   --border: #e5e7eb;
+  
+  /* 🔥 Safe area support for notch devices */
+  --safe-area-inset-top: env(safe-area-inset-top);
+  --safe-area-inset-right: env(safe-area-inset-right);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --safe-area-inset-left: env(safe-area-inset-left);
 }
 
 [data-theme='dark'] {
@@ -157,25 +324,15 @@ html {
   --border: #4b5563;
 }
 
-/* Apply theme colors */
+/* Dark theme with notch-aware background */
+[data-theme='dark'] html {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 50%, #0f172a 100%);
+  background-attachment: fixed;
+}
+
 [data-theme='dark'] body {
-  background-color: var(--background);
   color: var(--foreground);
-}
-
-/* ============================================================================
-   PERFORMANCE OPTIMIZATIONS
-   ============================================================================ */
-
-/* Improve scroll performance */
-.scroll-smooth {
-  scroll-behavior: smooth;
-}
-
-/* GPU acceleration for transforms */
-.gpu-accelerated {
-  transform: translateZ(0);
-  will-change: transform;
+  background: transparent; /* Keep transparent for gradient to show */
 }
 
 /* ============================================================================
@@ -192,6 +349,10 @@ html {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  .floating-animation {
+    animation: none;
+  }
 }
 
 /* High contrast mode support */
@@ -199,6 +360,41 @@ html {
   button,
   a {
     border: 2px solid currentColor;
+  }
+
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: none;
+  }
+}
+
+/* ============================================================================
+   DEVICE-SPECIFIC OPTIMIZATIONS
+   ============================================================================ */
+
+/* iPhone notch-specific optimizations */
+@supports (padding: max(0px)) {
+  .ios-safe-area {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .ios-safe-area-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .ios-safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Android notch/cutout support */
+@supports (padding: env(safe-area-inset-top)) {
+  .android-safe-area {
+    padding: max(1rem, env(safe-area-inset-top)) 
+             max(1rem, env(safe-area-inset-right))
+             max(1rem, env(safe-area-inset-bottom))
+             max(1rem, env(safe-area-inset-left));
   }
 }
 
@@ -214,6 +410,14 @@ html {
     color: black !important;
     box-shadow: none !important;
     text-shadow: none !important;
+  }
+
+  html {
+    background: white !important;
+  }
+
+  body {
+    background: white !important;
   }
 
   a,
@@ -235,5 +439,11 @@ html {
   h2,
   h3 {
     page-break-after: avoid;
+  }
+
+  /* Hide PWA-specific elements when printing */
+  .loading-screen,
+  .loading-screen-image {
+    display: none !important;
   }
 }

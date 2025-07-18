@@ -4,7 +4,7 @@
   "description": "Track your meals with love and support - your personal nutrition companion for building healthy eating habits.",
   "start_url": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": ["fullscreen", "standalone"],
   "background_color": "#f5ede6",
   "theme_color": "#f5ede6",
   "orientation": "portrait-primary",
@@ -75,6 +75,19 @@
       "short_name": "Summaries",
       "description": "View your meal summaries and progress",
       "url": "/summaries",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "View Calendar",
+      "short_name": "Calendar",
+      "description": "View your meal tracking calendar and streaks",
+      "url": "/calendar",
       "icons": [
         {
           "src": "/icon-192.png",
@@ -161,5 +174,8 @@
       "form_factor": "wide",
       "label": "My Progress Planner - Desktop view"
     }
-  ]
+  ],
+  "related_applications": [],
+  "handle_links": "preferred",
+  "capture_links": "existing-client-navigate"
 }
