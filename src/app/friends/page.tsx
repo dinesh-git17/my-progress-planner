@@ -46,10 +46,9 @@ const BANNER_TOTAL_HEIGHT =
 function FriendsHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
   return (
     <header
-      className="fixed top-0 left-0 w-full z-30"
+      className="fixed top-0 left-0 w-full z-30 pt-safe-top"
       style={{
-        height: BANNER_TOTAL_HEIGHT,
-        background: '#f5ede6', // Clean solid background
+        background: '#f5ede6',
       }}
     >
       <div className="relative w-full h-full flex flex-col items-center justify-center">
@@ -546,7 +545,7 @@ export default function FriendsPage() {
   return (
     <div className={`min-h-screen w-full ${dmSans.className}`}>
       {/* Back Button */}
-      <div className="fixed left-4 top-4 z-40">
+      <div className="fixed left-4 z-40 notch-safe">
         <button
           onClick={() => router.push('/')}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
@@ -574,12 +573,12 @@ export default function FriendsPage() {
 
       {/* Main Content */}
       <div
-        className="w-full max-w-2xl mx-auto"
+        className="w-full max-w-2xl mx-auto safe-x"
         style={{
           marginTop: BANNER_TOTAL_HEIGHT,
           minHeight: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
-          paddingTop: '2rem',
-          paddingBottom: '2rem',
+          paddingTop: 'calc(2rem + env(safe-area-inset-top))',
+          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
         }}
       >
         <div className="px-4">
