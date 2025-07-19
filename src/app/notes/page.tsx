@@ -318,7 +318,7 @@ export default function NotesPage() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-md mx-auto px-4 pb-20">
+      <main className="max-w-md mx-auto px-4 pb-safe-bottom">
         {error ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

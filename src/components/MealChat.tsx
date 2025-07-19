@@ -477,7 +477,7 @@ export default function MealChat({
 
       {/* Input Bar */}
       {!chatEnded && (
-        <div className="flex-shrink-0 w-full px-4 pb-6 mb-6 sticky bottom-0">
+        <div className="flex-shrink-0 w-full px-4 pb-safe-bottom mb-6 sticky bottom-0">
           <form className="flex items-center gap-3" onSubmit={handleSubmit}>
             <div className="relative flex-1">
               <input
