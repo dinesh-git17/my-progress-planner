@@ -113,6 +113,19 @@ body {
     }
   }
 
+  .loading-screen-image {
+    background-image: url('/loading-image.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+  }
   /* 🔥 NOTCH-SAFE UTILITIES: Safe area spacing utilities */
   .pt-safe-top {
     padding-top: env(safe-area-inset-top);
