@@ -579,7 +579,7 @@ function LoadingScreen({ isVisible }: { isVisible: boolean }) {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
-            className="relative z-10 text-center px-6 pb-16"
+            className="relative z-10 text-center px-6 pb-safe-bottom"
           >
             <h1
               className="text-lg font-light text-gray-600 mb-3 tracking-wide"
@@ -1739,7 +1739,7 @@ export default function Home() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.3 }}
-                        className="pb-24"
+                        className="pb-safe-bottom"
                       >
                         <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
                           Meals Today
@@ -1833,7 +1833,7 @@ export default function Home() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ duration: 0.3 }}
-                        className="pb-24"
+                        className="pb-safe-bottom"
                       >
                         <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
                           Progress
@@ -1978,7 +1978,7 @@ export default function Home() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ duration: 0.3 }}
-                        className="pb-24"
+                        className="pb-safe-bottom"
                       >
                         <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
                           Friends & Support
