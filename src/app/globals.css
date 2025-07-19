@@ -2,238 +2,198 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================================
-   GLOBAL RESET & BASE STYLES
-   ============================================================================ */
-
-/* Clean PWA foundation - no notch extensions */
-html,
-body {
-  padding: 0;
-  margin: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow-x: hidden;
-  background-color: #f5ede6; /* Your clean theme color */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  /* 🔥 Safe area support for notch devices */
+  --safe-area-inset-top: env(safe-area-inset-top);
+  --safe-area-inset-right: env(safe-area-inset-right);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --safe-area-inset-left: env(safe-area-inset-left);
 }
 
-/* Universal box-sizing for predictable layouts */
-*,
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #fdf2f8;
+    --foreground: #1f2937;
+  }
+}
+
+/* 🔥 PRIMARY BACKGROUND: Only HTML has the gradient - this extends into notch */
+html {
+  /* The gradient background that extends into notch area */
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f3e8ff 100%);
+  background-attachment: fixed;
+  /* NO padding on HTML - let background extend into notch */
+  min-height: 100vh;
+}
+
+/* 🔥 TRANSPARENT BODY: Lets HTML background show through */
+body {
+  color: var(--foreground);
+  /* CRITICAL: Transparent background so HTML gradient shows */
+  background: transparent;
+  font-family:
+    "DM Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  min-height: 100vh;
+  font-feature-settings:
+    "liga" 1,
+    "kern" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  overflow-x: hidden;
+  /* 🔥 INDUSTRY STANDARD: No padding on body - let containers handle safe areas */
+}
+
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
-/* ============================================================================
-   PWA MOBILE OPTIMIZATIONS
-   ============================================================================ */
-
-/* Standard responsive design - no complex positioning */
-@media screen and (max-width: 768px) {
-  html,
-  body {
-    height: 100vh;
-    height: 100dvh;
-    width: 100%;
-  }
-}
-
-/* ============================================================================
-   LOADING SCREEN (SIMPLIFIED)
-   ============================================================================ */
-
-/* Simple loading screen without complex gradients */
-.loading-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  z-index: 99999;
-  background-color: #f5ede6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Loading screen with image (if you have a loading image) */
-.loading-screen-image {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  z-index: 99999;
-  background:
-    url(/loading-image.png) center/cover no-repeat,
-    #f5ede6; /* Simple fallback color */
-}
-
-/* ============================================================================
-   SMOOTH INTERACTIONS
-   ============================================================================ */
-
-/* Smooth transitions for interactive elements */
-button,
-a,
-[role='button'] {
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    opacity 0.2s ease,
-    transform 0.2s ease;
-}
-
-/* Focus states for accessibility */
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: 2px solid #8b5cf6;
-  outline-offset: 2px;
-}
-
-/* ============================================================================
-   TYPOGRAPHY IMPROVEMENTS
-   ============================================================================ */
-
-/* Better text rendering */
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
-/* Prevent text size adjustment on orientation change */
-html {
-  -webkit-text-size-adjust: 100%;
-  -moz-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
-
-/* ============================================================================
-   UTILITY CLASSES
-   ============================================================================ */
-
-/* Hide scrollbars while maintaining functionality */
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* ============================================================================
-   THEME SUPPORT
-   ============================================================================ */
-
-/* CSS custom properties for theme switching */
-:root {
-  --background: #f5ede6;
-  --foreground: #1f2937;
-  --primary: #8b5cf6;
-  --secondary: #f3e8ff;
-  --accent: #ec4899;
-  --muted: #f9fafb;
-  --border: #e5e7eb;
-}
-
-[data-theme='dark'] {
-  --background: #1f2937;
-  --foreground: #f9fafb;
-  --primary: #a78bfa;
-  --secondary: #374151;
-  --accent: #f472b6;
-  --muted: #374151;
-  --border: #4b5563;
-}
-
-/* Apply theme colors */
-[data-theme='dark'] body {
-  background-color: var(--background);
-  color: var(--foreground);
-}
-
-/* ============================================================================
-   PERFORMANCE OPTIMIZATIONS
-   ============================================================================ */
-
-/* Improve scroll performance */
-.scroll-smooth {
-  scroll-behavior: smooth;
-}
-
-/* GPU acceleration for transforms */
-.gpu-accelerated {
-  transform: translateZ(0);
-  will-change: transform;
-}
-
-/* ============================================================================
-   ACCESSIBILITY IMPROVEMENTS
-   ============================================================================ */
-
-/* Respect user's motion preferences */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  button,
-  a {
-    border: 2px solid currentColor;
-  }
-}
-
-/* ============================================================================
-   PRINT STYLES
-   ============================================================================ */
-
-@media print {
-  *,
-  *::before,
-  *::after {
-    background: transparent !important;
-    color: black !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  a,
-  a:visited {
-    text-decoration: underline;
-  }
-
-  img {
-    page-break-inside: avoid;
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "DM Sans", system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.025em;
   }
 
   p,
-  h2,
-  h3 {
-    orphans: 3;
-    widows: 3;
+  div,
+  span {
+    font-family: "DM Sans", system-ui, sans-serif;
+    line-height: 1.6;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 
-  h2,
-  h3 {
-    page-break-after: avoid;
+  .gradient-text {
+    background: linear-gradient(135deg, #ec4899, #f43f5e, #e11d48);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .floating-animation {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  /* 🔥 NOTCH-SAFE UTILITIES: Safe area spacing utilities */
+  .pt-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pt-safe-top-plus-header {
+    padding-top: calc(env(safe-area-inset-top) + 80px);
+  }
+
+  .pb-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pl-safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Combined safe area utilities */
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .safe-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .safe-x {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .safe-y {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-all {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  /* 🔥 NOTCH-AWARE: Positioning for floating elements */
+  .notch-safe {
+    top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .notch-safe-left {
+    left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .notch-safe-right {
+    right: max(1rem, env(safe-area-inset-right));
+  }
+
+  /* Fixed header positioning that respects notch */
+  .fixed-header-top {
+    top: 0;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Content spacing to account for fixed header */
+  .content-below-header {
+    padding-top: calc(env(safe-area-inset-top) + 5rem);
+  }
+}
+
+html,
+body {
+  overscroll-behavior: none;
 }
