@@ -2,8 +2,11 @@
 
 import { upsertMealLog } from '@/utils/mealLog';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Dancing_Script } from 'next/font/google';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
+
+const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' });
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -220,13 +223,13 @@ export default function MealChat({
           delay: index === 0 ? 0.15 : 0,
         }}
         className={`
-          relative px-4 py-2.5 max-w-[75%] break-words select-text
-          ${
-            msg.sender === 'user'
-              ? 'rounded-[22px] rounded-br-[8px] text-white'
-              : 'rounded-[22px] rounded-bl-[8px] text-black'
-          }
-        `}
+         relative px-4 py-2.5 max-w-[75%] break-words select-text
+         ${
+           msg.sender === 'user'
+             ? 'rounded-[22px] rounded-br-[8px] text-white'
+             : 'rounded-[22px] rounded-bl-[8px] text-black'
+         }
+       `}
         style={{
           fontFamily: SYSTEM_FONT,
           fontSize: '17px',
@@ -310,11 +313,11 @@ export default function MealChat({
           WebkitBackdropFilter: 'saturate(180%) blur(40px)',
           borderRadius: '20px',
           boxShadow: `
-            0 32px 64px rgba(0, 0, 0, 0.08),
-            0 16px 32px rgba(0, 0, 0, 0.04),
-            inset 0 1px 0 rgba(255, 255, 255, 0.4),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.02)
-          `,
+           0 32px 64px rgba(0, 0, 0, 0.08),
+           0 16px 32px rgba(0, 0, 0, 0.04),
+           inset 0 1px 0 rgba(255, 255, 255, 0.4),
+           inset 0 -1px 0 rgba(0, 0, 0, 0.02)
+         `,
           border: '0.5px solid rgba(255, 255, 255, 0.25)',
           fontFamily: SYSTEM_FONT,
         }}
@@ -346,10 +349,10 @@ export default function MealChat({
                 fontWeight: '500',
                 letterSpacing: '-0.24px',
                 boxShadow: `
-                  0 4px 20px rgba(232, 164, 201, 0.25),
-                  0 2px 8px rgba(232, 164, 201, 0.15),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.2)
-                `,
+                 0 4px 20px rgba(232, 164, 201, 0.25),
+                 0 2px 8px rgba(232, 164, 201, 0.15),
+                 inset 0 1px 0 rgba(255, 255, 255, 0.2)
+               `,
                 border: '0.5px solid rgba(255, 255, 255, 0.1)',
               }}
               aria-label={`Continue to ${nextMealLabel}`}
@@ -376,11 +379,11 @@ export default function MealChat({
               fontWeight: '500',
               letterSpacing: '-0.24px',
               boxShadow: `
-                0 2px 10px rgba(0, 0, 0, 0.04),
-                0 1px 4px rgba(0, 0, 0, 0.02),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4),
-                inset 0 -0.5px 0 rgba(0, 0, 0, 0.04)
-              `,
+               0 2px 10px rgba(0, 0, 0, 0.04),
+               0 1px 4px rgba(0, 0, 0, 0.02),
+               inset 0 1px 0 rgba(255, 255, 255, 0.4),
+               inset 0 -0.5px 0 rgba(0, 0, 0, 0.04)
+             `,
               border: '0.5px solid rgba(255, 255, 255, 0.2)',
               backdropFilter: 'saturate(180%) blur(20px)',
               WebkitBackdropFilter: 'saturate(180%) blur(20px)',
@@ -406,55 +409,93 @@ export default function MealChat({
   // ============================================================================
   return (
     <div
-      className="flex flex-col w-full max-w-md mx-auto shadow-xl min-h-screen"
+      className="flex flex-col w-full max-w-md mx-auto shadow-xl min-h-screen safe-all"
       style={{
         fontFamily: SYSTEM_FONT,
         background: '#fdf6e3',
       }}
     >
-      {/* Header */}
-      <div
-        className="flex-shrink-0 h-11 flex items-center justify-center z-20 sticky top-0"
+      {/* Back navigation button */}
+      <motion.div
+        className="fixed left-4 z-40 notch-safe"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <button
+          onClick={() => router.push('/')}
+          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
+          aria-label="Go Back to Home"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-5 h-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 12H5"></path>
+            <path d="M12 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+      </motion.div>
+
+      {/* Fixed Header - Following Summaries Pattern */}
+      <header
+        className="fixed top-0 left-0 w-full z-30 pt-safe-top"
         style={{
-          background: 'rgba(255, 255, 255, 0.95)',
+          background: '#f5ede6',
         }}
       >
-        <div className="flex items-center justify-between w-full px-4">
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center justify-center w-8 h-8 transition-all duration-200 hover:scale-110 active:scale-95"
-            aria-label="Go back to home"
+        <div className="relative w-full h-full flex flex-col items-center justify-center">
+          <div
+            className="flex flex-col items-center w-full px-4"
+            style={{
+              paddingTop: 32,
+              paddingBottom: 22,
+            }}
           >
-            <svg
-              width="18"
-              height="18"
-              fill="none"
-              viewBox="0 0 24 24"
-              className="text-gray-600"
-              aria-hidden="true"
-            >
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 12H5m0 0l7 7m-7-7l7-7"
-              />
-            </svg>
-          </button>
-
-          <div className="flex items-center gap-2.5">
-            <span className="text-lg" role="img" aria-label={`${meal} emoji`}>
-              {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🫐' : '🍜'}
-            </span>
-            <h1 className="text-[17px] font-semibold text-gray-800 tracking-[-0.41px] leading-[22px]">
-              {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
-            </h1>
+            <div className="flex items-center gap-3 mb-2">
+              <span
+                className="text-3xl"
+                role="img"
+                aria-label={`${meal} emoji`}
+              >
+                {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🫐' : '🍜'}
+              </span>
+              <div
+                className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-gray-900 text-center drop-shadow-sm ${dancingScript.className}`}
+                style={{
+                  lineHeight: 1.15,
+                  letterSpacing: '-0.02em',
+                  fontWeight: 700,
+                }}
+              >
+                {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
+              </div>
+            </div>
+            <div className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto px-2 leading-tight">
+              Let's chat about your delicious meal! 💕
+            </div>
           </div>
 
-          <div className="w-8 h-8" aria-hidden="true" />
+          {/* Curved bottom design */}
+          <div className="absolute bottom-0 left-0 w-full overflow-hidden">
+            <svg
+              className="w-full text-[#f5ede6]"
+              height="44"
+              viewBox="0 0 400 44"
+              fill="currentColor"
+              preserveAspectRatio="none"
+            >
+              <path d="M0,0 L400,0 L400,22 Q200,44 0,22 Z" />
+            </svg>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Chat Messages */}
       <div
@@ -464,6 +505,7 @@ export default function MealChat({
           minHeight: 0,
           WebkitOverflowScrolling: 'touch',
           background: 'transparent',
+          marginTop: 140, // REDUCED from 172 to bring content up
         }}
         role="log"
         aria-live="polite"
@@ -477,15 +519,20 @@ export default function MealChat({
 
       {/* Input Bar */}
       {!chatEnded && (
-        <div className="flex-shrink-0 w-full px-4 pb-6 mb-6 sticky bottom-0">
+        <div
+          className="flex-shrink-0 w-full px-4 sticky bottom-0"
+          style={{
+            paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))',
+          }}
+        >
           <form className="flex items-center gap-3" onSubmit={handleSubmit}>
             <div className="relative flex-1">
               <input
                 disabled={loading}
                 className="
-                  w-full px-5 py-3 text-black placeholder-gray-500 outline-none transition-all duration-200
-                  disabled:opacity-60
-                "
+                 w-full px-5 py-3 text-black placeholder-gray-500 outline-none transition-all duration-200
+                 disabled:opacity-60
+               "
                 style={{
                   fontFamily: SYSTEM_FONT,
                   fontSize: '17px',
@@ -514,11 +561,11 @@ export default function MealChat({
                 type="submit"
                 disabled={loading || !input.trim()}
                 className="
-                  absolute right-1.5 top-1/2 -translate-y-1/2
-                  flex items-center justify-center w-8 h-8 transition-all duration-200
-                  disabled:opacity-40 disabled:scale-95
-                  hover:scale-105 active:scale-95
-                "
+                 absolute right-1.5 top-1/2 -translate-y-1/2
+                 flex items-center justify-center w-8 h-8 transition-all duration-200
+                 disabled:opacity-40 disabled:scale-95
+                 hover:scale-105 active:scale-95
+               "
                 style={{
                   borderRadius: '20px',
                   background:
