@@ -116,3 +116,12 @@ a {
     background-color 0.2s,
     color 0.2s;
 }
+
+/* Utility classes for safe area insets */
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
