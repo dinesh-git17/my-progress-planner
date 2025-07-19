@@ -561,7 +561,7 @@ export default function SummariesPage() {
               className={`
                 w-full h-screen max-h-screen flex flex-col overflow-hidden
                 bg-gradient-to-br from-white/85 via-[#f6e7fc]/80 to-[#fdf6fa]/90
-                select-none
+                select-none safe-all
                 ${dmSans.className}
               `}
               onClick={handleStoryAreaClick}
