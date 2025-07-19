@@ -1290,15 +1290,6 @@ export default function Home() {
 
   return (
     <>
-      {/* External CSS dependencies */}
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-        crossOrigin="anonymous"
-        referrerPolicy="no-referrer"
-      />
-
       {/* Loading screen overlay */}
       <LoadingScreen isVisible={showLoadingScreen} />
 
@@ -2103,17 +2094,21 @@ export default function Home() {
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setActiveTab('meals')}
                         className={`
-                          flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
-                          ${
-                            activeTab === 'meals'
-                              ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg'
-                              : 'text-gray-400 hover:text-gray-600'
-                          }
-                        `}
+    flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
+    ${
+      activeTab === 'meals'
+        ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg'
+        : 'text-gray-400 hover:text-gray-600'
+    }
+  `}
                       >
-                        <i
-                          className={`fas fa-utensils text-xl mb-1 ${activeTab === 'meals' ? 'text-white' : 'text-gray-400'}`}
-                        ></i>
+                        <svg
+                          className={`w-5 h-5 mb-1 ${activeTab === 'meals' ? 'text-white' : 'text-gray-400'}`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                        </svg>
                         <span
                           className={`text-xs font-medium ${activeTab === 'meals' ? 'text-white' : 'text-gray-400'}`}
                         >
@@ -2126,17 +2121,21 @@ export default function Home() {
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setActiveTab('progress')}
                         className={`
-                          flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
-                          ${
-                            activeTab === 'progress'
-                              ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg'
-                              : 'text-gray-400 hover:text-gray-600'
-                          }
-                        `}
+    flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
+    ${
+      activeTab === 'progress'
+        ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg'
+        : 'text-gray-400 hover:text-gray-600'
+    }
+  `}
                       >
-                        <i
-                          className={`fas fa-chart-line text-xl mb-1 ${activeTab === 'progress' ? 'text-white' : 'text-gray-400'}`}
-                        ></i>
+                        <svg
+                          className={`w-5 h-5 mb-1 ${activeTab === 'progress' ? 'text-white' : 'text-gray-400'}`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                        </svg>
                         <span
                           className={`text-xs font-medium ${activeTab === 'progress' ? 'text-white' : 'text-gray-400'}`}
                         >
@@ -2144,22 +2143,26 @@ export default function Home() {
                         </span>
                       </motion.button>
 
-                      {/* NEW: Friends tab */}
+                      {/* Friends tab */}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setActiveTab('friends')}
                         className={`
-                          flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
-                          ${
-                            activeTab === 'friends'
-                              ? 'bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-lg'
-                              : 'text-gray-400 hover:text-gray-600'
-                          }
-                        `}
+                        flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
+                        ${
+                          activeTab === 'friends'
+                            ? 'bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-lg'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }
+                      `}
                       >
-                        <i
-                          className={`fas fa-users text-xl mb-1 ${activeTab === 'friends' ? 'text-white' : 'text-gray-400'}`}
-                        ></i>
+                        <svg
+                          className={`w-5 h-5 mb-1 ${activeTab === 'friends' ? 'text-white' : 'text-gray-400'}`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                        </svg>
                         <span
                           className={`text-xs font-medium ${activeTab === 'friends' ? 'text-white' : 'text-gray-400'}`}
                         >
