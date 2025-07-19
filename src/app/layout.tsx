@@ -47,10 +47,10 @@ export const metadata: Metadata = {
     telephone: false,
   },
 
-  // Apple PWA configuration (simplified)
+  // Apple PWA configuration (optimized for native feel)
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent', // 🔥 FIXED: Allows content to extend into notch
     title: 'My Progress',
   },
 
@@ -103,14 +103,14 @@ export const metadata: Metadata = {
 };
 
 // ============================================================================
-// VIEWPORT CONFIGURATION (CLEANED - NO NOTCH EXTENSIONS)
+// VIEWPORT CONFIGURATION - PWA NATIVE OPTIMIZATION
 // ============================================================================
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  // REMOVED: viewportFit: 'cover' - this was for notch extension
+  viewportFit: 'cover', // 🔥 RESTORED: Essential for content extending into notch
 };
 
 // ============================================================================
@@ -124,6 +124,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={dmSans.className} suppressHydrationWarning>
       <head>
+        {/* ==============================================
+            PWA NATIVE VIEWPORT - MANUAL OVERRIDE
+            ============================================== */}
+
+        {/* 🔥 CRITICAL: Manual viewport meta for maximum device compatibility */}
+        <meta
+          name="viewport"
+          content="viewport-fit=cover, width=device-width, initial-scale=1, user-scalable=no"
+        />
+
         {/* ==============================================
             PERFORMANCE OPTIMIZATION
             ============================================== */}
@@ -150,13 +160,33 @@ export default function RootLayout({
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
 
         {/* ==============================================
+            PWA OPTIMIZATION
+            ============================================== */}
+
+        {/* Enhanced PWA meta tags for native-like experience */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="My Progress" />
+
+        {/* ==============================================
             SECURITY HEADERS
             ============================================== */}
 
-        {/* Content Security Policy - production ready */}
+        {/* Essential security headers for production */}
+        <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+        <meta
+          httpEquiv="Referrer-Policy"
+          content="strict-origin-when-cross-origin"
+        />
+
+        {/* Content Security Policy - optimized for Supabase + OpenAI */}
         <meta
           httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://api.openai.com; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://api.openai.com; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
         />
 
         {/* ==============================================
@@ -166,146 +196,8 @@ export default function RootLayout({
         <meta name="theme-color" content="#f5ede6" />
         <meta name="msapplication-TileColor" content="#f5ede6" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
-
-        {/* ==============================================
-            APPLE SPLASH SCREENS (OPTIONAL)
-            Remove this section if you don't have splash images
-            ============================================== */}
-
-        {/* iPhone 15 Pro Max, 14 Pro Max, 14 Plus, 13 Pro Max, 12 Pro Max */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1290x2796.png"
-          media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 15 Pro, 15, 14 Pro */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1179x2556.png"
-          media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 14, 13, 13 Pro, 12, 12 Pro */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1170x2532.png"
-          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 13 mini, 12 mini, 11 Pro, XS, X */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1125x2436.png"
-          media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 11 Pro Max, XS Max */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1242x2688.png"
-          media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 11, XR */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-828x1792.png"
-          media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
-        />
-
-        {/* iPhone 8 Plus, 7 Plus, 6s Plus, 6 Plus */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1242x2208.png"
-          media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
-        />
-
-        {/* iPhone 8, 7, 6s, 6, SE (2nd gen) */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-750x1334.png"
-          media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
-        />
-
-        {/* iPad Pro 12.9" */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-2048x2732.png"
-          media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
-        />
-
-        {/* iPad Pro 11" */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash-1668x2388.png"
-          media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
-        />
       </head>
-
-      {/* ==============================================
-          BODY ELEMENT - CLEAN & SIMPLE
-          ============================================== */}
-      <body className="antialiased">
-        {/* Service Worker Registration (you may need to add this component) */}
-        {/* <ServiceWorkerRegister /> */}
-
-        {/* Main application content */}
-        {children}
-
-        {/* ==============================================
-            THEME INITIALIZATION SCRIPT
-            Prevents FOUC (Flash of Unstyled Content)
-            ============================================== */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const savedTheme = localStorage.getItem('theme');
-                  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-                  
-                  document.documentElement.setAttribute('data-theme', theme);
-                  document.documentElement.style.setProperty('--initial-theme', theme);
-                } catch (error) {
-                  document.documentElement.setAttribute('data-theme', 'light');
-                  console.warn('Theme initialization failed:', error);
-                }
-              })();
-            `,
-          }}
-        />
-
-        {/* ==============================================
-            WEB VITALS MONITORING (OPTIONAL)
-            Uncomment for production performance monitoring
-            ============================================== */}
-        {/* 
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                if ('PerformanceObserver' in window) {
-                  new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    const lastEntry = entries[entries.length - 1];
-                    console.log('LCP:', lastEntry.startTime);
-                  }).observe({ entryTypes: ['largest-contentful-paint'] });
-                  
-                  new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    entries.forEach((entry) => {
-                      console.log('FID:', entry.processingStart - entry.startTime);
-                    });
-                  }).observe({ entryTypes: ['first-input'] });
-                }
-              })();
-            `,
-          }}
-        />
-        */}
-      </body>
+      <body className={`${dmSans.className} antialiased`}>{children}</body>
     </html>
   );
 }
