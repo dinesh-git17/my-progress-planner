@@ -629,7 +629,7 @@ export default function SummariesPage() {
               </style>
 
               {/* Modal content */}
-              <div className="flex flex-col flex-1 min-h-0 w-full px-6 pb-3 justify-start">
+              <div className="flex flex-col flex-1 min-h-0 w-full px-6 pb-safe-bottom justify-start">
                 {/* Date display */}
                 <div className="w-full pt-8 pb-2 flex flex-col items-center">
                   <div className="text-center text-gray-600 font-normal uppercase tracking-widest text-[1.15rem] sm:text-[1.25rem] select-none mb-1">
