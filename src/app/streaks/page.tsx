@@ -250,10 +250,10 @@ const BANNER_TOTAL_HEIGHT =
 function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
   return (
     <header
-      className="fixed top-0 left-0 w-full z-30"
+      className="safe-area-pt fixed top-0 left-0 w-full z-30"
       style={{
-        height: BANNER_TOTAL_HEIGHT,
-        minHeight: BANNER_TOTAL_HEIGHT,
+        height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`,
+        minHeight: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`,
         pointerEvents: 'none',
         background: 'transparent',
         border: 'none',
@@ -439,11 +439,11 @@ export default function StreaksPage() {
         {/* Main Content Area */}
         <div
           className="flex-1 w-full max-w-2xl mx-auto flex flex-col relative z-10"
-          style={{
-            marginTop: `${BANNER_TOTAL_HEIGHT - 20}px`,
-            height: `calc(100vh - ${BANNER_TOTAL_HEIGHT - 20}px)`,
-            overflow: 'auto',
-          }}
+        style={{
+          marginTop: `calc(${BANNER_TOTAL_HEIGHT - 20}px + env(safe-area-inset-top))`,
+          height: `calc(100vh - (${BANNER_TOTAL_HEIGHT - 20}px + env(safe-area-inset-top)))`,
+          overflow: 'auto',
+        }}
         >
           <div className="px-4 pb-8 pt-8">
             {loading ? (
