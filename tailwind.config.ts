@@ -179,8 +179,6 @@ const config: Config = {
     'pt-safe-top',
     'pt-safe-top-min',
     'pt-safe-top-header',
-    'pb-safe-bottom',
-    'pb-safe-bottom-min',
     'pl-safe-left',
     'pl-safe-left-min',
     'pr-safe-right',

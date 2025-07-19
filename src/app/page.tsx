@@ -579,7 +579,7 @@ function LoadingScreen({ isVisible }: { isVisible: boolean }) {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
-            className="relative z-10 text-center px-6 pb-safe-bottom"
+            className="relative z-10 text-center px-6"
           >
             <h1
               className="text-lg font-light text-gray-600 mb-3 tracking-wide"
@@ -1315,7 +1315,7 @@ export default function Home() {
           animate={{ opacity: 1 }}
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center"
         >
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl max-w-sm mx-4 pt-8 px-8 pb-safe-bottom">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl max-w-sm mx-4 pt-8 px-8">
             <div className="text-center">
               <div className="mb-4 text-4xl">🔄</div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">
@@ -1432,7 +1432,7 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/40 pt-8 px-8 pb-safe-bottom">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/40 pt-8 px-8">
                     <input
                       className="
                         w-full px-6 py-4 mb-6 rounded-2xl border-none shadow-inner
@@ -1739,7 +1739,7 @@ export default function Home() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.3 }}
-                        className="pb-safe-bottom"
+                        className="pb-4"
                       >
                         <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
                           Meals Today
@@ -1833,7 +1833,7 @@ export default function Home() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ duration: 0.3 }}
-                        className="pb-safe-bottom"
+                        className="pb-4"
                       >
                         <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
                           Progress
@@ -1978,7 +1978,7 @@ export default function Home() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ duration: 0.3 }}
-                        className="pb-safe-bottom"
+                        className="pb-4"
                       >
                         <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
                           Friends & Support
