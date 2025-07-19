@@ -109,7 +109,7 @@ export default function MealLogPage() {
       <section className="w-full max-w-sm flex flex-col h-full min-h-0 overflow-hidden relative shadow-xl rounded-3xl bg-white/90 my-2">
         {/* Chat area */}
         <div
-          className="flex-1 flex flex-col overflow-y-auto px-3 pt-5 pb-safe-bottom min-h-0"
+          className="flex-1 flex flex-col overflow-y-auto px-3 pt-5 min-h-0"
           onClick={focusInput}
           style={{
             WebkitOverflowScrolling: 'touch',
@@ -216,7 +216,7 @@ export default function MealLogPage() {
           </button>
         </form>
         {chatEnded && (
-          <div className="flex justify-center pb-safe-bottom">
+          <div className="flex justify-center">
             <button
               onClick={() => router.push('/')}
               className="px-6 py-2 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 text-white font-semibold text-base shadow-md transition hover:scale-105 mt-3"
