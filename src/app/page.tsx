@@ -571,7 +571,7 @@ function LoadingScreen({ isVisible }: { isVisible: boolean }) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-          className="loading-screen-image flex flex-col items-center justify-center"
+          className="loading-screen-image flex flex-col items-center justify-center safe-all"
         >
           <div className="flex-1" />
 
@@ -1313,7 +1313,7 @@ export default function Home() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center safe-all"
         >
           <div className="bg-white/90 backdrop-blur-md rounded-2xl p-8 shadow-2xl max-w-sm mx-4">
             <div className="text-center">
@@ -1363,7 +1363,7 @@ export default function Home() {
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -50 }}
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-100 border border-green-300 rounded-lg p-4 max-w-sm mx-4"
+          className="fixed left-1/2 transform -translate-x-1/2 z-50 bg-red-100 border border-red-300 rounded-lg p-4 max-w-sm notch-safe"
         >
           <div className="flex items-center">
             <div className="text-green-600 mr-3">✅</div>
@@ -1383,15 +1383,12 @@ export default function Home() {
       <AnimatePresence>
         {contentReady && (
           <motion.main
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
             className="
               min-h-[100dvh] w-full h-[100dvh] overflow-hidden
-              relative pt-8 md:pt-12 flex flex-col
+              relative flex flex-col safe-all
             "
             style={{
-              paddingTop: '2rem',
+              paddingTop: 'calc(2rem + env(safe-area-inset-top))',
             }}
           >
             {/* 
@@ -1419,7 +1416,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="absolute inset-0 z-50 flex items-center justify-center px-4"
+                className="absolute inset-0 z-50 flex items-center justify-center safe-x"
               >
                 <div className="w-full max-w-md">
                   <div className="flex flex-col items-center mb-8">
@@ -1497,7 +1494,7 @@ export default function Home() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6 }}
-                className="absolute inset-0 z-50 flex items-center justify-center px-4"
+                className="absolute inset-0 z-50 flex items-center justify-center safe-x"
               >
                 <div className="text-center">
                   <div className="mb-6 text-6xl">💖</div>
@@ -1518,7 +1515,7 @@ export default function Home() {
             {!askName && userId && (
               <>
                 {/* Header with greeting and profile */}
-                <div className="w-full max-w-lg mx-auto px-4 flex flex-row items-center justify-between mb-8">
+                <div className="w-full max-w-lg mx-auto safe-x flex flex-row items-center justify-between mb-8">
                   <div className="flex flex-col">
                     <span className="text-[1.5rem] font-bold text-gray-900 leading-snug flex items-center gap-1">
                       {name ? (
@@ -1696,7 +1693,7 @@ export default function Home() {
                 </div>
 
                 {/* Motivational quote section */}
-                <div className="w-full max-w-lg mx-auto px-4 mb-6">
+                <div className="w-full max-w-lg mx-auto safe-x mb-6">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1729,7 +1726,7 @@ export default function Home() {
                 </div>
 
                 {/* Main content area with tabs */}
-                <div className="w-full max-w-lg mx-auto px-4 flex-1 overflow-y-auto">
+                <div className="w-full max-w-lg mx-auto safe-x flex-1 overflow-y-auto">
                   <AnimatePresence mode="wait">
                     {/* Meals tab content */}
                     {activeTab === 'meals' && (
@@ -2098,8 +2095,8 @@ export default function Home() {
                 {/* ============================================================ */}
                 {/* BOTTOM NAVIGATION TABS */}
                 {/* ============================================================ */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-2">
-                  <div className="w-full max-w-lg mx-auto">
+                <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 pb-safe-bottom">
+                  <div className="w-full max-w-lg mx-auto safe-x py-2">
                     <div className="flex items-center justify-around">
                       {/* Meals tab */}
                       <motion.button
