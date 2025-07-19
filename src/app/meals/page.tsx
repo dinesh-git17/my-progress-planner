@@ -109,9 +109,8 @@ function getAvailableStories(mealList: MealList): StoryTab[] {
 function MealsHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
   return (
     <header
-      className="fixed top-0 left-0 w-full z-30"
+      className="fixed top-0 left-0 w-full z-30 pt-safe-top"
       style={{
-        height: BANNER_TOTAL_HEIGHT,
         background: '#f5ede6', // Clean solid background
       }}
     >
@@ -568,11 +567,11 @@ export default function MealsPage() {
     >
       <motion.div
         className={`
-          w-full h-screen max-h-screen flex flex-col overflow-hidden
-          bg-gradient-to-br from-white/85 via-[#f6e7fc]/80 to-[#fdf6fa]/90
-          select-none
-          ${dmSans.className}
-        `}
+        w-full h-screen max-h-screen flex flex-col overflow-hidden
+        bg-gradient-to-br from-white/85 via-[#f6e7fc]/80 to-[#fdf6fa]/90
+        select-none safe-all
+        ${dmSans.className}
+      `}
         onClick={handleStoryAreaClick}
         style={{
           borderRadius: 0,
@@ -721,7 +720,7 @@ export default function MealsPage() {
     <div className={`min-h-screen w-full ${dmSans.className}`}>
       {/* Back Button */}
       <motion.div
-        className="fixed left-4 top-4 z-40"
+        className="fixed left-4 z-40 notch-safe"
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3 }}
@@ -753,12 +752,12 @@ export default function MealsPage() {
 
       {/* Main Content */}
       <div
-        className="w-full max-w-2xl mx-auto"
+        className="w-full max-w-2xl mx-auto safe-x"
         style={{
           marginTop: BANNER_TOTAL_HEIGHT,
           minHeight: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
-          paddingTop: '2rem',
-          paddingBottom: '2rem',
+          paddingTop: 'calc(2rem + env(safe-area-inset-top))',
+          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
         }}
       >
         <div className="px-4">
