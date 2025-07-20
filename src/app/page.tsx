@@ -660,7 +660,7 @@ export default function Home() {
     () => {
       if (typeof window !== 'undefined') {
         return (
-          (localStorage.getItem('activeTab') as
+          (sessionStorage.getItem('activeTab') as
             | 'meals'
             | 'progress'
             | 'friends') || 'meals'
@@ -1033,7 +1033,7 @@ export default function Home() {
    */
 
   useEffect(() => {
-    localStorage.setItem('activeTab', activeTab);
+    sessionStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
 
   /**
