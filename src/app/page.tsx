@@ -1958,7 +1958,7 @@ export default function Home() {
                                     >
                                       <path
                                         fillRule="evenodd"
-                                        d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z"
+                                        d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
                                         clipRule="evenodd"
                                       />
                                     </svg>
@@ -2118,11 +2118,42 @@ export default function Home() {
                         }}
                         className="pb-24"
                       >
-                        {/* Your friends content here - same as before */}
+                        {/* friends content */}
                         <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
                           Friends & Support
                         </span>
                         <div className="flex flex-col gap-6">
+                          <motion.div
+                            whileTap={{ scale: 0.98 }}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-purple-50 hover:shadow-lg cursor-pointer"
+                            onClick={() => router.push('/friends-list')}
+                            tabIndex={0}
+                            role="button"
+                          >
+                            <span className="text-2xl">👥</span>
+                            <div className="flex-1 flex flex-col ml-4">
+                              <span className="text-base font-semibold text-gray-900">
+                                My Friends
+                              </span>
+                              <span className="text-xs text-gray-400 mt-1">
+                                View your friends and their progress
+                              </span>
+                            </div>
+                            <span className="text-gray-300">
+                              <svg
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </span>
+                          </motion.div>
+
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-blue-50 hover:shadow-lg cursor-pointer"
@@ -2130,14 +2161,13 @@ export default function Home() {
                             tabIndex={0}
                             role="button"
                           >
-                            <span className="text-2xl">👥</span>
+                            <span className="text-2xl">⚙️</span>
                             <div className="flex-1 flex flex-col ml-4">
                               <span className="text-base font-semibold text-gray-900">
                                 Manage Friends
                               </span>
                               <span className="text-xs text-gray-400 mt-1">
-                                Add friends, share your code, and view
-                                connections
+                                Add friends, share your code, and settings
                               </span>
                             </div>
                             <span className="text-gray-300">
@@ -2185,26 +2215,6 @@ export default function Home() {
                               </svg>
                             </span>
                           </motion.div>
-
-                          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
-                            <div className="text-center">
-                              <p className="text-sm text-gray-600 mb-2">
-                                Your Friend Code
-                              </p>
-                              <div className="bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg p-3 border-2 border-dashed border-indigo-300 mb-3">
-                                <div className="text-lg font-bold tracking-wider text-gray-800">
-                                  {friendCode
-                                    ? formatFriendCode(friendCode)
-                                    : '--:--:--'}
-                                </div>
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                {friendCode
-                                  ? 'Share this code with friends to connect!'
-                                  : 'Tap "Manage Friends" to generate your code'}
-                              </p>
-                            </div>
-                          </div>
                         </div>
                       </motion.div>
                     )}

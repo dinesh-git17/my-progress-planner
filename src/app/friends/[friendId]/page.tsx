@@ -211,16 +211,23 @@ function MealCard({
   emoji,
   label,
   isLogged,
+  index,
 }: {
   meal: string;
   emoji: string;
   label: string;
   isLogged: boolean;
+  index: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.3,
+        delay: index * 0.05,
+        ease: [0.4, 0, 0.2, 1],
+      }}
       className={`
         relative px-4 py-4 rounded-xl border-2 transition-all duration-300
         ${
@@ -248,8 +255,9 @@ function MealCard({
 
         {isLogged && (
           <motion.div
-            initial={{ scale: 0 }}
+            initial={false}
             animate={{ scale: 1 }}
+            transition={{ delay: index * 0.05 + 0.2 }}
             className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center"
           >
             <span className="text-white text-xs">✓</span>
@@ -387,7 +395,7 @@ export default function FriendDetailPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center">
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={false}
           animate={{ opacity: 1 }}
           className="text-center"
         >
@@ -403,7 +411,7 @@ export default function FriendDetailPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center p-4">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           className="text-center bg-white rounded-2xl p-8 shadow-lg max-w-md w-full"
         >
@@ -411,7 +419,7 @@ export default function FriendDetailPage() {
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Oops!</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => router.push('/friends')}
+            onClick={() => router.push('/')}
             className="w-full bg-pink-500 text-white py-3 rounded-xl font-medium hover:bg-pink-600 transition-colors"
           >
             Back to Friends
@@ -430,12 +438,12 @@ export default function FriendDetailPage() {
       {/* Back navigation button */}
       <motion.div
         className="fixed left-4 z-40 notch-safe"
-        initial={{ opacity: 0, x: -10 }}
+        initial={false}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3 }}
       >
         <button
-          onClick={() => router.push('/friends')}
+          onClick={() => router.push('/friends-list')}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go back to friends"
         >
@@ -461,11 +469,17 @@ export default function FriendDetailPage() {
         }}
       >
         <div className="px-4">
-          <main className="max-w-md mx-auto space-y-6">
+          <motion.main
+            initial={false}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="max-w-md mx-auto space-y-6"
+          >
             {/* Today's Meals Section */}
             <motion.section
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
               className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
             >
               <div className="flex items-center space-x-2 mb-4">
@@ -476,7 +490,7 @@ export default function FriendDetailPage() {
               </div>
 
               <div className="space-y-3">
-                {mealLabels.map(({ meal, emoji, label }) => {
+                {mealLabels.map(({ meal, emoji, label }, index) => {
                   // Check if the meal summary exists (indicates meal was logged)
                   const summaryKey =
                     `${meal}_summary` as keyof typeof friendData.summaries;
@@ -489,20 +503,26 @@ export default function FriendDetailPage() {
                       emoji={emoji}
                       label={label}
                       isLogged={isLogged}
+                      index={index}
                     />
                   );
                 })}
               </div>
 
               {/* Meals Summary */}
-              <div className="mt-4 p-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl">
+              <motion.div
+                initial={false}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="mt-4 p-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl"
+              >
                 <p className="text-center text-sm text-gray-600">
                   <span className="font-medium text-pink-600">
                     {friendData.progress?.meals_completed_today || 0} of 3
                   </span>{' '}
                   meals logged today
                 </p>
-              </div>
+              </motion.div>
             </motion.section>
 
             {/* Meal Summaries Section */}
@@ -510,9 +530,9 @@ export default function FriendDetailPage() {
               friendData.summaries?.lunch_summary ||
               friendData.summaries?.dinner_summary) && (
               <motion.section
-                initial={{ opacity: 0, y: 20 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
                 className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
               >
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">
@@ -522,7 +542,12 @@ export default function FriendDetailPage() {
                 <div className="space-y-4">
                   {/* Breakfast Summary */}
                   {friendData.summaries.breakfast_summary && (
-                    <div className="p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-100">
+                    <motion.div
+                      initial={false}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-100"
+                    >
                       <div className="flex items-center space-x-2 mb-2">
                         <span className="text-xl">🍳</span>
                         <h3 className="font-medium text-gray-800">Breakfast</h3>
@@ -530,12 +555,17 @@ export default function FriendDetailPage() {
                       <p className="text-sm text-gray-700 leading-relaxed">
                         {friendData.summaries.breakfast_summary}
                       </p>
-                    </div>
+                    </motion.div>
                   )}
 
                   {/* Lunch Summary */}
                   {friendData.summaries.lunch_summary && (
-                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                    <motion.div
+                      initial={false}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.35 }}
+                      className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
+                    >
                       <div className="flex items-center space-x-2 mb-2">
                         <span className="text-xl">🫐</span>
                         <h3 className="font-medium text-gray-800">Lunch</h3>
@@ -543,12 +573,17 @@ export default function FriendDetailPage() {
                       <p className="text-sm text-gray-700 leading-relaxed">
                         {friendData.summaries.lunch_summary}
                       </p>
-                    </div>
+                    </motion.div>
                   )}
 
                   {/* Dinner Summary */}
                   {friendData.summaries.dinner_summary && (
-                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                    <motion.div
+                      initial={false}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100"
+                    >
                       <div className="flex items-center space-x-2 mb-2">
                         <span className="text-xl">🍜</span>
                         <h3 className="font-medium text-gray-800">Dinner</h3>
@@ -556,12 +591,17 @@ export default function FriendDetailPage() {
                       <p className="text-sm text-gray-700 leading-relaxed">
                         {friendData.summaries.dinner_summary}
                       </p>
-                    </div>
+                    </motion.div>
                   )}
 
                   {/* Full Day Summary */}
                   {friendData.summaries.full_day_summary && (
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                    <motion.div
+                      initial={false}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.45 }}
+                      className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100"
+                    >
                       <div className="flex items-center space-x-2 mb-2">
                         <span className="text-xl">✨</span>
                         <h3 className="font-medium text-gray-800">
@@ -571,7 +611,7 @@ export default function FriendDetailPage() {
                       <p className="text-sm text-gray-700 leading-relaxed">
                         {friendData.summaries.full_day_summary}
                       </p>
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               </motion.section>
@@ -579,9 +619,9 @@ export default function FriendDetailPage() {
 
             {/* Send Encouragement Section */}
             <motion.section
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
               className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
             >
               <div className="flex items-center space-x-2 mb-4">
@@ -641,9 +681,9 @@ export default function FriendDetailPage() {
             {/* Recent Notes Section */}
             {friendData.notes && friendData.notes.length > 0 && (
               <motion.section
-                initial={{ opacity: 0, y: 20 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
                 className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
               >
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">
@@ -651,11 +691,15 @@ export default function FriendDetailPage() {
                 </h2>
 
                 <div className="space-y-3">
-                  {friendData.notes.slice(0, 5).map((note) => (
+                  {friendData.notes.slice(0, 5).map((note, index) => (
                     <motion.div
                       key={note.id}
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={false}
                       animate={{ opacity: 1, x: 0 }}
+                      transition={{
+                        delay: 0.5 + index * 0.05,
+                        duration: 0.3,
+                      }}
                       className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
                     >
                       <p className="text-sm text-gray-700 mb-2">{note.note}</p>
@@ -671,7 +715,7 @@ export default function FriendDetailPage() {
 
             {/* Bottom Spacing */}
             <div className="h-20" />
-          </main>
+          </motion.main>
         </div>
       </div>
     </div>
