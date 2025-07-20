@@ -7,12 +7,12 @@ export async function GET(req: Request) {
   const randomizer = Math.random().toString(36).slice(2, 10);
   const prompt = `
 You are a loving, gentle motivator acting like a sweet boyfriend.
-Give a short, sweet, *original* motivational quote (max 20 words) about eating, self-care, and taking small steps.
+Give a short, sweet, *original* motivational quote (max 15 words) about eating, self-care, and taking small steps.
 Use the person's name: "${name}" naturally in the message to make it feel personal and loving.
 Avoid using em-dashes (—) or en-dashes (–) completely.
 Do NOT mention or reference the random string. Just use it for uniqueness: "${randomizer}"
 The tone should feel like a caring message meant to lift "${name}" up with affection and positivity.
-Do not use any dashes or special characters in the quote. 
+Do not use any dashes or special characters in the quote.  
 `;
 
   try {

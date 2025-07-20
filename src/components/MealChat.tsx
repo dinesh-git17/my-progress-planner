@@ -415,97 +415,71 @@ export default function MealChat({
         background: '#fdf6e3',
       }}
     >
-      {/* Back navigation button */}
-      <motion.div
-        className="fixed left-4 z-40 notch-safe"
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <button
-          onClick={() => router.push('/')}
-          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
-          aria-label="Go Back to Home"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5"></path>
-            <path d="M12 19l-7-7 7-7"></path>
-          </svg>
-        </button>
-      </motion.div>
-
-      {/* Fixed Header - Following Summaries Pattern */}
+      {/* Fixed Header - Messaging App Style */}
       <header
-        className="fixed top-0 left-0 w-full z-30 pt-safe-top"
+        className="fixed top-0 left-0 w-full z-30"
         style={{
-          background: '#f5ede6',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'saturate(180%) blur(20px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+          borderBottom: '0.5px solid rgba(0, 0, 0, 0.08)',
         }}
       >
-        <div className="relative w-full h-full flex flex-col items-center justify-center">
-          <div
-            className="flex flex-col items-center w-full px-4"
-            style={{
-              paddingTop: 32,
-              paddingBottom: 22,
-            }}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <span
-                className="text-3xl"
-                role="img"
-                aria-label={`${meal} emoji`}
-              >
-                {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🫐' : '🍜'}
-              </span>
-              <div
-                className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-gray-900 text-center drop-shadow-sm ${dancingScript.className}`}
-                style={{
-                  lineHeight: 1.15,
-                  letterSpacing: '-0.02em',
-                  fontWeight: 700,
-                }}
-              >
-                {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
-              </div>
-            </div>
-            <div className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto px-2 leading-tight">
-              Let's chat about your delicious meal! 💕
-            </div>
-          </div>
+        {/* Safe area top padding */}
+        <div style={{ height: 'env(safe-area-inset-top)' }} />
 
-          {/* Curved bottom design */}
-          <div className="absolute bottom-0 left-0 w-full overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left: Back Button */}
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center justify-center w-8 h-8 text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Go Back to Home"
+          >
             <svg
-              className="w-full text-[#f5ede6]"
-              height="44"
-              viewBox="0 0 400 44"
-              fill="currentColor"
-              preserveAspectRatio="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <path d="M0,0 L400,0 L400,22 Q200,44 0,22 Z" />
+              <path d="M19 12H5"></path>
+              <path d="M12 19l-7-7 7-7"></path>
             </svg>
+          </button>
+          {/* Center: Meal Title */}
+          <div className="flex items-center gap-2">
+            <span className="text-xl" role="img" aria-label={`${meal} emoji`}>
+              {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🫐' : '🍜'}
+            </span>
+            <div
+              className="text-lg font-semibold text-gray-900"
+              style={{
+                fontFamily: SYSTEM_FONT,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
+            </div>
           </div>
+          {/* Right: Menu/Options (placeholder for now) */}
+          <div className="w-8 h-8" /> {/* Spacer to center the title */}
         </div>
       </header>
 
       {/* Chat Messages */}
       <div
         ref={chatBodyRef}
-        className="flex-1 w-full px-4 py-6 flex flex-col justify-start overflow-y-auto"
+        className="flex-1 w-full px-4 flex flex-col justify-start overflow-y-auto"
         style={{
           minHeight: 0,
           WebkitOverflowScrolling: 'touch',
           background: 'transparent',
-          marginTop: 140, // REDUCED from 172 to bring content up
+          marginTop: 'calc(env(safe-area-inset-top) + 20px)', // Reduced header height
+          paddingTop: 4, // Minimal padding from header
+          paddingBottom: 24, // Bottom padding
         }}
         role="log"
         aria-live="polite"
