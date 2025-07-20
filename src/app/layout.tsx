@@ -47,11 +47,109 @@ export const metadata: Metadata = {
     telephone: false,
   },
 
-  // Apple PWA configuration (optimized for native feel)
+  // 🔥 ENHANCED: Apple PWA configuration with comprehensive splash screen support
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent', // 🔥 FIXED: Allows content to extend into notch
+    statusBarStyle: 'black-translucent', // Allows content to extend into notch
     title: 'My Progress',
+    startupImage: [
+      // iPhone 15 Pro Max, iPhone 15 Plus, iPhone 14 Pro Max
+      {
+        url: '/splash/iphone-15-pro-max.png',
+        media:
+          '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+      },
+      // iPhone 15 Pro, iPhone 15, iPhone 14 Pro
+      {
+        url: '/splash/iphone-15-pro.png',
+        media:
+          '(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+      },
+      // iPhone 14, iPhone 13, iPhone 12
+      {
+        url: '/splash/iphone-14.png',
+        media:
+          '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+      },
+      // iPhone 14 Plus, iPhone 13 Pro Max, iPhone 12 Pro Max
+      {
+        url: '/splash/iphone-14-plus.png',
+        media:
+          '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+      },
+      // iPhone 13 mini, iPhone 12 mini
+      {
+        url: '/splash/iphone-13-mini.png',
+        media:
+          '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+      },
+      // iPhone SE 3rd gen, iPhone SE 2nd gen
+      {
+        url: '/splash/iphone-se.png',
+        media:
+          '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
+      },
+      // iPhone 11 Pro Max, iPhone XS Max
+      {
+        url: '/splash/iphone-11-pro-max.png',
+        media:
+          '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+      },
+      // iPhone 11, iPhone XR
+      {
+        url: '/splash/iphone-11.png',
+        media:
+          '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
+      },
+      // iPhone 11 Pro, iPhone XS, iPhone X
+      {
+        url: '/splash/iphone-11-pro.png',
+        media:
+          '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+      },
+      // iPhone 8 Plus, iPhone 7 Plus, iPhone 6s Plus, iPhone 6 Plus
+      {
+        url: '/splash/iphone-8-plus.png',
+        media:
+          '(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
+      },
+      // iPhone 8, iPhone 7, iPhone 6s, iPhone 6
+      {
+        url: '/splash/iphone-8.png',
+        media:
+          '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
+      },
+      // iPad Pro 12.9" (6th gen, 5th gen, 4th gen, 3rd gen)
+      {
+        url: '/splash/ipad-pro-12-9.png',
+        media:
+          '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
+      },
+      // iPad Pro 11" (4th gen, 3rd gen, 2nd gen, 1st gen)
+      {
+        url: '/splash/ipad-pro-11.png',
+        media:
+          '(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
+      },
+      // iPad Air (5th gen, 4th gen), iPad Pro 10.5"
+      {
+        url: '/splash/ipad-air.png',
+        media:
+          '(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
+      },
+      // iPad (10th gen, 9th gen, 8th gen, 7th gen), iPad Air (3rd gen, 2nd gen)
+      {
+        url: '/splash/ipad.png',
+        media:
+          '(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
+      },
+      // iPad mini (6th gen, 5th gen)
+      {
+        url: '/splash/ipad-mini.png',
+        media:
+          '(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
+      },
+    ],
   },
 
   // Icons configuration
@@ -110,7 +208,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: 'cover', // 🔥 RESTORED: Essential for content extending into notch
+  viewportFit: 'cover', // Essential for content extending into notch
 };
 
 // ============================================================================
@@ -128,7 +226,7 @@ export default function RootLayout({
             PWA NATIVE VIEWPORT - MANUAL OVERRIDE
             ============================================== */}
 
-        {/* 🔥 CRITICAL: Manual viewport meta for maximum device compatibility */}
+        {/* Critical: Manual viewport meta for maximum device compatibility */}
         <meta
           name="viewport"
           content="viewport-fit=cover, width=device-width, initial-scale=1, user-scalable=no"
