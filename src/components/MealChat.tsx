@@ -63,8 +63,10 @@ export default function MealChat({
   const gptReplies = useRef<string[]>([]);
   const chatBodyRef = useRef<HTMLDivElement>(null);
 
+  // Add overlay state for smooth transitions
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [initialViewportHeight, setInitialViewportHeight] = useState(0);
+  const [showScrollOverlay, setShowScrollOverlay] = useState(false);
 
   const router = useRouter();
 
@@ -84,7 +86,7 @@ export default function MealChat({
   }, [meal]);
 
   /**
-   * Single smooth auto-scroll
+   * Single smooth auto-scroll - no overlay for regular messages
    */
   useEffect(() => {
     if (!chatBodyRef.current) return;
@@ -93,35 +95,11 @@ export default function MealChat({
       const el = chatBodyRef.current;
       if (!el) return;
 
-      // Single smooth scroll to bottom
-      el.scrollTo({
-        top: el.scrollHeight,
-        behavior: 'smooth',
-      });
-    };
+      // Check if user is near bottom before auto-scrolling
+      const isNearBottom =
+        el.scrollHeight - el.scrollTop <= el.clientHeight + 150;
 
-    // Single scroll attempt with small delay for DOM updates
-    const timeoutId = setTimeout(scrollToBottom, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [messages, loading]);
-
-  /**
-   * Keyboard state change scroll (gentler approach)
-   */
-  useEffect(() => {
-    if (!chatBodyRef.current) return;
-
-    // Only scroll if we're not already at the bottom
-    const scrollToBottomGently = () => {
-      const el = chatBodyRef.current;
-      if (!el) return;
-
-      const isAtBottom =
-        el.scrollHeight - el.scrollTop <= el.clientHeight + 100;
-
-      // Only auto-scroll if user was already near the bottom
-      if (isAtBottom) {
+      if (isNearBottom) {
         el.scrollTo({
           top: el.scrollHeight,
           behavior: 'smooth',
@@ -129,10 +107,64 @@ export default function MealChat({
       }
     };
 
-    // Gentle scroll after keyboard animation completes
-    const timeoutId = setTimeout(scrollToBottomGently, 350); // After transform animation
+    // Only scroll for new messages, with delay for DOM updates
+    const timeoutId = setTimeout(scrollToBottom, 150);
 
     return () => clearTimeout(timeoutId);
+  }, [messages]);
+
+  /**
+   * Keyboard scroll with overlay - ONLY when keyboard OPENS
+   */
+  useEffect(() => {
+    if (!chatBodyRef.current) return;
+
+    // Only show overlay when keyboard OPENS (not closes)
+    if (isKeyboardOpen) {
+      setShowScrollOverlay(true);
+    }
+
+    const gentleKeyboardScroll = () => {
+      const el = chatBodyRef.current;
+      if (!el) return;
+
+      // Only scroll if user was already at the very bottom
+      const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
+
+      if (isAtBottom) {
+        // Wait for the height transition to complete
+        setTimeout(() => {
+          if (el) {
+            el.scrollTo({
+              top: el.scrollHeight,
+              behavior: 'smooth',
+            });
+          }
+        }, 350); // After CSS transition completes
+      }
+    };
+
+    if (isKeyboardOpen) {
+      // Hide overlay after keyboard open transition completes
+      const hideOverlayTimeout = setTimeout(() => {
+        setShowScrollOverlay(false);
+      }, 800); // Cover keyboard open transition + scroll
+
+      // Scroll after keyboard animation
+      const scrollTimeout = setTimeout(gentleKeyboardScroll, 50);
+
+      return () => {
+        clearTimeout(hideOverlayTimeout);
+        clearTimeout(scrollTimeout);
+      };
+    } else {
+      // Keyboard closing - just scroll, no overlay
+      const scrollTimeout = setTimeout(gentleKeyboardScroll, 50);
+
+      return () => {
+        clearTimeout(scrollTimeout);
+      };
+    }
   }, [isKeyboardOpen]);
 
   /**
@@ -331,13 +363,19 @@ export default function MealChat({
       };
       setMessages((msgs) => [...msgs, fallbackMessage]);
 
-      // SINGLE SMOOTH SCROLL FOR FALLBACK MESSAGE
+      // Regular fallback scroll - no overlay
       setTimeout(() => {
         if (chatBodyRef.current) {
-          chatBodyRef.current.scrollTo({
-            top: chatBodyRef.current.scrollHeight,
-            behavior: 'smooth',
-          });
+          const el = chatBodyRef.current;
+          const isNearBottom =
+            el.scrollHeight - el.scrollTop <= el.clientHeight + 150;
+
+          if (isNearBottom) {
+            el.scrollTo({
+              top: el.scrollHeight,
+              behavior: 'smooth',
+            });
+          }
         }
       }, 200);
     }
@@ -782,6 +820,47 @@ export default function MealChat({
           </form>
         </div>
       )}
+
+      {/* Modern Scroll Overlay - Hides scroll jumps */}
+      <AnimatePresence>
+        {showScrollOverlay && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-50 pointer-events-none"
+            style={{
+              background:
+                'linear-gradient(180deg, transparent 0%, rgba(253, 246, 227, 0.95) 70%, rgba(253, 246, 227, 1) 100%)',
+              backdropFilter: 'blur(2px)',
+              WebkitBackdropFilter: 'blur(2px)',
+            }}
+          >
+            {/* Subtle loading indicator */}
+            <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2">
+              <div className="flex items-center gap-1">
+                {[0, 100, 200].map((delay, i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1.5 h-1.5 bg-pink-300/60 rounded-full"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.6, 1, 0.6],
+                    }}
+                    transition={{
+                      duration: 0.8,
+                      repeat: Infinity,
+                      delay: delay / 1000,
+                      ease: 'easeInOut',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Chat Complete Overlay */}
       <AnimatePresence>
