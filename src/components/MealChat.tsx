@@ -107,24 +107,30 @@ export default function MealChat({
   }, [messages, loading]);
 
   /**
-   * Keyboard state change scroll (only when needed)
+   * Keyboard state change scroll (gentler approach)
    */
   useEffect(() => {
     if (!chatBodyRef.current) return;
 
-    const scrollToBottomForKeyboard = () => {
+    // Only scroll if we're not already at the bottom
+    const scrollToBottomGently = () => {
       const el = chatBodyRef.current;
       if (!el) return;
 
-      // Single smooth scroll for keyboard changes
-      el.scrollTo({
-        top: el.scrollHeight,
-        behavior: 'smooth',
-      });
+      const isAtBottom =
+        el.scrollHeight - el.scrollTop <= el.clientHeight + 100;
+
+      // Only auto-scroll if user was already near the bottom
+      if (isAtBottom) {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
     };
 
-    // Single scroll attempt after keyboard transition
-    const timeoutId = setTimeout(scrollToBottomForKeyboard, 400);
+    // Gentle scroll after keyboard animation completes
+    const timeoutId = setTimeout(scrollToBottomGently, 350); // After transform animation
 
     return () => clearTimeout(timeoutId);
   }, [isKeyboardOpen]);
@@ -639,7 +645,7 @@ export default function MealChat({
         </div>
       </header>
 
-      {/* Chat Messages - iOS Safe Scrollable Area */}
+      {/* Chat Messages - Adjust Height for Keyboard */}
       <div
         ref={chatBodyRef}
         className="w-full px-4 py-4 flex flex-col justify-start overflow-y-auto"
@@ -648,29 +654,25 @@ export default function MealChat({
           top: 'calc(env(safe-area-inset-top) + 56px)',
           left: 0,
           right: 0,
-          bottom: isKeyboardOpen ? '350px' : '100px',
+          bottom: isKeyboardOpen ? '350px' : '100px', // CHANGE HEIGHT for available space
           WebkitOverflowScrolling: 'touch',
           background: 'transparent',
           overscrollBehavior: 'contain',
-          touchAction: 'pan-y', // EXPLICITLY allow vertical scrolling in chat
+          touchAction: 'pan-y',
           scrollBehavior: 'auto',
           minHeight: 0,
-          // CRITICAL: Force hardware acceleration
           WebkitTransform: 'translateZ(0)',
           transform: 'translateZ(0)',
-          // ADD PADDING BOTTOM TO PREVENT INPUT BAR FROM COVERING MESSAGES
-          paddingBottom: '100px', // Space for input bar
+          paddingBottom: '100px', // Increased space for input bar
+          transition: 'bottom 0.3s ease', // SMOOTH height transition
         }}
         role="log"
         aria-live="polite"
         aria-label="Chat conversation"
         onTouchMove={(e) => {
-          // CRITICAL: Allow touch events for scrolling but stop propagation
           e.stopPropagation();
         }}
-        // Simplified scroll handler - don't interfere with user scrolling
         onScroll={(e) => {
-          // Only log for debugging - don't interfere
           const el = e.currentTarget;
           const isAtBottom =
             el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
@@ -688,23 +690,22 @@ export default function MealChat({
         </AnimatePresence>
       </div>
 
-      {/* Input Bar - iOS Safe Fixed Bottom */}
+      {/* Input Bar - Only This Moves Up */}
       {!chatEnded && (
         <div
           className="w-full px-4 py-4"
           style={{
             position: 'absolute',
-            bottom: '0px', // Always stay at bottom (above keyboard)
+            bottom: '0px', // Always at bottom
             left: 0,
             right: 0,
-            background: 'transparent', // Remove background
+            background: 'transparent',
             paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
-            // borderTop: '0.5px solid rgba(0, 0, 0, 0.05)', // Remove border too
             transform: isKeyboardOpen
               ? 'translateY(-350px)'
-              : 'translateY(0px)', // Move up more for keyboard
-            transition: 'transform 0.3s ease', // Smooth transition
-            zIndex: 40, // Ensure it stays above everything
+              : 'translateY(0px)', // ONLY INPUT BAR MOVES
+            transition: 'transform 0.3s ease', // Smooth animation
+            zIndex: 40,
           }}
         >
           <form className="flex items-center gap-3" onSubmit={handleSubmit}>
