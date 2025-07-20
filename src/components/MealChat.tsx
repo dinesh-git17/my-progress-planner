@@ -63,6 +63,9 @@ export default function MealChat({
   const gptReplies = useRef<string[]>([]);
   const chatBodyRef = useRef<HTMLDivElement>(null);
 
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [initialViewportHeight, setInitialViewportHeight] = useState(0);
+
   const router = useRouter();
 
   // ============================================================================
@@ -81,13 +84,144 @@ export default function MealChat({
   }, [meal]);
 
   /**
-   * Auto-scroll to bottom when new messages arrive
+   * Single smooth auto-scroll
    */
   useEffect(() => {
     if (!chatBodyRef.current) return;
-    const el = chatBodyRef.current;
-    el.scrollTop = el.scrollHeight;
+
+    const scrollToBottom = () => {
+      const el = chatBodyRef.current;
+      if (!el) return;
+
+      // Single smooth scroll to bottom
+      el.scrollTo({
+        top: el.scrollHeight,
+        behavior: 'smooth',
+      });
+    };
+
+    // Single scroll attempt with small delay for DOM updates
+    const timeoutId = setTimeout(scrollToBottom, 100);
+
+    return () => clearTimeout(timeoutId);
   }, [messages, loading]);
+
+  /**
+   * Keyboard state change scroll (only when needed)
+   */
+  useEffect(() => {
+    if (!chatBodyRef.current) return;
+
+    const scrollToBottomForKeyboard = () => {
+      const el = chatBodyRef.current;
+      if (!el) return;
+
+      // Single smooth scroll for keyboard changes
+      el.scrollTo({
+        top: el.scrollHeight,
+        behavior: 'smooth',
+      });
+    };
+
+    // Single scroll attempt after keyboard transition
+    const timeoutId = setTimeout(scrollToBottomForKeyboard, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [isKeyboardOpen]);
+
+  /**
+   * iOS keyboard detection with page scroll prevention
+   */
+  useEffect(() => {
+    // Store initial viewport height
+    setInitialViewportHeight(window.innerHeight);
+
+    // iOS keyboard detection using focus/blur events
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      // Check if focused element can trigger keyboard
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.contentEditable === 'true'
+      ) {
+        // Delay to ensure keyboard animation starts
+        setTimeout(() => {
+          setIsKeyboardOpen(true);
+
+          // PREVENT PAGE SCROLLING ONLY WHEN KEYBOARD IS OPEN
+          document.body.style.overflow = 'hidden';
+          document.documentElement.style.overflow = 'hidden';
+
+          // BUT ALLOW THE CHAT CONTAINER TO SCROLL
+          if (chatBodyRef.current) {
+            chatBodyRef.current.style.touchAction = 'pan-y';
+            chatBodyRef.current.style.overflowY = 'auto';
+          }
+
+          // Prevent iOS from pushing viewport up
+          window.scrollTo(0, 0);
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+
+          // Auto-scroll to bottom after keyboard opens
+          setTimeout(() => {
+            if (chatBodyRef.current) {
+              chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+            }
+          }, 300);
+
+          // Additional aggressive scrolls for iOS
+          setTimeout(() => {
+            if (chatBodyRef.current) {
+              chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+            }
+          }, 600);
+
+          setTimeout(() => {
+            if (chatBodyRef.current) {
+              chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+            }
+          }, 1000);
+        }, 100);
+      }
+    };
+
+    const handleFocusOut = () => {
+      setTimeout(() => {
+        setIsKeyboardOpen(false);
+
+        // RESTORE PAGE SCROLLING
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+
+        // Reset any scroll position
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+
+        // Auto-scroll to bottom after keyboard closes
+        setTimeout(() => {
+          if (chatBodyRef.current) {
+            chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+          }
+        }, 300);
+      }, 100);
+    };
+
+    // Add global event listeners
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+
+      // Cleanup: restore scrolling on unmount
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, []);
 
   // ============================================================================
   // CHAT HANDLERS
@@ -169,6 +303,13 @@ export default function MealChat({
       gptReplies.current.push(data.reply);
       setLoading(false);
 
+      // FORCE SCROLL TO NEW MESSAGE
+      setTimeout(() => {
+        if (chatBodyRef.current) {
+          chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+        }
+      }, 100);
+
       // Finish chat if this was the last turn
       if (isLastTurn) {
         setTimeout(() => finishChat(), 1400);
@@ -183,6 +324,16 @@ export default function MealChat({
         text: "I'm having trouble right now, but I'm sure your meal was wonderful! 💕",
       };
       setMessages((msgs) => [...msgs, fallbackMessage]);
+
+      // SINGLE SMOOTH SCROLL FOR FALLBACK MESSAGE
+      setTimeout(() => {
+        if (chatBodyRef.current) {
+          chatBodyRef.current.scrollTo({
+            top: chatBodyRef.current.scrollHeight,
+            behavior: 'smooth',
+          });
+        }
+      }, 200);
     }
   };
 
@@ -209,6 +360,7 @@ export default function MealChat({
       className={`flex w-full mb-1.5 ${
         msg.sender === 'user' ? 'justify-end' : 'justify-start'
       }`}
+      data-message={`${msg.sender}-${index}`} // Add data attribute for targeting
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -409,25 +561,41 @@ export default function MealChat({
   // ============================================================================
   return (
     <div
-      className="flex flex-col w-full max-w-md mx-auto shadow-xl min-h-screen safe-all"
+      className="flex flex-col w-full max-w-md mx-auto shadow-xl"
       style={{
         fontFamily: SYSTEM_FONT,
         background: '#fdf6e3',
+        height: '100vh',
+        position: 'fixed', // Critical for iOS PWA
+        top: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+        maxWidth: '448px',
+        overflow: 'hidden', // Prevent scrolling
+        touchAction: 'none', // Prevent touch scrolling on main container
+        WebkitOverflowScrolling: 'auto', // Disable momentum scrolling
+      }}
+      onTouchMove={(e) => {
+        // Prevent page scrolling, but allow chat to handle its own events
+        e.preventDefault();
       }}
     >
-      {/* Fixed Header - Messaging App Style */}
+      {/* Fixed Header - iOS Safe */}
       <header
-        className="fixed top-0 left-0 w-full z-30"
         style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 30,
           background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'saturate(180%) blur(20px)',
           WebkitBackdropFilter: 'saturate(180%) blur(20px)',
           borderBottom: '0.5px solid rgba(0, 0, 0, 0.08)',
+          paddingTop: 'env(safe-area-inset-top)',
         }}
       >
-        {/* Safe area top padding */}
-        <div style={{ height: 'env(safe-area-inset-top)' }} />
-
         <div className="flex items-center justify-between px-4 py-3">
           {/* Left: Back Button */}
           <button
@@ -449,6 +617,7 @@ export default function MealChat({
               <path d="M12 19l-7-7 7-7"></path>
             </svg>
           </button>
+
           {/* Center: Meal Title */}
           <div className="flex items-center gap-2">
             <span className="text-xl" role="img" aria-label={`${meal} emoji`}>
@@ -464,26 +633,54 @@ export default function MealChat({
               {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
             </div>
           </div>
+
           {/* Right: Menu/Options (placeholder for now) */}
-          <div className="w-8 h-8" /> {/* Spacer to center the title */}
+          <div className="w-8 h-8" />
         </div>
       </header>
 
-      {/* Chat Messages */}
+      {/* Chat Messages - iOS Safe Scrollable Area */}
       <div
         ref={chatBodyRef}
-        className="flex-1 w-full px-4 flex flex-col justify-start overflow-y-auto"
+        className="w-full px-4 py-4 flex flex-col justify-start overflow-y-auto"
         style={{
-          minHeight: 0,
+          position: 'absolute',
+          top: 'calc(env(safe-area-inset-top) + 56px)',
+          left: 0,
+          right: 0,
+          bottom: isKeyboardOpen ? '350px' : '100px',
           WebkitOverflowScrolling: 'touch',
           background: 'transparent',
-          marginTop: 'calc(env(safe-area-inset-top) + 20px)', // Reduced header height
-          paddingTop: 4, // Minimal padding from header
-          paddingBottom: 24, // Bottom padding
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-y', // EXPLICITLY allow vertical scrolling in chat
+          scrollBehavior: 'auto',
+          minHeight: 0,
+          // CRITICAL: Force hardware acceleration
+          WebkitTransform: 'translateZ(0)',
+          transform: 'translateZ(0)',
+          // ADD PADDING BOTTOM TO PREVENT INPUT BAR FROM COVERING MESSAGES
+          paddingBottom: '100px', // Space for input bar
         }}
         role="log"
         aria-live="polite"
         aria-label="Chat conversation"
+        onTouchMove={(e) => {
+          // CRITICAL: Allow touch events for scrolling but stop propagation
+          e.stopPropagation();
+        }}
+        // Simplified scroll handler - don't interfere with user scrolling
+        onScroll={(e) => {
+          // Only log for debugging - don't interfere
+          const el = e.currentTarget;
+          const isAtBottom =
+            el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
+          console.log('Scroll position:', {
+            scrollTop: el.scrollTop,
+            scrollHeight: el.scrollHeight,
+            clientHeight: el.clientHeight,
+            isAtBottom,
+          });
+        }}
       >
         <AnimatePresence initial={false}>
           {messages.map(renderMessage)}
@@ -491,12 +688,23 @@ export default function MealChat({
         </AnimatePresence>
       </div>
 
-      {/* Input Bar */}
+      {/* Input Bar - iOS Safe Fixed Bottom */}
       {!chatEnded && (
         <div
-          className="flex-shrink-0 w-full px-4 sticky bottom-0"
+          className="w-full px-4 py-4"
           style={{
-            paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))',
+            position: 'absolute',
+            bottom: '0px', // Always stay at bottom (above keyboard)
+            left: 0,
+            right: 0,
+            background: 'transparent', // Remove background
+            paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
+            // borderTop: '0.5px solid rgba(0, 0, 0, 0.05)', // Remove border too
+            transform: isKeyboardOpen
+              ? 'translateY(-350px)'
+              : 'translateY(0px)', // Move up more for keyboard
+            transition: 'transform 0.3s ease', // Smooth transition
+            zIndex: 40, // Ensure it stays above everything
           }}
         >
           <form className="flex items-center gap-3" onSubmit={handleSubmit}>
@@ -504,9 +712,9 @@ export default function MealChat({
               <input
                 disabled={loading}
                 className="
-                 w-full px-5 py-3 text-black placeholder-gray-500 outline-none transition-all duration-200
-                 disabled:opacity-60
-               "
+               w-full px-5 py-3 text-black placeholder-gray-500 outline-none transition-all duration-200
+               disabled:opacity-60
+             "
                 style={{
                   fontFamily: SYSTEM_FONT,
                   fontSize: '17px',
@@ -525,7 +733,9 @@ export default function MealChat({
                 placeholder={loading ? 'Wait for my reply…' : 'Message'}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                autoFocus
+                autoFocus={
+                  typeof window !== 'undefined' && window.innerWidth > 768
+                } // Only autofocus on desktop
                 autoComplete="off"
                 inputMode="text"
                 aria-label="Type your message"
@@ -535,11 +745,11 @@ export default function MealChat({
                 type="submit"
                 disabled={loading || !input.trim()}
                 className="
-                 absolute right-1.5 top-1/2 -translate-y-1/2
-                 flex items-center justify-center w-8 h-8 transition-all duration-200
-                 disabled:opacity-40 disabled:scale-95
-                 hover:scale-105 active:scale-95
-               "
+               absolute right-1.5 top-1/2 -translate-y-1/2
+               flex items-center justify-center w-8 h-8 transition-all duration-200
+               disabled:opacity-40 disabled:scale-95
+               hover:scale-105 active:scale-95
+             "
                 style={{
                   borderRadius: '20px',
                   background:
