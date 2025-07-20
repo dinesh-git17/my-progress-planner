@@ -28,17 +28,27 @@ interface Message {
 }
 
 // ============================================================================
-// CONSTANTS
+// CONSTANTS & CONFIGURATION
 // ============================================================================
-const BANNER_CURVE_HEIGHT = 44;
-const BANNER_TOP_PADDING = 32;
-const BANNER_BOTTOM_PADDING = 22;
-const BANNER_TEXT_HEIGHT = 74;
+
+/**
+ * UI timing and layout constants
+ */
+const UI_CONSTANTS = {
+  BANNER_CURVE_HEIGHT: 100, // ← INCREASED from 44 to 100
+  BANNER_TOP_PADDING: 35, // ← INCREASED from 32 to 35
+  BANNER_BOTTOM_PADDING: 28, // ← INCREASED from 22 to 28
+  BANNER_TEXT_HEIGHT: 80, // ← INCREASED from 74 to 80
+} as const;
+
+/**
+ * Calculated total header height for layout positioning
+ */
 const BANNER_TOTAL_HEIGHT =
-  BANNER_CURVE_HEIGHT +
-  BANNER_TOP_PADDING +
-  BANNER_BOTTOM_PADDING +
-  BANNER_TEXT_HEIGHT;
+  UI_CONSTANTS.BANNER_CURVE_HEIGHT +
+  UI_CONSTANTS.BANNER_TOP_PADDING +
+  UI_CONSTANTS.BANNER_BOTTOM_PADDING +
+  UI_CONSTANTS.BANNER_TEXT_HEIGHT;
 
 // ============================================================================
 // HEADER COMPONENT (CLEANED)
@@ -46,22 +56,56 @@ const BANNER_TOTAL_HEIGHT =
 function FriendsHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
   return (
     <header
-      className="fixed top-0 left-0 w-full z-30 pt-safe-top"
+      className="fixed top-0 left-0 w-full z-30"
       style={{
-        background: '#f5ede6',
+        background: 'transparent', // No background needed - SVG handles it
+        // REMOVED pt-safe-top - SVG will extend into notch
       }}
     >
-      <div className="relative w-full h-full flex flex-col items-center justify-center">
-        {/* Header content */}
-        <div
-          className="flex flex-col items-center w-full px-4"
-          style={{
-            paddingTop: BANNER_TOP_PADDING,
-            paddingBottom: BANNER_BOTTOM_PADDING,
-          }}
-        >
+      {/* SVG that creates the entire header shape with wavy bottom - EXTENDS INTO NOTCH */}
+      <svg
+        className="w-full"
+        viewBox="0 0 500 220" // Increased height to account for notch area
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="none"
+        style={{
+          height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Add safe area to height
+        }}
+      >
+        {/* Gradient definition */}
+        <defs>
+          <linearGradient
+            id="friendsHeaderGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <stop offset="0%" stopColor="#ec4899" />
+            <stop offset="50%" stopColor="#f472b6" />
+            <stop offset="100%" stopColor="#e879f9" />
+          </linearGradient>
+        </defs>
+
+        {/* Single path with wavy bottom - matches summaries style */}
+        <path
+          d="M0 0 L500 0 L500 160 C400 200 350 140 250 180 C150 220 100 160 0 200 L0 0 Z"
+          fill="url(#friendsHeaderGradient)"
+        />
+      </svg>
+
+      {/* Text content positioned absolutely over the SVG - RESPECTS SAFE AREA */}
+      <div
+        className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-start"
+        style={{
+          paddingTop: `calc(${UI_CONSTANTS.BANNER_TOP_PADDING}px + env(safe-area-inset-top))`,
+          paddingBottom: UI_CONSTANTS.BANNER_BOTTOM_PADDING,
+        }}
+      >
+        <div className="flex flex-col items-center w-full px-4">
           <div
-            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-gray-900 text-center drop-shadow-sm ${dancingScriptClass}`}
+            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-white text-center drop-shadow-sm ${dancingScriptClass}`}
             style={{
               lineHeight: 1.15,
               letterSpacing: '-0.02em',
@@ -70,24 +114,10 @@ function FriendsHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
           >
             Friends
           </div>
-          <div className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
+          <div className="text-lg sm:text-xl text-white font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
             Connect with friends and share your progress 👥
           </div>
         </div>
-
-        {/* Curved bottom border using SVG */}
-        <svg
-          className="absolute left-0 bottom-0 w-full"
-          viewBox="0 0 500 44"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="none"
-          style={{
-            height: BANNER_CURVE_HEIGHT,
-          }}
-        >
-          <path d="M0 0C82 40 418 40 500 0V44H0V0Z" fill="#f5ede6" />
-        </svg>
       </div>
     </header>
   );
@@ -543,7 +573,7 @@ export default function FriendsPage() {
   // MAIN RENDER
   // ============================================================================
   return (
-    <div className={`min-h-screen w-full ${dmSans.className}`}>
+    <div className={`h-screen w-full overflow-hidden ${dmSans.className}`}>
       {/* Back Button */}
       <div className="fixed left-4 z-40 notch-safe">
         <button
@@ -573,15 +603,15 @@ export default function FriendsPage() {
 
       {/* Main Content */}
       <div
-        className="w-full max-w-2xl mx-auto safe-x"
+        className="w-full max-w-2xl mx-auto safe-x overflow-hidden"
         style={{
           marginTop: BANNER_TOTAL_HEIGHT,
-          minHeight: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
-          paddingTop: 'calc(2rem + env(safe-area-inset-top))',
-          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
+          height: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
+          paddingTop: `calc(0.1rem + env(safe-area-inset-top))`, // Match summaries page
+          paddingBottom: '2rem',
         }}
       >
-        <div className="px-4">
+        <div className="px-4 h-full overflow-y-auto">
           {loading ? (
             <div className="text-center text-gray-400/80 text-base font-medium animate-pulse py-8">
               Loading your friends…

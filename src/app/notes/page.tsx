@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, Heart, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Heart, Mail } from 'lucide-react';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -13,17 +13,27 @@ const dmSans = DM_Sans({ subsets: ['latin'] });
 const dancingScript = Dancing_Script({ subsets: ['latin'] });
 
 // ============================================================================
-// CONSTANTS
+// CONSTANTS & CONFIGURATION
 // ============================================================================
-const BANNER_CURVE_HEIGHT = 44;
-const BANNER_TOP_PADDING = 32;
-const BANNER_BOTTOM_PADDING = 22;
-const BANNER_TEXT_HEIGHT = 74;
+
+/**
+ * UI timing and layout constants
+ */
+const UI_CONSTANTS = {
+  BANNER_CURVE_HEIGHT: 100, // ← INCREASED from 44 to 100
+  BANNER_TOP_PADDING: 35, // ← INCREASED from 32 to 35
+  BANNER_BOTTOM_PADDING: 28, // ← INCREASED from 22 to 28
+  BANNER_TEXT_HEIGHT: 80, // ← INCREASED from 74 to 80
+} as const;
+
+/**
+ * Calculated total header height for layout positioning
+ */
 const BANNER_TOTAL_HEIGHT =
-  BANNER_CURVE_HEIGHT +
-  BANNER_TOP_PADDING +
-  BANNER_BOTTOM_PADDING +
-  BANNER_TEXT_HEIGHT;
+  UI_CONSTANTS.BANNER_CURVE_HEIGHT +
+  UI_CONSTANTS.BANNER_TOP_PADDING +
+  UI_CONSTANTS.BANNER_BOTTOM_PADDING +
+  UI_CONSTANTS.BANNER_TEXT_HEIGHT;
 
 // ============================================================================
 // TYPES
@@ -133,22 +143,56 @@ function NotesHeader({
 }) {
   return (
     <header
-      className="fixed top-0 left-0 w-full z-30 pt-safe-top"
+      className="fixed top-0 left-0 w-full z-30"
       style={{
-        background: '#f5ede6',
+        background: 'transparent', // No background needed - SVG handles it
+        // REMOVED pt-safe-top - SVG will extend into notch
       }}
     >
-      <div className="relative w-full h-full flex flex-col items-center justify-center">
-        {/* Text content */}
-        <div
-          className="flex flex-col items-center w-full px-4"
-          style={{
-            paddingTop: BANNER_TOP_PADDING,
-            paddingBottom: BANNER_BOTTOM_PADDING,
-          }}
-        >
+      {/* SVG that creates the entire header shape with wavy bottom - EXTENDS INTO NOTCH */}
+      <svg
+        className="w-full"
+        viewBox="0 0 500 220" // Increased height to account for notch area
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="none"
+        style={{
+          height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Add safe area to height
+        }}
+      >
+        {/* Gradient definition */}
+        <defs>
+          <linearGradient
+            id="notesHeaderGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <stop offset="0%" stopColor="#ec4899" />
+            <stop offset="50%" stopColor="#f472b6" />
+            <stop offset="100%" stopColor="#e879f9" />
+          </linearGradient>
+        </defs>
+
+        {/* Single path with wavy bottom - matches summaries style */}
+        <path
+          d="M0 0 L500 0 L500 160 C400 200 350 140 250 180 C150 220 100 160 0 200 L0 0 Z"
+          fill="url(#notesHeaderGradient)"
+        />
+      </svg>
+
+      {/* Text content positioned absolutely over the SVG - RESPECTS SAFE AREA */}
+      <div
+        className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-start"
+        style={{
+          paddingTop: `calc(${UI_CONSTANTS.BANNER_TOP_PADDING}px + env(safe-area-inset-top))`, // Safe area for text only
+          paddingBottom: UI_CONSTANTS.BANNER_BOTTOM_PADDING,
+        }}
+      >
+        <div className="flex flex-col items-center w-full px-4">
           <div
-            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-gray-900 text-center drop-shadow-sm ${dancingScriptClass}`}
+            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-white text-center drop-shadow-sm ${dancingScriptClass}`}
             style={{
               lineHeight: 1.15,
               letterSpacing: '-0.02em',
@@ -157,24 +201,11 @@ function NotesHeader({
           >
             Encouragement Notes
           </div>
-          <div className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
-            {notesCount} note{notesCount !== 1 ? 's' : ''} from friends 💌
+          <div className="text-lg sm:text-xl text-white font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight flex items-center justify-center gap-2">
+            <Mail className="w-5 h-5 text-white" />
+            {notesCount} note{notesCount !== 1 ? 's' : ''} from friends
           </div>
         </div>
-
-        {/* Curved bottom border using SVG */}
-        <svg
-          className="absolute left-0 bottom-0 w-full"
-          viewBox="0 0 500 44"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="none"
-          style={{
-            height: BANNER_CURVE_HEIGHT,
-          }}
-        >
-          <path d="M0 0C82 40 418 40 500 0V44H0V0Z" fill="#f5ede6" />
-        </svg>
       </div>
     </header>
   );
@@ -317,24 +348,8 @@ export default function NotesPage() {
   const groupedNotes = groupNotesByDate(notes);
   const dateKeys = Object.keys(groupedNotes).sort((a, b) => b.localeCompare(a)); // Most recent first
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center"
-        >
-          <Loader2 className="w-8 h-8 text-pink-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading your notes...</p>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
-    <div className={`min-h-screen w-full ${dmSans.className}`}>
+    <div className={`h-screen w-full overflow-hidden ${dmSans.className}`}>
       {/* Back navigation button */}
       <motion.div
         className="fixed left-4 z-40 notch-safe"
@@ -359,15 +374,15 @@ export default function NotesPage() {
 
       {/* Main Content */}
       <div
-        className="w-full max-w-2xl mx-auto safe-x"
+        className="w-full max-w-2xl mx-auto safe-x overflow-hidden"
         style={{
           marginTop: BANNER_TOTAL_HEIGHT,
-          minHeight: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
-          paddingTop: '1rem',
-          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
+          height: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
+          paddingTop: '2.5rem',
+          paddingBottom: '2rem',
         }}
       >
-        <div className="px-4">
+        <div className="px-4 h-full overflow-y-auto">
           <div className="max-w-md mx-auto">
             {/* Filter Tabs */}
             <div className="py-2">
@@ -394,10 +409,30 @@ export default function NotesPage() {
                 </button>
               </div>
             </div>
-
             {/* Main Content */}
             <main className="pb-20">
-              {error ? (
+              {loading ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center py-8"
+                >
+                  <motion.div
+                    animate={{ opacity: [0.3, 0.7, 0.3] }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                    className="flex justify-center space-x-1.5 mb-3"
+                  >
+                    <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
+                  </motion.div>
+                  <p className="text-sm text-gray-500">Loading your notes...</p>
+                </motion.div>
+              ) : error ? (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
