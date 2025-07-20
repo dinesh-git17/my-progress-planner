@@ -12,6 +12,7 @@ import {
 } from '@/utils/auth';
 import { getUserName, saveUserName } from '@/utils/user';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useUserInitialization } from '../../hooks/useUserInitialization';
@@ -1579,7 +1580,7 @@ export default function Home() {
                           type="button"
                           aria-label="Enable notifications"
                         >
-                          <i className="fas fa-bell text-white text-xs pointer-events-none"></i>
+                          <Bell className="w-3.5 h-3.5 text-white pointer-events-none" />
                         </motion.button>
 
                         {/* Cursive tooltip with curvy arrow */}
