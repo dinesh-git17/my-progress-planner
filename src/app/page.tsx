@@ -467,7 +467,7 @@ function ProfileDropdown({
   };
 
   const handleEditProfile = () => {
-    router.push('/friends');
+    router.push('/');
     onClose();
   };
 
@@ -547,7 +547,7 @@ function ProfileDropdown({
                 "
               >
                 <i className="fas fa-cog text-sm w-4 text-center text-purple-500"></i>
-                <span className="text-sm font-medium">Settings</span>
+                <span className="text-sm font-medium">Recover Data</span>
               </motion.button>
 
               <div className="mx-4 my-2 border-t border-gray-100"></div>
@@ -656,6 +656,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [contentReady, setContentReady] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   const [previousTab, setPreviousTab] = useState<
     'meals' | 'progress' | 'friends'
@@ -828,6 +829,7 @@ export default function Home() {
     const success = await saveUserName(userId, tempName.trim());
     if (success) {
       setName(tempName.trim());
+      fetchQuote(tempName.trim());
       setShowNameSaved(true);
       setTimeout(() => {
         setAskName(false);
@@ -1039,47 +1041,42 @@ export default function Home() {
   // ========================================================================
 
   /**
-   * Initialize quote from session storage if available
-   * This runs once when the component mounts
+   * client-side detection
    */
   useEffect(() => {
-    if (!contentReady || !name) return;
-
-    const sessionQuote = sessionStorage.getItem('mealapp_daily_quote');
-    const sessionQuoteName = sessionStorage.getItem('mealapp_quote_name');
-
-    if (sessionQuote && sessionQuoteName === name) {
-      // We have a valid session quote for this user
-      setQuote(sessionQuote);
-      setLoading(false);
-    } else if (name) {
-      // No session quote or name mismatch - fetch fresh quote
-      fetchQuote(name);
-    }
-  }, [contentReady, name]); // Only run when contentReady or name changes
+    setIsClient(true);
+  }, []);
 
   /**
    * App initialization effect
    * Handles loading screen timing and content readiness
    */
   useEffect(() => {
-    const hasShownLoadingScreen = sessionStorage.getItem('mealapp_has_loaded');
+    if (!isClient) return; // Wait for client-side hydration to complete
 
-    if (!hasShownLoadingScreen) {
-      // First time loading - show loading screen
+    const hasShownLoadingScreen = sessionStorage.getItem('mealapp_has_loaded');
+    const isInternalNav = sessionStorage.getItem('mealapp_internal_nav');
+
+    // Clear the internal nav flag
+    if (isInternalNav) {
+      sessionStorage.removeItem('mealapp_internal_nav');
+    }
+
+    if (!isInternalNav && !hasShownLoadingScreen) {
+      // App launch - show loading screen
       const timer = setTimeout(() => {
         setShowLoadingScreen(false);
         sessionStorage.setItem('mealapp_has_loaded', 'true');
         setTimeout(() => setContentReady(true), 100);
-      }, 2000);
+      }, 3000);
 
       return () => clearTimeout(timer);
     } else {
-      // Already loaded before - skip loading screen
+      // Internal navigation - skip loading
       setShowLoadingScreen(false);
       setContentReady(true);
     }
-  }, []);
+  }, [isClient]); // Depend on isClient
 
   /**
    * Persist the active tab to localStorage whenever it changes
@@ -1141,6 +1138,7 @@ export default function Home() {
         setAskName(true);
       } else {
         setName(existingName);
+        fetchQuote(existingName);
         fetchLoggedMealsAndRefreshStreak(userId);
         fetchFriendCode(userId); // Fetch friend code when user data is loaded
       }
@@ -1240,7 +1238,7 @@ export default function Home() {
    */
   useEffect(() => {
     const initializeUser = async () => {
-      if (!contentReady) {
+      if (!isClient) {
         return;
       }
 
@@ -1292,6 +1290,7 @@ export default function Home() {
           const existingName = await getAuthUserName(session.user.id);
           if (existingName) {
             setName(existingName);
+            fetchQuote(existingName);
             setAskName(false);
           } else {
             setAskName(true);
@@ -1308,6 +1307,12 @@ export default function Home() {
           if (localUserId) {
             console.log('📱 Using local user ID:', localUserId);
             setUserId(localUserId);
+
+            const existingName = await getUserName(localUserId);
+            if (existingName) {
+              setName(existingName);
+              fetchQuote(existingName);
+            }
           } else {
             console.log('❌ No user ID found');
             // No user ID at all - will show auth prompt
@@ -1326,7 +1331,7 @@ export default function Home() {
     };
 
     initializeUser();
-  }, [contentReady, refreshStreak, fetchFriendCode]);
+  }, [isClient, refreshStreak, fetchFriendCode]);
 
   /**
    * Enhanced data recovery redirect handler with streak refresh

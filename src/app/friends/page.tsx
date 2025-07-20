@@ -577,7 +577,10 @@ export default function FriendsPage() {
       {/* Back Button */}
       <div className="fixed left-4 z-40 notch-safe">
         <button
-          onClick={() => router.push('/')}
+          onClick={() => {
+            sessionStorage.setItem('mealapp_internal_nav', 'true');
+            router.push('/');
+          }}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go back to home"
         >

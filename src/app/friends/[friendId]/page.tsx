@@ -419,7 +419,10 @@ export default function FriendDetailPage() {
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Oops!</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => {
+              sessionStorage.setItem('mealapp_internal_nav', 'true');
+              router.push('/');
+            }}
             className="w-full bg-pink-500 text-white py-3 rounded-xl font-medium hover:bg-pink-600 transition-colors"
           >
             Back to Friends
