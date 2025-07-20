@@ -67,6 +67,9 @@ export default function MealChat({
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [showScrollOverlay, setShowScrollOverlay] = useState(false);
 
+  // Rough keyboard height used for layout adjustments
+  const KEYBOARD_OFFSET = 350;
+
   const router = useRouter();
 
   // ============================================================================
@@ -592,7 +595,7 @@ export default function MealChat({
       style={{
         fontFamily: SYSTEM_FONT,
         background: '#fdf6e3',
-        height: '100dvh',
+        height: '100vh',
         position: 'fixed', // Critical for iOS PWA
         top: 0,
         left: '50%',
@@ -675,7 +678,7 @@ export default function MealChat({
           top: 'calc(env(safe-area-inset-top) + 56px)',
           left: 0,
           right: 0,
-          bottom: isKeyboardOpen ? '350px' : '100px', // CHANGE HEIGHT for available space
+          bottom: isKeyboardOpen ? `${KEYBOARD_OFFSET}px` : '100px', // CHANGE HEIGHT for available space
           WebkitOverflowScrolling: 'touch',
           background: 'transparent',
           overscrollBehavior: 'contain',
@@ -717,15 +720,12 @@ export default function MealChat({
           className="w-full px-4 py-4"
           style={{
             position: 'absolute',
-            bottom: '0px', // Always at bottom
+            bottom: isKeyboardOpen ? `${KEYBOARD_OFFSET}px` : '0px',
             left: 0,
             right: 0,
             background: 'transparent',
             paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
-            transform: isKeyboardOpen
-              ? 'translateY(-350px)'
-              : 'translateY(0px)', // ONLY INPUT BAR MOVES
-            transition: 'transform 0.3s ease', // Smooth animation
+            transition: 'bottom 0.3s ease', // Smooth animation
             zIndex: 40,
           }}
         >
