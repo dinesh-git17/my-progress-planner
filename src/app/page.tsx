@@ -603,6 +603,14 @@ function LoadingScreen({ isVisible }: { isVisible: boolean }) {
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
           className="loading-screen-image flex flex-col items-center justify-center safe-all"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 9999,
+          }}
         >
           <div className="flex-1" />
 
@@ -665,18 +673,20 @@ export default function Home() {
   const [enterDirection, setEnterDirection] = useState(0);
 
   const [activeTab, setActiveTab] = useState<'meals' | 'progress' | 'friends'>(
-    () => {
-      if (typeof window !== 'undefined') {
-        return (
-          (sessionStorage.getItem('activeTab') as
-            | 'meals'
-            | 'progress'
-            | 'friends') || 'meals'
-        );
-      }
-      return 'meals';
-    },
+    'meals',
   );
+
+  useEffect(() => {
+    if (!isClient) return;
+
+    const savedTab = sessionStorage.getItem('activeTab') as
+      | 'meals'
+      | 'progress'
+      | 'friends';
+    if (savedTab) {
+      setActiveTab(savedTab);
+    }
+  }, [isClient]);
 
   // User and authentication state
   const [name, setName] = useState('');
@@ -1054,29 +1064,33 @@ export default function Home() {
   useEffect(() => {
     if (!isClient) return; // Wait for client-side hydration to complete
 
-    const hasShownLoadingScreen = sessionStorage.getItem('mealapp_has_loaded');
-    const isInternalNav = sessionStorage.getItem('mealapp_internal_nav');
+    // Add small delay to prevent hydration glitch
+    setTimeout(() => {
+      const hasShownLoadingScreen =
+        sessionStorage.getItem('mealapp_has_loaded');
+      const isInternalNav = sessionStorage.getItem('mealapp_internal_nav');
 
-    // Clear the internal nav flag
-    if (isInternalNav) {
-      sessionStorage.removeItem('mealapp_internal_nav');
-    }
+      // Clear the internal nav flag
+      if (isInternalNav) {
+        sessionStorage.removeItem('mealapp_internal_nav');
+      }
 
-    if (!isInternalNav && !hasShownLoadingScreen) {
-      // App launch - show loading screen
-      const timer = setTimeout(() => {
+      if (!isInternalNav && !hasShownLoadingScreen) {
+        // App launch - show loading screen
+        const timer = setTimeout(() => {
+          setShowLoadingScreen(false);
+          sessionStorage.setItem('mealapp_has_loaded', 'true');
+          setTimeout(() => setContentReady(true), 100);
+        }, 3000);
+
+        return () => clearTimeout(timer);
+      } else {
+        // Internal navigation - skip loading
         setShowLoadingScreen(false);
-        sessionStorage.setItem('mealapp_has_loaded', 'true');
-        setTimeout(() => setContentReady(true), 100);
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    } else {
-      // Internal navigation - skip loading
-      setShowLoadingScreen(false);
-      setContentReady(true);
-    }
-  }, [isClient]); // Depend on isClient
+        setContentReady(true);
+      }
+    }, 50); // Small delay to ensure DOM is ready
+  }, [isClient]);
 
   /**
    * Persist the active tab to localStorage whenever it changes
@@ -1523,7 +1537,7 @@ export default function Home() {
 
       {/* Main app content */}
       <AnimatePresence>
-        {contentReady && (
+        {contentReady && isClient && (
           <motion.main
             className="
               min-h-[100dvh] w-full h-[100dvh] overflow-hidden
