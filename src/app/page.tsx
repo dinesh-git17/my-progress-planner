@@ -1694,7 +1694,7 @@ export default function Home() {
                           stiffness: 320,
                           damping: 18,
                         }}
-                        className="flex items-center mt-1 text-[1rem] font-medium text-gray-700 pl-1"
+                        className="flex items-center mt-1 text-[1rem] font-medium text-gray-700 pl-2"
                       >
                         <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400 mr-2" />
                         <span>
@@ -2186,7 +2186,7 @@ export default function Home() {
                                 Manage Friends
                               </span>
                               <span className="text-xs text-gray-400 mt-1">
-                                Add friends, share your code, and settings
+                                Add & manage connections
                               </span>
                             </div>
                             <span className="text-gray-300">
