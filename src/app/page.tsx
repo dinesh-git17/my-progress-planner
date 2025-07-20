@@ -13,7 +13,7 @@ import {
 import { getUserName, saveUserName } from '@/utils/user';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useUserInitialization } from '../../hooks/useUserInitialization';
 
@@ -626,8 +626,15 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [contentReady, setContentReady] = useState(false);
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'meals' | 'progress' | 'friends'>(
-    'meals',
+    () => {
+      const tabParam = searchParams.get('tab') as
+        | 'meals'
+        | 'progress'
+        | 'friends';
+      return tabParam || 'meals';
+    },
   );
 
   // User and authentication state

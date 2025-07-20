@@ -42,11 +42,11 @@ const STORY_TABS = [
  * UI timing and layout constants
  */
 const UI_CONSTANTS = {
-  STORY_DURATION: 20000, // ms - Auto-advance time for story slides
-  BANNER_CURVE_HEIGHT: 44,
-  BANNER_TOP_PADDING: 32,
-  BANNER_BOTTOM_PADDING: 22,
-  BANNER_TEXT_HEIGHT: 74,
+  STORY_DURATION: 20000,
+  BANNER_CURVE_HEIGHT: 100, // ← INCREASED from 80 to 120
+  BANNER_TOP_PADDING: 35, // ← INCREASED from 32 to 40
+  BANNER_BOTTOM_PADDING: 28, // ← INCREASED from 22 to 30
+  BANNER_TEXT_HEIGHT: 80, // ← INCREASED from 74 to 90
 } as const;
 
 /**
@@ -108,8 +108,12 @@ function prettifyText(str: string | null): string {
 // ============================================================================
 
 /**
- * Fixed header component with curved bottom design
- * Simplified without notch extensions
+ * Proper header with waves extending downward from solid background
+ * Matches the reference design with clean header and flowing bottom waves
+ */
+/**
+ * Complete header using SVG with built-in wavy bottom
+ * Much cleaner approach - single SVG element creates entire header shape
  */
 function SummariesHeader({
   dancingScriptClass,
@@ -118,23 +122,56 @@ function SummariesHeader({
 }) {
   return (
     <header
-      className="fixed top-0 left-0 w-full z-30 pt-safe-top"
+      className="fixed top-0 left-0 w-full z-30"
       style={{
-        background: '#f5ede6',
+        background: 'transparent', // No background needed - SVG handles it
+        // REMOVED pt-safe-top - SVG will extend into notch
       }}
     >
-      {/* Header content container */}
-      <div className="relative w-full h-full flex flex-col items-center justify-center">
-        {/* Text content */}
-        <div
-          className="flex flex-col items-center w-full px-4"
-          style={{
-            paddingTop: UI_CONSTANTS.BANNER_TOP_PADDING,
-            paddingBottom: UI_CONSTANTS.BANNER_BOTTOM_PADDING,
-          }}
-        >
+      {/* SVG that creates the entire header shape with wavy bottom - EXTENDS INTO NOTCH */}
+      <svg
+        className="w-full"
+        viewBox="0 0 500 220" // Increased height to account for notch area
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="none"
+        style={{
+          height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Add safe area to height
+        }}
+      >
+        {/* Gradient definition */}
+        <defs>
+          <linearGradient
+            id="headerGradient1"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <stop offset="0%" stopColor="#ec4899" />
+            <stop offset="50%" stopColor="#f472b6" />
+            <stop offset="100%" stopColor="#e879f9" />
+          </linearGradient>
+        </defs>
+
+        {/* Single path with just 2-3 large wave peaks */}
+        <path
+          d="M0 0 L500 0 L500 160 C400 200 350 140 250 180 C150 220 100 160 0 200 L0 0 Z"
+          fill="url(#headerGradient1)"
+        />
+      </svg>
+
+      {/* Text content positioned absolutely over the SVG - RESPECTS SAFE AREA */}
+      <div
+        className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-start"
+        style={{
+          paddingTop: `calc(${UI_CONSTANTS.BANNER_TOP_PADDING}px + env(safe-area-inset-top))`, // Safe area for text only
+          paddingBottom: UI_CONSTANTS.BANNER_BOTTOM_PADDING,
+        }}
+      >
+        <div className="flex flex-col items-center w-full px-4">
           <div
-            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-gray-900 text-center drop-shadow-sm ${dancingScriptClass}`}
+            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-white text-center drop-shadow-sm ${dancingScriptClass}`}
             style={{
               lineHeight: 1.15,
               letterSpacing: '-0.02em',
@@ -143,25 +180,11 @@ function SummariesHeader({
           >
             Summaries
           </div>
-          <div className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
+          <div className="text-lg sm:text-xl text-white font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
             A gentle way to track your meal journey and celebrate your daily
             wins ✨
           </div>
         </div>
-
-        {/* Curved bottom border using SVG */}
-        <svg
-          className="absolute left-0 bottom-0 w-full"
-          viewBox="0 0 500 44"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="none"
-          style={{
-            height: UI_CONSTANTS.BANNER_CURVE_HEIGHT,
-          }}
-        >
-          <path d="M0 0C82 40 418 40 500 0V44H0V0Z" fill="#f5ede6" />
-        </svg>
       </div>
     </header>
   );
@@ -204,10 +227,10 @@ function Calendar({
   const endOfCalendar = new Date(endOfMonth);
   endOfCalendar.setDate(endOfCalendar.getDate() + (6 - endOfCalendar.getDay()));
 
-  // Generate calendar day array
+  // Generate calendar day array - ALWAYS 42 days (6 weeks)
   const calendarDays = [];
   const current = new Date(startOfCalendar);
-  while (current <= endOfCalendar) {
+  for (let i = 0; i < 42; i++) {
     calendarDays.push(new Date(current));
     current.setDate(current.getDate() + 1);
   }
@@ -248,7 +271,10 @@ function Calendar({
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto h-full flex flex-col justify-center">
+    <div
+      className="w-full max-w-lg mx-auto flex flex-col justify-center"
+      style={{ height: 'calc(100vh - 300px)' }}
+    >
       {/* Month navigation header */}
       <div className="flex items-center justify-between mb-6 px-4">
         <button
@@ -342,7 +368,7 @@ function Calendar({
 
               {/* Today indicator overlay */}
               {isTodayDate && (
-                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <span className="text-[10px] font-medium text-purple-700 bg-purple-100/40 px-1.5 py-0.5 rounded-full whitespace-nowrap">
                     TODAY
                   </span>
@@ -483,7 +509,7 @@ export default function SummariesPage() {
   // ============================================================================
 
   return (
-    <div className={`min-h-screen w-full ${dmSans.className}`}>
+    <div className={`h-screen w-full overflow-hidden ${dmSans.className}`}>
       {/* Back navigation button */}
       <motion.div
         className="fixed left-4 z-40 notch-safe"
@@ -492,7 +518,7 @@ export default function SummariesPage() {
         transition={{ duration: 0.3 }}
       >
         <button
-          onClick={() => router.push('/')}
+          onClick={() => router.push('/?tab=progress')}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go Back to Home"
         >
@@ -517,18 +543,33 @@ export default function SummariesPage() {
 
       {/* Main calendar content area */}
       <div
-        className="w-full max-w-2xl mx-auto safe-x"
+        className="w-full max-w-2xl mx-auto safe-x overflow-hidden"
         style={{
           marginTop: BANNER_TOTAL_HEIGHT,
-          minHeight: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
-          paddingTop: 'calc(2rem + env(safe-area-inset-top))',
-          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
+          height: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
+          paddingTop: '0.5rem', // ← REDUCED from 2rem to 0.5rem
+          paddingBottom: '2rem',
         }}
       >
         <div className="px-4">
           {loading ? (
-            <div className="text-center text-gray-400/80 text-base font-medium animate-pulse py-8">
-              Loading summaries…
+            <div
+              className="flex items-center justify-center"
+              style={{
+                height: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px - 4rem)`,
+              }}
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-8 h-8 border-3 border-purple-200 border-t-purple-500 rounded-full animate-spin"></div>
+                <div className="text-center">
+                  <p className="text-lg font-medium text-gray-700 mb-1">
+                    Loading summaries
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Gathering your meal journey ✨
+                  </p>
+                </div>
+              </div>
             </div>
           ) : (
             <AnimatePresence mode="wait">
