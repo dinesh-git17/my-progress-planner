@@ -595,7 +595,7 @@ export default function MealChat({
       style={{
         fontFamily: SYSTEM_FONT,
         background: '#fdf6e3',
-        height: '100vh',
+        height: '100dvh',
         position: 'fixed', // Critical for iOS PWA
         top: 0,
         left: '50%',
