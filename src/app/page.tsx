@@ -656,6 +656,13 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [contentReady, setContentReady] = useState(false);
+
+  const [previousTab, setPreviousTab] = useState<
+    'meals' | 'progress' | 'friends'
+  >('meals');
+
+  const [enterDirection, setEnterDirection] = useState(0);
+
   const [activeTab, setActiveTab] = useState<'meals' | 'progress' | 'friends'>(
     () => {
       if (typeof window !== 'undefined') {
@@ -669,6 +676,7 @@ export default function Home() {
       return 'meals';
     },
   );
+
   // User and authentication state
   const [name, setName] = useState('');
   const [askName, setAskName] = useState(false);
@@ -736,11 +744,8 @@ export default function Home() {
 
         const data = await response.json();
 
-        console.log('Friend code API response:', data); // Debug log
-
         if (data.success && data.friendCode) {
           setFriendCode(data.friendCode);
-          console.log('Friend code set:', data.friendCode); // Debug log
         } else {
           console.log('No friend code found for user');
           setFriendCode('');
@@ -859,6 +864,55 @@ export default function Home() {
     router.push('/recover');
   };
 
+  /**
+   * Calculate directions for tab transition
+   */
+  const getTransitionDirections = (fromTab: string, toTab: string) => {
+    const TAB_ORDER = ['meals', 'progress', 'friends'];
+    const fromIndex = TAB_ORDER.indexOf(fromTab);
+    const toIndex = TAB_ORDER.indexOf(toTab);
+
+    if (toIndex > fromIndex) {
+      // Moving forward: current exits LEFT, new enters from RIGHT
+      return {
+        exitDirection: -100,
+        enterDirection: 100,
+      };
+    } else {
+      // Moving backward: current exits RIGHT, new enters from LEFT
+      return {
+        exitDirection: 100,
+        enterDirection: -100,
+      };
+    }
+  };
+
+  /**
+   * Get exit direction for a tab when transitioning TO the current activeTab
+   */
+  const getExitDirectionForTab = (tabName: string) => {
+    // When this tab is exiting, where are we going?
+    // The target is the current activeTab (since we're transitioning to it)
+    if (tabName === activeTab) return 0; // Tab is not exiting
+
+    // Calculate exit direction from this tab TO the activeTab
+    return getTransitionDirections(tabName, activeTab).exitDirection;
+  };
+
+  /**
+   * Handle tab change - only set enter direction
+   */
+  const handleTabChange = (newTab: 'meals' | 'progress' | 'friends') => {
+    if (newTab !== activeTab) {
+      const directions = getTransitionDirections(activeTab, newTab);
+
+      // Only set enter direction - exit direction will be calculated dynamically
+      setEnterDirection(directions.enterDirection);
+
+      setPreviousTab(activeTab);
+      setActiveTab(newTab);
+    }
+  };
   // ========================================================================
   // DATA FETCHING FUNCTIONS
   // ========================================================================
@@ -1815,10 +1869,22 @@ export default function Home() {
                     {activeTab === 'meals' && (
                       <motion.div
                         key="meals"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
+                        initial={{
+                          opacity: 0,
+                          x: enterDirection,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          x: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          x: getExitDirectionForTab('meals'),
+                        }}
+                        transition={{
+                          duration: 0.4,
+                          ease: [0.4, 0, 0.2, 1],
+                        }}
                         className="pb-24"
                       >
                         <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
@@ -1832,15 +1898,15 @@ export default function Home() {
                                 key={meal}
                                 whileTap={{ scale: isLogged ? 1 : 0.98 }}
                                 className={`
-                            flex items-center px-6 py-5 rounded-2xl transition
-                            bg-white/95 border border-gray-100 shadow-sm
-                            ${
-                              isLogged
-                                ? 'opacity-60 pointer-events-none'
-                                : 'hover:bg-pink-50 hover:shadow-lg'
-                            }
-                            cursor-pointer
-                          `}
+                flex items-center px-6 py-5 rounded-2xl transition
+                bg-white/95 border border-gray-100 shadow-sm
+                ${
+                  isLogged
+                    ? 'opacity-60 pointer-events-none'
+                    : 'hover:bg-pink-50 hover:shadow-lg'
+                }
+                cursor-pointer
+              `}
                                 onClick={() =>
                                   !isLogged &&
                                   router.push(`/${meal}?user_id=${userId}`)
@@ -1909,33 +1975,35 @@ export default function Home() {
                     {activeTab === 'progress' && (
                       <motion.div
                         key="progress"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.3 }}
+                        initial={{
+                          opacity: 0,
+                          x: enterDirection,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          x: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          x: getExitDirectionForTab('progress'),
+                        }}
+                        transition={{
+                          duration: 0.4,
+                          ease: [0.4, 0, 0.2, 1],
+                        }}
                         className="pb-24"
                       >
+                        {/* Your progress content here - same as before */}
                         <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
                           Progress
                         </span>
                         <div className="flex flex-col gap-6">
-                          {/* View My Summaries - Original */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
-                            className={`
-                            flex items-center px-6 py-5 rounded-2xl transition
-                            bg-white/95 border border-gray-100 shadow-sm
-                            hover:bg-pink-50 hover:shadow-lg
-                            cursor-pointer
-                          `}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-pink-50 hover:shadow-lg cursor-pointer"
                             onClick={() => router.push('/summaries')}
                             tabIndex={0}
                             role="button"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                router.push('/summaries');
-                              }
-                            }}
                           >
                             <span className="text-2xl">📋</span>
                             <div className="flex-1 flex flex-col ml-4">
@@ -1961,23 +2029,12 @@ export default function Home() {
                             </span>
                           </motion.div>
 
-                          {/* NEW: Nutritional Analysis */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
-                            className={`
-                              flex items-center px-6 py-5 rounded-2xl transition
-                              bg-white/95 border border-gray-100 shadow-sm
-                              hover:bg-green-50 hover:shadow-lg
-                              cursor-pointer
-                            `}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-green-50 hover:shadow-lg cursor-pointer"
                             onClick={() => router.push('/meals')}
                             tabIndex={0}
                             role="button"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                router.push('/nutrition');
-                              }
-                            }}
                           >
                             <span className="text-2xl">🥗</span>
                             <div className="flex-1 flex flex-col ml-4">
@@ -2003,23 +2060,12 @@ export default function Home() {
                             </span>
                           </motion.div>
 
-                          {/* View My Streaks - Existing */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
-                            className={`
-                              flex items-center px-6 py-5 rounded-2xl transition
-                              bg-white/95 border border-gray-100 shadow-sm
-                              hover:bg-orange-50 hover:shadow-lg
-                              cursor-pointer
-                            `}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-orange-50 hover:shadow-lg cursor-pointer"
                             onClick={() => router.push('/streaks')}
                             tabIndex={0}
                             role="button"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                router.push('/streaks');
-                              }
-                            }}
                           >
                             <span className="text-2xl">🏆</span>
                             <div className="flex-1 flex flex-col ml-4">
@@ -2050,37 +2096,39 @@ export default function Home() {
                       </motion.div>
                     )}
 
-                    {/* NEW: Friends tab content */}
+                    {/* Friends tab content */}
                     {activeTab === 'friends' && (
                       <motion.div
                         key="friends"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.3 }}
+                        initial={{
+                          opacity: 0,
+                          x: enterDirection,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          x: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          x: getExitDirectionForTab('friends'),
+                        }}
+                        transition={{
+                          duration: 0.4,
+                          ease: [0.4, 0, 0.2, 1],
+                        }}
                         className="pb-24"
                       >
+                        {/* Your friends content here - same as before */}
                         <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
                           Friends & Support
                         </span>
                         <div className="flex flex-col gap-6">
-                          {/* Manage Friends */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
-                            className={`
-                              flex items-center px-6 py-5 rounded-2xl transition
-                              bg-white/95 border border-gray-100 shadow-sm
-                              hover:bg-blue-50 hover:shadow-lg
-                              cursor-pointer
-                            `}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-blue-50 hover:shadow-lg cursor-pointer"
                             onClick={() => router.push('/friends')}
                             tabIndex={0}
                             role="button"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                router.push('/friends');
-                              }
-                            }}
                           >
                             <span className="text-2xl">👥</span>
                             <div className="flex-1 flex flex-col ml-4">
@@ -2107,23 +2155,12 @@ export default function Home() {
                             </span>
                           </motion.div>
 
-                          {/* Encouragement Notes */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
-                            className={`
-                              flex items-center px-6 py-5 rounded-2xl transition
-                              bg-white/95 border border-gray-100 shadow-sm
-                              hover:bg-pink-50 hover:shadow-lg
-                              cursor-pointer
-                            `}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-pink-50 hover:shadow-lg cursor-pointer"
                             onClick={() => router.push('/notes')}
                             tabIndex={0}
                             role="button"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                router.push('/notes');
-                              }
-                            }}
                           >
                             <span className="text-2xl">💌</span>
                             <div className="flex-1 flex flex-col ml-4">
@@ -2149,7 +2186,6 @@ export default function Home() {
                             </span>
                           </motion.div>
 
-                          {/* Friend Code Preview */}
                           <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
                             <div className="text-center">
                               <p className="text-sm text-gray-600 mb-2">
@@ -2184,15 +2220,15 @@ export default function Home() {
                       {/* Meals tab */}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => setActiveTab('meals')}
+                        onClick={() => handleTabChange('meals')}
                         className={`
-    flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
-    ${
-      activeTab === 'meals'
-        ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg'
-        : 'text-gray-400 hover:text-gray-600'
-    }
-  `}
+                        flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
+                        ${
+                          activeTab === 'meals'
+                            ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }
+                      `}
                       >
                         <svg
                           className={`w-5 h-5 mb-1 ${activeTab === 'meals' ? 'text-white' : 'text-gray-400'}`}
@@ -2211,15 +2247,15 @@ export default function Home() {
                       {/* Progress tab */}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => setActiveTab('progress')}
+                        onClick={() => handleTabChange('progress')}
                         className={`
-    flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
-    ${
-      activeTab === 'progress'
-        ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg'
-        : 'text-gray-400 hover:text-gray-600'
-    }
-  `}
+                        flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
+                        ${
+                          activeTab === 'progress'
+                            ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }
+                      `}
                       >
                         <svg
                           className={`w-5 h-5 mb-1 ${activeTab === 'progress' ? 'text-white' : 'text-gray-400'}`}
@@ -2238,7 +2274,7 @@ export default function Home() {
                       {/* Friends tab */}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => setActiveTab('friends')}
+                        onClick={() => handleTabChange('friends')}
                         className={`
                         flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
                         ${
