@@ -420,7 +420,6 @@ export default function FriendDetailPage() {
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => {
-              sessionStorage.setItem('mealapp_internal_nav', 'true');
               router.push('/');
             }}
             className="w-full bg-pink-500 text-white py-3 rounded-xl font-medium hover:bg-pink-600 transition-colors"
