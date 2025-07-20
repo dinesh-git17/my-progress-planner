@@ -4,7 +4,7 @@
   "description": "Track your meals with love and support - your personal nutrition companion for building healthy eating habits.",
   "start_url": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": ["fullscreen", "standalone"],
   "background_color": "#f5ede6",
   "theme_color": "#f5ede6",
   "orientation": "portrait-primary",
