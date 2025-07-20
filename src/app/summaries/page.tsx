@@ -518,7 +518,10 @@ export default function SummariesPage() {
         transition={{ duration: 0.3 }}
       >
         <button
-          onClick={() => router.push('/?tab=progress')}
+          onClick={() => {
+            localStorage.setItem('activeTab', 'progress');
+            router.push('/');
+          }}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go Back to Home"
         >

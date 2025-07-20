@@ -13,7 +13,7 @@ import {
 import { getUserName, saveUserName } from '@/utils/user';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useUserInitialization } from '../../hooks/useUserInitialization';
 
@@ -626,17 +626,19 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [contentReady, setContentReady] = useState(false);
-  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'meals' | 'progress' | 'friends'>(
     () => {
-      const tabParam = searchParams.get('tab') as
-        | 'meals'
-        | 'progress'
-        | 'friends';
-      return tabParam || 'meals';
+      if (typeof window !== 'undefined') {
+        return (
+          (localStorage.getItem('activeTab') as
+            | 'meals'
+            | 'progress'
+            | 'friends') || 'meals'
+        );
+      }
+      return 'meals';
     },
   );
-
   // User and authentication state
   const [name, setName] = useState('');
   const [askName, setAskName] = useState(false);
@@ -948,6 +950,15 @@ export default function Home() {
       setContentReady(true);
     }
   }, []);
+
+  /**
+   * Persist the active tab to localStorage whenever it changes
+   * This ensures the user returns to the same tab when navigating back from other pages
+   */
+
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
 
   /**
    * Auto-reload at midnight EST effect
