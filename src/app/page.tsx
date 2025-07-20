@@ -788,48 +788,124 @@ export default function Home() {
   };
 
   /**
-   * Handles push notification setup and subscription
-   * Requests permission and registers service worker
+   * Updated handleNotificationClick function for your homepage
+   * Replace your existing function with this one
    */
   const handleNotificationClick = async () => {
     try {
-      // Register service worker and request permission
-      const reg = await navigator.serviceWorker.ready;
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') throw new Error('Notification permission denied');
+      console.log('🔔 Starting notification setup...');
 
-      // VAPID public key for push subscription (should be in environment variables)
+      // 1. Check if service workers are supported
+      if (!('serviceWorker' in navigator)) {
+        throw new Error('Service workers not supported in this browser');
+      }
+
+      if (!('PushManager' in window)) {
+        throw new Error('Push notifications not supported in this browser');
+      }
+
+      // 2. Register service worker if not already registered
+      let registration;
+      try {
+        registration = await navigator.serviceWorker.getRegistration();
+
+        if (!registration) {
+          console.log('📝 Registering service worker...');
+          registration = await navigator.serviceWorker.register(
+            '/service-worker.js',
+            {
+              scope: '/',
+            },
+          );
+          console.log('✅ Service worker registered successfully');
+        } else {
+          console.log('✅ Service worker already registered');
+        }
+
+        // Wait for service worker to be ready
+        await navigator.serviceWorker.ready;
+      } catch (swError) {
+        console.error('❌ Service worker registration failed:', swError);
+        throw new Error('Failed to register service worker');
+      }
+
+      // 3. Request notification permission
+      console.log('🔐 Requesting notification permission...');
+      const permission = await Notification.requestPermission();
+
+      if (permission !== 'granted') {
+        throw new Error(
+          'Notification permission denied. Please enable notifications in your browser settings.',
+        );
+      }
+
+      console.log('✅ Notification permission granted');
+
+      // 4. Create push subscription
       const vapidPublicKey =
         'BAEWVqKa9ASTlGbc7Oo_BJGAsYBtlYAS1IkI1gKMz5Ot6WnNQuP-WQ2u3sDRDV4Ca5kZQwo8aKOshT3wOrUugxk';
 
-      // Subscribe to push notifications
-      const subscription = await reg.pushManager.subscribe({
+      console.log('📱 Creating push subscription...');
+      const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
-      // Save subscription to backend
+      console.log('✅ Push subscription created');
+
+      // 5. Save subscription to backend WITH user_id
+      console.log('💾 Saving subscription to backend...');
       const response = await fetch('/api/push/save-subscription', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           subscription,
+          user_id: userId, // This is the key fix - include user_id
         }),
-        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        const errorData = await response.json();
+        console.error('❌ Backend save failed:', errorData);
+        throw new Error(
+          `Failed to save subscription: ${errorData.error || 'Unknown error'}`,
+        );
       }
 
+      const result = await response.json();
+      console.log('✅ Subscription saved to backend:', result);
+
+      // 6. Update UI state
       setNotificationsEnabled(true);
-      alert('🎉 Notifications enabled!');
-    } catch (err: any) {
-      console.error('Notification setup failed:', err);
-      alert(`Error: ${err.message}`);
+
+      // Show success message
+      alert(
+        "🎉 Notifications enabled! You'll now receive encouraging reminders.",
+      );
+    } catch (error) {
+      console.error('💥 Notification setup failed:', error);
+
+      // Show user-friendly error message
+      let errorMessage = 'Failed to enable notifications. ';
+
+      if (error instanceof Error) {
+        if (error.message.includes('permission denied')) {
+          errorMessage +=
+            'Please enable notifications in your browser settings and try again.';
+        } else if (error.message.includes('not supported')) {
+          errorMessage += "Your browser doesn't support push notifications.";
+        } else {
+          errorMessage += error.message;
+        }
+      } else {
+        errorMessage += 'Please try again or check your browser settings.';
+      }
+
+      alert(`❌ ${errorMessage}`);
     }
   };
-
   /**
    * Saves user name to backend and updates UI state
    */
@@ -1134,14 +1210,47 @@ export default function Home() {
   }, [userId]);
 
   /**
-   * App data initialization effect
-   * Loads user data once userId and content are ready
+   * Enhanced notification state checking
+   * Replace the notification checking section in your useEffect with this:
    */
+
   useEffect(() => {
-    // Check notification permission status
-    if (typeof Notification !== 'undefined') {
-      setNotificationsEnabled(Notification.permission === 'granted');
-    }
+    // Don't just check permission - check for actual subscription
+    const checkNotificationState = async () => {
+      try {
+        // First check if notifications are supported
+        if (typeof Notification === 'undefined') {
+          setNotificationsEnabled(false);
+          return;
+        }
+
+        // Check permission
+        if (Notification.permission !== 'granted') {
+          setNotificationsEnabled(false);
+          return;
+        }
+
+        // Check if we have an active push subscription
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration) {
+            const subscription =
+              await registration.pushManager.getSubscription();
+            if (subscription) {
+              // We have both permission AND an active subscription
+              setNotificationsEnabled(true);
+              return;
+            }
+          }
+        }
+
+        // Permission granted but no active subscription
+        setNotificationsEnabled(false);
+      } catch (error) {
+        console.error('Error checking notification state:', error);
+        setNotificationsEnabled(false);
+      }
+    };
 
     if (!userId || !contentReady) return;
 
@@ -1154,27 +1263,11 @@ export default function Home() {
         setName(existingName);
         fetchQuote(existingName);
         fetchLoggedMealsAndRefreshStreak(userId);
-        fetchFriendCode(userId); // Fetch friend code when user data is loaded
+        fetchFriendCode(userId);
       }
 
-      // Check for existing push subscription
-      try {
-        if (
-          'serviceWorker' in navigator &&
-          Notification.permission === 'granted'
-        ) {
-          const registration = await navigator.serviceWorker.getRegistration();
-          if (registration) {
-            const subscription =
-              await registration.pushManager.getSubscription();
-            if (subscription) {
-              setNotificationsEnabled(true);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error checking existing push subscription:', error);
-      }
+      // Check notification state properly
+      await checkNotificationState();
     };
 
     init();
@@ -1714,14 +1807,14 @@ export default function Home() {
                             e.preventDefault();
                             e.stopPropagation();
                             setShowNotificationTooltip(false); // Hide tooltip on click
-                            handleNotificationClick();
+                            handleNotificationClick(); // Call the proper function!
                           }}
                           className="
-                            w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 
-                            flex items-center justify-center shadow-lg 
-                            cursor-pointer hover:scale-110 active:scale-95 transition-transform
-                            border-none outline-none focus:ring-2 focus:ring-pink-300
-                          "
+          w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 
+          flex items-center justify-center shadow-lg 
+          cursor-pointer hover:scale-110 active:scale-95 transition-transform
+          border-none outline-none focus:ring-2 focus:ring-pink-300
+        "
                           animate={{
                             y: [0, -4, 0],
                             scale: [1, 1.05, 1],
@@ -1821,13 +1914,13 @@ export default function Home() {
                           setShowProfileDropdown(!showProfileDropdown)
                         }
                         className="
-                          w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full 
-                          flex items-center justify-center text-lg font-bold text-white shadow-lg 
-                          select-none uppercase cursor-pointer transition-all duration-200
-                          hover:shadow-xl hover:from-pink-300 hover:to-yellow-300
-                          focus:outline-none focus:ring-2 focus:ring-pink-300/40
-                          border-none
-                        "
+        w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full 
+        flex items-center justify-center text-lg font-bold text-white shadow-lg 
+        select-none uppercase cursor-pointer transition-all duration-200
+        hover:shadow-xl hover:from-pink-300 hover:to-yellow-300
+        focus:outline-none focus:ring-2 focus:ring-pink-300/40
+        border-none
+      "
                         type="button"
                         aria-label="Profile menu"
                         style={{ WebkitTapHighlightColor: 'transparent' }}
