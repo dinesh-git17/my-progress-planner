@@ -796,7 +796,6 @@ export default function Home() {
       setShowNameSaved(true);
       setTimeout(() => {
         setAskName(false);
-        fetchQuote(tempName.trim());
         fetchLoggedMealsAndRefreshStreak(userId);
       }, 1200);
     }
@@ -814,6 +813,10 @@ export default function Home() {
       setLoggedMeals([]);
       setIsAfterRecovery(false);
       localStorage.removeItem('user_id');
+
+      // Clear session quote so new user gets fresh quote
+      sessionStorage.removeItem('mealapp_daily_quote');
+      sessionStorage.removeItem('mealapp_quote_name');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -832,9 +835,22 @@ export default function Home() {
 
   /**
    * Fetches personalized motivational quote from GPT API
+   * Only fetches if no quote exists in session storage
    * @param {string} nameToUse - User's name for personalization
    */
   const fetchQuote = (nameToUse: string): void => {
+    // Check if we already have a quote for this session
+    const sessionQuote = sessionStorage.getItem('mealapp_daily_quote');
+    const sessionQuoteName = sessionStorage.getItem('mealapp_quote_name');
+
+    if (sessionQuote && sessionQuoteName === nameToUse) {
+      // Use existing quote from session
+      setQuote(sessionQuote);
+      setLoading(false);
+      return;
+    }
+
+    // No session quote or name changed - fetch new one
     setLoading(true);
     setQuote('');
 
@@ -853,11 +869,21 @@ export default function Home() {
         ) {
           safeQuote = "You're doing amazing! One step at a time.";
         }
+
         setQuote(safeQuote);
+
+        // Store in session storage for this session
+        sessionStorage.setItem('mealapp_daily_quote', safeQuote);
+        sessionStorage.setItem('mealapp_quote_name', nameToUse);
       })
       .catch((error) => {
         console.error('Quote fetch failed:', error);
-        setQuote("You're doing amazing! One step at a time.");
+        const fallbackQuote = "You're doing amazing! One step at a time.";
+        setQuote(fallbackQuote);
+
+        // Store fallback quote in session too
+        sessionStorage.setItem('mealapp_daily_quote', fallbackQuote);
+        sessionStorage.setItem('mealapp_quote_name', nameToUse);
       })
       .finally(() => setLoading(false));
   };
@@ -927,6 +953,26 @@ export default function Home() {
   // ========================================================================
   // EFFECT HOOKS
   // ========================================================================
+
+  /**
+   * Initialize quote from session storage if available
+   * This runs once when the component mounts
+   */
+  useEffect(() => {
+    if (!contentReady || !name) return;
+
+    const sessionQuote = sessionStorage.getItem('mealapp_daily_quote');
+    const sessionQuoteName = sessionStorage.getItem('mealapp_quote_name');
+
+    if (sessionQuote && sessionQuoteName === name) {
+      // We have a valid session quote for this user
+      setQuote(sessionQuote);
+      setLoading(false);
+    } else if (name) {
+      // No session quote or name mismatch - fetch fresh quote
+      fetchQuote(name);
+    }
+  }, [contentReady, name]); // Only run when contentReady or name changes
 
   /**
    * App initialization effect
@@ -1011,7 +1057,6 @@ export default function Home() {
         setAskName(true);
       } else {
         setName(existingName);
-        fetchQuote(existingName);
         fetchLoggedMealsAndRefreshStreak(userId);
         fetchFriendCode(userId); // Fetch friend code when user data is loaded
       }
@@ -1164,7 +1209,6 @@ export default function Home() {
           if (existingName) {
             setName(existingName);
             setAskName(false);
-            fetchQuote(existingName);
           } else {
             setAskName(true);
           }
@@ -1246,7 +1290,6 @@ export default function Home() {
             if (nameData.name) {
               setName(nameData.name);
               setAskName(false);
-              fetchQuote(nameData.name);
             }
           }
 
