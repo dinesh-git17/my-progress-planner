@@ -165,9 +165,6 @@ export const metadata: Metadata = {
     ],
   },
 
-  // Theme colors
-  themeColor: '#f5ede6',
-
   // Open Graph for social sharing
   openGraph: {
     type: 'website',
@@ -208,7 +205,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: 'cover', // Essential for content extending into notch
+  viewportFit: 'cover',
+  themeColor: '#f5ede6',
 };
 
 // ============================================================================
@@ -291,7 +289,6 @@ export default function RootLayout({
             PWA THEME COLORS
             ============================================== */}
 
-        <meta name="theme-color" content="#f5ede6" />
         <meta name="msapplication-TileColor" content="#f5ede6" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
