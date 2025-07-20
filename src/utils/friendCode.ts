@@ -1,7 +1,7 @@
 // src/utils/friendCode.ts
 
 /**
- * Friend Code Utilities for My Progress Planner
+ * Friend Code Utilities for Sweethearty
  * Generates and validates unique 6-character friend codes
  * Format: ABC123 (3 letters + 3 numbers)
  */

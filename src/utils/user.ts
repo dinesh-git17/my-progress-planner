@@ -1,5 +1,5 @@
 /**
- * User Management Utilities for My Progress Planner
+ * User Management Utilities for Sweethearty
  *
  * This module provides comprehensive user management functionality including:
  * - Basic user operations (CRUD)
@@ -7,7 +7,7 @@
  * - Friend data access with privacy controls
  * - Encouragement notes system
  *
- * @author My Progress Planner Team
+ * @author Sweethearty Team
  * @version 2.0.0
  * @since 2025-07-07
  */

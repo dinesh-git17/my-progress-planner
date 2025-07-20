@@ -19,8 +19,8 @@ const dmSans = DM_Sans({
 // ============================================================================
 export const metadata: Metadata = {
   title: {
-    default: 'My Progress Planner',
-    template: '%s | My Progress Planner',
+    default: 'Sweethearty',
+    template: '%s | Sweethearty',
   },
   description:
     'Track your meals with love and support - your personal nutrition companion',
@@ -33,9 +33,9 @@ export const metadata: Metadata = {
     'wellness',
     'food diary',
   ],
-  authors: [{ name: 'My Progress Planner Team' }],
-  creator: 'My Progress Planner',
-  publisher: 'My Progress Planner',
+  authors: [{ name: 'Sweethearty Team' }],
+  creator: 'Sweethearty',
+  publisher: 'Sweethearty',
 
   // PWA manifest
   manifest: '/manifest.json',
@@ -169,8 +169,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    siteName: 'My Progress Planner',
-    title: 'My Progress Planner - Track Your Nutrition Journey',
+    siteName: 'Sweethearty',
+    title: 'Sweethearty - Track Your Nutrition Journey',
     description:
       'Build healthy eating habits with our intuitive meal tracking app',
     images: [
@@ -178,7 +178,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'My Progress Planner - Meal Tracking App',
+        alt: 'Sweethearty - Meal Tracking App',
       },
     ],
   },

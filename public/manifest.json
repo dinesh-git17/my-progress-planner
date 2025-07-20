@@ -1,6 +1,6 @@
 {
-  "name": "My Progress Planner",
-  "short_name": "Progress Planner",
+  "name": "Sweethearty",
+  "short_name": "Sweethearty",
   "description": "Track your meals with love and support - your personal nutrition companion for building healthy eating habits.",
   "start_url": "/",
   "display": "standalone",
@@ -152,14 +152,14 @@
       "sizes": "540x720",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "My Progress Planner - Track your meals with love"
+      "label": "Sweethearty - Track your meals with love"
     },
     {
       "src": "/screenshot-wide.png",
       "sizes": "1024x593",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "My Progress Planner - Desktop view"
+      "label": "Sweethearty - Desktop view"
     }
   ]
 }

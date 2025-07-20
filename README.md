@@ -1,10 +1,10 @@
-# My Progress Planner 🍽️
+# Sweethearty 🍽️
 
 A loving, supportive meal tracking PWA that acts like your caring boyfriend, providing encouragement and motivation throughout your wellness journey. Built with modern web technologies to create an intimate, personal experience that celebrates every meal and milestone.
 
 ## The Story Behind the App 💕
 
-This isn't just another meal tracking app. My Progress Planner was designed with love, specifically to provide the kind of warm, supportive feedback you'd get from someone who genuinely cares about your wellbeing. Every interaction is crafted to feel personal, encouraging, and celebratory—because every healthy choice deserves recognition.
+This isn't just another meal tracking app. Sweethearty was designed with love, specifically to provide the kind of warm, supportive feedback you'd get from someone who genuinely cares about your wellbeing. Every interaction is crafted to feel personal, encouraging, and celebratory—because every healthy choice deserves recognition.
 
 ## How It Works 🌟
 
