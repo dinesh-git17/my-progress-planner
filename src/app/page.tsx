@@ -31,9 +31,6 @@ const mealLabels = [
   { meal: 'dinner', emoji: '🍜', label: 'Dinner' },
 ];
 
-// Tab order for directional animations
-const TAB_ORDER = ['meals', 'progress', 'friends'] as const;
-
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
@@ -659,7 +656,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [contentReady, setContentReady] = useState(false);
-  const [slideDirection, setSlideDirection] = useState(0);
 
   const [previousTab, setPreviousTab] = useState<
     'meals' | 'progress' | 'friends'
@@ -866,47 +862,6 @@ export default function Home() {
    */
   const handleRecoverData = () => {
     router.push('/recover');
-  };
-
-  /**
-   * Calculates slide direction for tab transitions
-   * @param {string} newTab - Target tab
-   * @param {string} currentTab - Current active tab
-   * @returns {number} 1 for forward (right to left), -1 for backward (left to right)
-   */
-  const calculateSlideDirection = (
-    newTab: string,
-    currentTab: string,
-  ): number => {
-    const newIndex = TAB_ORDER.indexOf(newTab as any);
-    const currentIndex = TAB_ORDER.indexOf(currentTab as any);
-    return newIndex > currentIndex ? 1 : -1;
-  };
-
-  /**
-   * Gets explicit animation directions for tab transitions
-   * Returns both exit direction for current tab and enter direction for new tab
-   */
-  const getTabAnimationDirections = (
-    fromTab: string,
-    toTab: string,
-  ): { exitDirection: number; enterDirection: number } => {
-    const fromIndex = TAB_ORDER.indexOf(fromTab as any);
-    const toIndex = TAB_ORDER.indexOf(toTab as any);
-
-    if (toIndex > fromIndex) {
-      // Moving forward (left to right in tab order)
-      return {
-        exitDirection: -100, // Current tab exits LEFT
-        enterDirection: 100, // New tab enters from RIGHT
-      };
-    } else {
-      // Moving backward (right to left in tab order)
-      return {
-        exitDirection: 100, // Current tab exits RIGHT
-        enterDirection: -100, // New tab enters from LEFT
-      };
-    }
   };
 
   /**
@@ -2256,19 +2211,6 @@ export default function Home() {
                   </AnimatePresence>
                 </div>
 
-                {/* ==============Debug============================ */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="fixed top-20 left-4 bg-black/80 text-white p-2 rounded text-xs font-mono z-50">
-                    <div>Active: {activeTab}</div>
-                    <div>Previous: {previousTab}</div>
-                    <div>Enter Dir: {enterDirection}</div>
-                    <div>Meals Exit: {getExitDirectionForTab('meals')}</div>
-                    <div>
-                      Progress Exit: {getExitDirectionForTab('progress')}
-                    </div>
-                    <div>Friends Exit: {getExitDirectionForTab('friends')}</div>
-                  </div>
-                )}
                 {/* ============================================================ */}
                 {/* BOTTOM NAVIGATION TABS */}
                 {/* ============================================================ */}
