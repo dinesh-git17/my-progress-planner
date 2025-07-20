@@ -139,14 +139,44 @@ function getMsUntilNextEstMidnight() {
  */
 function highlightQuote(quote: string): string {
   const highlights: HighlightedWord[] = [
+    // PRIORITY 1: Multi-word phrases and hyphenated words (MUST come first)
     { regex: /self-care/gi, className: 'text-pink-500 font-semibold' },
-    { regex: /progress/gi, className: 'text-purple-500 font-semibold' },
     { regex: /small steps/gi, className: 'text-yellow-500 font-semibold' },
+    { regex: /step by step/gi, className: 'text-slate-600 font-semibold' },
+    { regex: /one step/gi, className: 'text-gray-600 font-semibold' },
+
+    // PRIORITY 2: Single words (processed after multi-word phrases)
+    { regex: /progress/gi, className: 'text-purple-500 font-semibold' },
     { regex: /amazing/gi, className: 'text-green-500 font-semibold' },
     { regex: /love/gi, className: 'text-red-500 font-semibold' },
     { regex: /motivation/gi, className: 'text-blue-500 font-semibold' },
     { regex: /healthy/gi, className: 'text-teal-500 font-semibold' },
     { regex: /victory/gi, className: 'text-teal-500 font-semibold' },
+    { regex: /eating/gi, className: 'text-orange-500 font-semibold' },
+    { regex: /nourish/gi, className: 'text-green-600 font-semibold' },
+    { regex: /caring/gi, className: 'text-pink-600 font-semibold' },
+    { regex: /gentle/gi, className: 'text-purple-400 font-semibold' },
+    { regex: /sweet/gi, className: 'text-pink-400 font-semibold' },
+    { regex: /proud/gi, className: 'text-yellow-600 font-semibold' },
+    { regex: /beautiful/gi, className: 'text-rose-500 font-semibold' },
+    { regex: /strong/gi, className: 'text-blue-600 font-semibold' },
+    { regex: /wonderful/gi, className: 'text-purple-600 font-semibold' },
+    { regex: /special/gi, className: 'text-indigo-500 font-semibold' },
+    { regex: /care/gi, className: 'text-teal-400 font-semibold' },
+    { regex: /nurture/gi, className: 'text-green-400 font-semibold' },
+    { regex: /kindness/gi, className: 'text-pink-300 font-semibold' },
+    { regex: /support/gi, className: 'text-blue-400 font-semibold' },
+    { regex: /encourage/gi, className: 'text-yellow-400 font-semibold' },
+    { regex: /celebrate/gi, className: 'text-orange-400 font-semibold' },
+    { regex: /growth/gi, className: 'text-emerald-500 font-semibold' },
+    { regex: /journey/gi, className: 'text-violet-500 font-semibold' },
+    { regex: /succeed/gi, className: 'text-green-700 font-semibold' },
+    { regex: /overcome/gi, className: 'text-blue-700 font-semibold' },
+    { regex: /believe/gi, className: 'text-indigo-600 font-semibold' },
+    { regex: /trust/gi, className: 'text-cyan-600 font-semibold' },
+    { regex: /positive/gi, className: 'text-lime-500 font-semibold' },
+    { regex: /affection/gi, className: 'text-red-400 font-semibold' },
+    { regex: /embrace/gi, className: 'text-amber-500 font-semibold' },
   ];
 
   let highlighted = quote;
