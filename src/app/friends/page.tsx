@@ -337,7 +337,7 @@ export default function FriendsPage() {
   const renderTabs = () => {
     const tabs = [
       { id: 'my-code' as TabType, label: 'My Code', emoji: '🏷️' },
-      { id: 'add-friend' as TabType, label: 'Add Friend', emoji: '➕' },
+      { id: 'add-friend' as TabType, label: 'Add', emoji: '➕' },
       { id: 'friends-list' as TabType, label: 'Friends', emoji: '👥' },
     ];
 

@@ -1,15 +1,29 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import {
-  ArrowLeft,
-  Calendar,
-  Heart,
-  Loader2,
-  MessageCircle,
-} from 'lucide-react';
+import { ArrowLeft, Calendar, Heart, Loader2 } from 'lucide-react';
+import { DM_Sans, Dancing_Script } from 'next/font/google';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+// ============================================================================
+// FONT CONFIGURATION
+// ============================================================================
+const dmSans = DM_Sans({ subsets: ['latin'] });
+const dancingScript = Dancing_Script({ subsets: ['latin'] });
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+const BANNER_CURVE_HEIGHT = 44;
+const BANNER_TOP_PADDING = 32;
+const BANNER_BOTTOM_PADDING = 22;
+const BANNER_TEXT_HEIGHT = 74;
+const BANNER_TOTAL_HEIGHT =
+  BANNER_CURVE_HEIGHT +
+  BANNER_TOP_PADDING +
+  BANNER_BOTTOM_PADDING +
+  BANNER_TEXT_HEIGHT;
 
 // ============================================================================
 // TYPES
@@ -104,6 +118,66 @@ function groupNotesByDate(notes: Note[]) {
   });
 
   return groups;
+}
+
+// ============================================================================
+// HEADER COMPONENT
+// ============================================================================
+
+function NotesHeader({
+  dancingScriptClass,
+  notesCount,
+}: {
+  dancingScriptClass: string;
+  notesCount: number;
+}) {
+  return (
+    <header
+      className="fixed top-0 left-0 w-full z-30 pt-safe-top"
+      style={{
+        background: '#f5ede6',
+      }}
+    >
+      <div className="relative w-full h-full flex flex-col items-center justify-center">
+        {/* Text content */}
+        <div
+          className="flex flex-col items-center w-full px-4"
+          style={{
+            paddingTop: BANNER_TOP_PADDING,
+            paddingBottom: BANNER_BOTTOM_PADDING,
+          }}
+        >
+          <div
+            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-gray-900 text-center drop-shadow-sm ${dancingScriptClass}`}
+            style={{
+              lineHeight: 1.15,
+              letterSpacing: '-0.02em',
+              fontWeight: 700,
+            }}
+          >
+            Encouragement Notes
+          </div>
+          <div className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
+            {notesCount} note{notesCount !== 1 ? 's' : ''} from friends 💌
+          </div>
+        </div>
+
+        {/* Curved bottom border using SVG */}
+        <svg
+          className="absolute left-0 bottom-0 w-full"
+          viewBox="0 0 500 44"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+          style={{
+            height: BANNER_CURVE_HEIGHT,
+          }}
+        >
+          <path d="M0 0C82 40 418 40 500 0V44H0V0Z" fill="#f5ede6" />
+        </svg>
+      </div>
+    </header>
+  );
 }
 
 // ============================================================================
@@ -260,116 +334,125 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50">
+    <div className={`min-h-screen w-full ${dmSans.className}`}>
+      {/* Back navigation button */}
+      <motion.div
+        className="fixed left-4 z-40 notch-safe"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <button
+          onClick={() => router.push('/')}
+          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
+          aria-label="Go back to home"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      </motion.div>
+
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-md mx-auto px-4 py-4">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => router.push('/')}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-
-            <div className="flex-1">
-              <h1 className="text-lg font-semibold text-gray-800">
-                Encouragement Notes
-              </h1>
-              <p className="text-sm text-gray-500">
-                {notes.length} note{notes.length !== 1 ? 's' : ''} from friends
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-1 bg-pink-100 px-3 py-1 rounded-full">
-              <MessageCircle className="w-4 h-4 text-pink-500" />
-              <span className="text-sm font-medium text-pink-700">
-                {notes.length}
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Filter Tabs */}
-      <div className="max-w-md mx-auto px-4 py-4">
-        <div className="flex bg-white rounded-xl p-1 shadow-sm">
-          <button
-            onClick={() => setSelectedFilter('all')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-              selectedFilter === 'all'
-                ? 'bg-pink-500 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            All Notes
-          </button>
-          <button
-            onClick={() => setSelectedFilter('today')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-              selectedFilter === 'today'
-                ? 'bg-pink-500 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            Today
-          </button>
-        </div>
-      </div>
+      <NotesHeader
+        dancingScriptClass={dancingScript.className}
+        notesCount={notes.length}
+      />
 
       {/* Main Content */}
-      <main className="max-w-md mx-auto px-4 pb-20">
-        {error ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl p-6 shadow-lg text-center"
-          >
-            <div className="text-red-500 text-4xl mb-4">😕</div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">Oops!</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button
-              onClick={fetchNotes}
-              className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
-            >
-              Try Again
-            </button>
-          </motion.div>
-        ) : notes.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="space-y-6">
-            {dateKeys.map((dateKey) => (
-              <motion.section
-                key={dateKey}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-3"
-              >
-                {/* Date Header */}
-                <div className="flex items-center space-x-2 px-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <h2 className="text-sm font-medium text-gray-600">
-                    {formatDateGroup(dateKey)}
-                  </h2>
-                  <div className="flex-1 h-px bg-gray-200"></div>
-                  <span className="text-xs text-gray-400">
-                    {groupedNotes[dateKey].length} note
-                    {groupedNotes[dateKey].length !== 1 ? 's' : ''}
-                  </span>
-                </div>
+      <div
+        className="w-full max-w-2xl mx-auto safe-x"
+        style={{
+          marginTop: BANNER_TOTAL_HEIGHT,
+          minHeight: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
+          paddingTop: '1rem',
+          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
+        }}
+      >
+        <div className="px-4">
+          <div className="max-w-md mx-auto">
+            {/* Filter Tabs */}
+            <div className="py-2">
+              <div className="flex bg-white rounded-xl p-1 shadow-sm">
+                <button
+                  onClick={() => setSelectedFilter('all')}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                    selectedFilter === 'all'
+                      ? 'bg-pink-500 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  All Notes
+                </button>
+                <button
+                  onClick={() => setSelectedFilter('today')}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                    selectedFilter === 'today'
+                      ? 'bg-pink-500 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Today
+                </button>
+              </div>
+            </div>
 
-                {/* Notes for this date */}
-                <div className="space-y-3">
-                  {groupedNotes[dateKey].map((note) => (
-                    <NoteCard key={note.id} note={note} />
+            {/* Main Content */}
+            <main className="pb-20">
+              {error ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-2xl p-6 shadow-lg text-center"
+                >
+                  <div className="text-red-500 text-4xl mb-4">😕</div>
+                  <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                    Oops!
+                  </h2>
+                  <p className="text-gray-600 mb-4">{error}</p>
+                  <button
+                    onClick={fetchNotes}
+                    className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </motion.div>
+              ) : notes.length === 0 ? (
+                <EmptyState />
+              ) : (
+                <div className="space-y-6">
+                  {dateKeys.map((dateKey) => (
+                    <motion.section
+                      key={dateKey}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-3"
+                    >
+                      {/* Date Header */}
+                      <div className="flex items-center space-x-2 px-2">
+                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <h2 className="text-sm font-medium text-gray-600">
+                          {formatDateGroup(dateKey)}
+                        </h2>
+                        <div className="flex-1 h-px bg-gray-200"></div>
+                        <span className="text-xs text-gray-400">
+                          {groupedNotes[dateKey].length} note
+                          {groupedNotes[dateKey].length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+
+                      {/* Notes for this date */}
+                      <div className="space-y-3">
+                        {groupedNotes[dateKey].map((note) => (
+                          <NoteCard key={note.id} note={note} />
+                        ))}
+                      </div>
+                    </motion.section>
                   ))}
                 </div>
-              </motion.section>
-            ))}
+              )}
+            </main>
           </div>
-        )}
-      </main>
+        </div>
+      </div>
     </div>
   );
 }
