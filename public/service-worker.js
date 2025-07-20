@@ -380,6 +380,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
+// Replace the notificationclick event listener in public/service-worker.js
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
@@ -387,20 +389,49 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
-  const urlToOpen = event.notification.data || '/';
+  // Get the URL to open from notification data
+  let urlToOpen = '/'; // Default fallback
+
+  if (event.notification.data) {
+    if (typeof event.notification.data === 'string') {
+      urlToOpen = event.notification.data;
+    } else if (event.notification.data.url) {
+      urlToOpen = event.notification.data.url;
+    }
+  }
+
+  console.log('🔔 Notification clicked, navigating to:', urlToOpen);
 
   event.waitUntil(
     self.clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // If app is already open, focus it
+        // Check if we already have a window open with the target URL
         for (const client of clientList) {
           if (client.url.includes(self.location.origin)) {
+            // Navigate the existing client to the target URL
+            console.log(
+              '📱 Focusing existing window and navigating to:',
+              urlToOpen,
+            );
+            client.postMessage({
+              type: 'NOTIFICATION_CLICK',
+              url: urlToOpen,
+            });
             return client.focus();
           }
         }
-        // Otherwise open new window
-        return self.clients.openWindow(urlToOpen);
+
+        // No existing window found, open a new one
+        console.log('🆕 Opening new window at:', urlToOpen);
+        const fullUrl = self.location.origin + urlToOpen;
+        return self.clients.openWindow(fullUrl);
+      })
+      .catch((error) => {
+        console.error('❌ Error handling notification click:', error);
+        // Fallback: try to open a new window
+        const fullUrl = self.location.origin + urlToOpen;
+        return self.clients.openWindow(fullUrl);
       }),
   );
 });

@@ -1,8 +1,8 @@
+import { NotificationNavigationHandler } from '@/components/NotificationNavigationHandler';
 import type { Metadata, Viewport } from 'next';
 import { DM_Sans } from 'next/font/google';
 import React from 'react';
 import './globals.css';
-
 // ============================================================================
 // FONT CONFIGURATION
 // ============================================================================
@@ -293,7 +293,10 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#f5ede6" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
-      <body className={`${dmSans.className} antialiased`}>{children}</body>
+      <body className={`${dmSans.className} antialiased`}>
+        <NotificationNavigationHandler />
+        {children}
+      </body>
     </html>
   );
 }
