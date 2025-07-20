@@ -646,6 +646,22 @@ function LoadingScreen({ isVisible }: { isVisible: boolean }) {
   );
 }
 
+const setTabAndNavigate = (
+  tab: 'meals' | 'progress' | 'friends',
+  path: string = '/',
+) => {
+  sessionStorage.setItem('mealapp_internal_nav', 'true');
+  sessionStorage.setItem('mealapp_active_tab', tab);
+  if (path !== '/') {
+    window.location.href = path;
+  }
+};
+
+// Make it available globally for other components
+if (typeof window !== 'undefined') {
+  (window as any).setTabAndNavigate = setTabAndNavigate;
+}
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -676,17 +692,25 @@ export default function Home() {
     'meals',
   );
 
+  // Enhanced tab persistence with proper initialization
   useEffect(() => {
     if (!isClient) return;
 
-    const savedTab = sessionStorage.getItem('activeTab') as
+    const savedTab = sessionStorage.getItem('mealapp_active_tab') as
       | 'meals'
       | 'progress'
       | 'friends';
-    if (savedTab) {
+    if (savedTab && ['meals', 'progress', 'friends'].includes(savedTab)) {
       setActiveTab(savedTab);
     }
   }, [isClient]);
+
+  // Update the persistence effect to use consistent key
+  useEffect(() => {
+    if (isClient) {
+      sessionStorage.setItem('mealapp_active_tab', activeTab);
+    }
+  }, [activeTab, isClient]);
 
   // User and authentication state
   const [name, setName] = useState('');
