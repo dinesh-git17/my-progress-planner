@@ -65,7 +65,6 @@ export default function MealChat({
 
   // Add overlay state for smooth transitions
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  const [initialViewportHeight, setInitialViewportHeight] = useState(0);
   const [showScrollOverlay, setShowScrollOverlay] = useState(false);
 
   const router = useRouter();
@@ -171,9 +170,6 @@ export default function MealChat({
    * iOS keyboard detection with page scroll prevention
    */
   useEffect(() => {
-    // Store initial viewport height
-    setInitialViewportHeight(window.innerHeight);
-
     // iOS keyboard detection using focus/blur events
     const handleFocusIn = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
@@ -190,18 +186,11 @@ export default function MealChat({
           // PREVENT PAGE SCROLLING ONLY WHEN KEYBOARD IS OPEN
           document.body.style.overflow = 'hidden';
           document.documentElement.style.overflow = 'hidden';
-
           // BUT ALLOW THE CHAT CONTAINER TO SCROLL
           if (chatBodyRef.current) {
             chatBodyRef.current.style.touchAction = 'pan-y';
             chatBodyRef.current.style.overflowY = 'auto';
           }
-
-          // Prevent iOS from pushing viewport up
-          window.scrollTo(0, 0);
-          document.body.scrollTop = 0;
-          document.documentElement.scrollTop = 0;
-
           // Auto-scroll to bottom after keyboard opens
           setTimeout(() => {
             if (chatBodyRef.current) {
@@ -232,12 +221,6 @@ export default function MealChat({
         // RESTORE PAGE SCROLLING
         document.body.style.overflow = '';
         document.documentElement.style.overflow = '';
-
-        // Reset any scroll position
-        window.scrollTo(0, 0);
-        document.body.scrollTop = 0;
-        document.documentElement.scrollTop = 0;
-
         // Auto-scroll to bottom after keyboard closes
         setTimeout(() => {
           if (chatBodyRef.current) {
@@ -609,7 +592,7 @@ export default function MealChat({
       style={{
         fontFamily: SYSTEM_FONT,
         background: '#fdf6e3',
-        height: '100vh',
+        height: '100dvh',
         position: 'fixed', // Critical for iOS PWA
         top: 0,
         left: '50%',
