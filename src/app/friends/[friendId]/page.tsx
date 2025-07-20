@@ -9,8 +9,28 @@ import {
   Loader2,
   MessageCircle,
 } from 'lucide-react';
+import { DM_Sans, Dancing_Script } from 'next/font/google';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+// ============================================================================
+// FONT CONFIGURATION
+// ============================================================================
+const dmSans = DM_Sans({ subsets: ['latin'] });
+const dancingScript = Dancing_Script({ subsets: ['latin'] });
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+const BANNER_CURVE_HEIGHT = 44;
+const BANNER_TOP_PADDING = 32;
+const BANNER_BOTTOM_PADDING = 22;
+const BANNER_TEXT_HEIGHT = 74;
+const BANNER_TOTAL_HEIGHT =
+  BANNER_CURVE_HEIGHT +
+  BANNER_TOP_PADDING +
+  BANNER_BOTTOM_PADDING +
+  BANNER_TEXT_HEIGHT;
 
 // ============================================================================
 // TYPES
@@ -47,7 +67,7 @@ interface FriendData {
     note: string;
     from_user_id: string;
     created_at: string;
-    from_name?: string; // Make optional since API might not always include it
+    from_name?: string;
   }>;
   metadata: {
     has_data: boolean;
@@ -81,6 +101,69 @@ function formatDate(dateString: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+// ============================================================================
+// HEADER COMPONENT
+// ============================================================================
+
+function FriendDetailHeader({
+  dancingScriptClass,
+  friendName,
+  streak,
+}: {
+  dancingScriptClass: string;
+  friendName: string;
+  streak: number;
+}) {
+  return (
+    <header
+      className="fixed top-0 left-0 w-full z-30 pt-safe-top"
+      style={{
+        background: '#f5ede6',
+      }}
+    >
+      <div className="relative w-full h-full flex flex-col items-center justify-center">
+        {/* Text content */}
+        <div
+          className="flex flex-col items-center w-full px-4"
+          style={{
+            paddingTop: BANNER_TOP_PADDING,
+            paddingBottom: BANNER_BOTTOM_PADDING,
+          }}
+        >
+          <div
+            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-gray-900 text-center drop-shadow-sm ${dancingScriptClass}`}
+            style={{
+              lineHeight: 1.15,
+              letterSpacing: '-0.02em',
+              fontWeight: 700,
+            }}
+          >
+            {friendName}'s Progress
+          </div>
+          <div className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight flex items-center gap-2">
+            <Flame className="w-5 h-5 text-orange-500" />
+            {streak} day{streak !== 1 ? 's' : ''} streak! 🔥
+          </div>
+        </div>
+
+        {/* Curved bottom border using SVG */}
+        <svg
+          className="absolute left-0 bottom-0 w-full"
+          viewBox="0 0 500 44"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+          style={{
+            height: BANNER_CURVE_HEIGHT,
+          }}
+        >
+          <path d="M0 0C82 40 418 40 500 0V44H0V0Z" fill="#f5ede6" />
+        </svg>
+      </div>
+    </header>
+  );
 }
 
 // ============================================================================
@@ -204,7 +287,6 @@ export default function FriendDetailPage() {
 
       const data = await response.json();
 
-      // Debug log to see what we're getting
       console.log('Friend data received:', data);
 
       if (!data.success) {
@@ -314,253 +396,254 @@ export default function FriendDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50">
+    <div className={`min-h-screen w-full ${dmSans.className}`}>
+      {/* Back navigation button */}
+      <motion.div
+        className="fixed left-4 z-40 notch-safe"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <button
+          onClick={() => router.push('/friends')}
+          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
+          aria-label="Go back to friends"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      </motion.div>
+
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-md mx-auto px-4 py-4">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => router.push('/friends')}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-
-            <div className="flex items-center space-x-3 flex-1">
-              {/* Friend Avatar */}
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                {getInitials(friendData.friend?.name)}
-              </div>
-
-              <div>
-                <h1 className="text-lg font-semibold text-gray-800">
-                  {String(friendData.friend?.name || 'Unknown Friend')}
-                </h1>
-                <p className="text-sm text-gray-500">Friend's Progress</p>
-              </div>
-            </div>
-
-            {/* Streak Display */}
-            <div className="flex items-center space-x-1 bg-orange-100 px-3 py-1 rounded-full">
-              <Flame className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium text-orange-700">
-                {String(friendData.streak?.current || 0)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
+      <FriendDetailHeader
+        dancingScriptClass={dancingScript.className}
+        friendName={friendData.friend?.name || 'Friend'}
+        streak={friendData.streak?.current || 0}
+      />
 
       {/* Main Content */}
-      <main className="max-w-md mx-auto px-4 py-6 space-y-6">
-        {/* Today's Meals Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
-        >
-          <div className="flex items-center space-x-2 mb-4">
-            <Calendar className="w-5 h-5 text-pink-500" />
-            <h2 className="text-lg font-semibold text-gray-800">
-              Today's Meals
-            </h2>
-          </div>
+      <div
+        className="w-full max-w-2xl mx-auto safe-x"
+        style={{
+          marginTop: BANNER_TOTAL_HEIGHT,
+          minHeight: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
+          paddingTop: '2rem',
+          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
+        }}
+      >
+        <div className="px-4">
+          <main className="max-w-md mx-auto space-y-6">
+            {/* Today's Meals Section */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
+            >
+              <div className="flex items-center space-x-2 mb-4">
+                <Calendar className="w-5 h-5 text-pink-500" />
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Today's Meals
+                </h2>
+              </div>
 
-          <div className="space-y-3">
-            {mealLabels.map(({ meal, emoji, label }) => {
-              // Check if the meal summary exists (indicates meal was logged)
-              const summaryKey =
-                `${meal}_summary` as keyof typeof friendData.summaries;
-              const isLogged = !!friendData.summaries?.[summaryKey];
+              <div className="space-y-3">
+                {mealLabels.map(({ meal, emoji, label }) => {
+                  // Check if the meal summary exists (indicates meal was logged)
+                  const summaryKey =
+                    `${meal}_summary` as keyof typeof friendData.summaries;
+                  const isLogged = !!friendData.summaries?.[summaryKey];
 
-              return (
-                <MealCard
-                  key={meal}
-                  meal={meal}
-                  emoji={emoji}
-                  label={label}
-                  isLogged={isLogged}
-                />
-              );
-            })}
-          </div>
+                  return (
+                    <MealCard
+                      key={meal}
+                      meal={meal}
+                      emoji={emoji}
+                      label={label}
+                      isLogged={isLogged}
+                    />
+                  );
+                })}
+              </div>
 
-          {/* Meals Summary */}
-          <div className="mt-4 p-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl">
-            <p className="text-center text-sm text-gray-600">
-              <span className="font-medium text-pink-600">
-                {friendData.progress?.meals_completed_today || 0} of 3
-              </span>{' '}
-              meals logged today
-            </p>
-          </div>
-        </motion.section>
-
-        {/* Meal Summaries Section */}
-        {(friendData.summaries?.breakfast_summary ||
-          friendData.summaries?.lunch_summary ||
-          friendData.summaries?.dinner_summary) && (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
-          >
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              What They Ate Today
-            </h2>
-
-            <div className="space-y-4">
-              {/* Breakfast Summary */}
-              {friendData.summaries.breakfast_summary && (
-                <div className="p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-100">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-xl">🍳</span>
-                    <h3 className="font-medium text-gray-800">Breakfast</h3>
-                  </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {friendData.summaries.breakfast_summary}
-                  </p>
-                </div>
-              )}
-
-              {/* Lunch Summary */}
-              {friendData.summaries.lunch_summary && (
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-xl">🫐</span>
-                    <h3 className="font-medium text-gray-800">Lunch</h3>
-                  </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {friendData.summaries.lunch_summary}
-                  </p>
-                </div>
-              )}
-
-              {/* Dinner Summary */}
-              {friendData.summaries.dinner_summary && (
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-xl">🍜</span>
-                    <h3 className="font-medium text-gray-800">Dinner</h3>
-                  </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {friendData.summaries.dinner_summary}
-                  </p>
-                </div>
-              )}
-
-              {/* Full Day Summary */}
-              {friendData.summaries.full_day_summary && (
-                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-xl">✨</span>
-                    <h3 className="font-medium text-gray-800">Day Summary</h3>
-                  </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {friendData.summaries.full_day_summary}
-                  </p>
-                </div>
-              )}
-            </div>
-          </motion.section>
-        )}
-
-        {/* Send Encouragement Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
-        >
-          <div className="flex items-center space-x-2 mb-4">
-            <Heart className="w-5 h-5 text-pink-500" />
-            <h2 className="text-lg font-semibold text-gray-800">
-              Send Encouragement
-            </h2>
-          </div>
-
-          <div className="space-y-4">
-            <textarea
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              placeholder={`Send ${friendData.friend?.name || 'your friend'} an encouraging note...`}
-              className="w-full p-4 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-              rows={3}
-              maxLength={500}
-            />
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">
-                {noteText.length}/500 characters
-              </span>
-
-              <button
-                onClick={sendNote}
-                disabled={!noteText.trim() || sendingNote}
-                className="px-6 py-2 bg-pink-500 text-white rounded-xl font-medium hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                {sendingNote ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <MessageCircle className="w-4 h-4" />
-                )}
-                <span>{sendingNote ? 'Sending...' : 'Send Note'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Success Message */}
-          <AnimatePresence>
-            {showNoteSuccess && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="mt-4 p-3 bg-green-100 border border-green-200 rounded-xl"
-              >
-                <p className="text-sm text-green-700 text-center">
-                  ✨ Your encouragement was sent successfully!
+              {/* Meals Summary */}
+              <div className="mt-4 p-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl">
+                <p className="text-center text-sm text-gray-600">
+                  <span className="font-medium text-pink-600">
+                    {friendData.progress?.meals_completed_today || 0} of 3
+                  </span>{' '}
+                  meals logged today
                 </p>
-              </motion.div>
+              </div>
+            </motion.section>
+
+            {/* Meal Summaries Section */}
+            {(friendData.summaries?.breakfast_summary ||
+              friendData.summaries?.lunch_summary ||
+              friendData.summaries?.dinner_summary) && (
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
+              >
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                  What They Ate Today
+                </h2>
+
+                <div className="space-y-4">
+                  {/* Breakfast Summary */}
+                  {friendData.summaries.breakfast_summary && (
+                    <div className="p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-100">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-xl">🍳</span>
+                        <h3 className="font-medium text-gray-800">Breakfast</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {friendData.summaries.breakfast_summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Lunch Summary */}
+                  {friendData.summaries.lunch_summary && (
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-xl">🫐</span>
+                        <h3 className="font-medium text-gray-800">Lunch</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {friendData.summaries.lunch_summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Dinner Summary */}
+                  {friendData.summaries.dinner_summary && (
+                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-xl">🍜</span>
+                        <h3 className="font-medium text-gray-800">Dinner</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {friendData.summaries.dinner_summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Full Day Summary */}
+                  {friendData.summaries.full_day_summary && (
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-xl">✨</span>
+                        <h3 className="font-medium text-gray-800">
+                          Day Summary
+                        </h3>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {friendData.summaries.full_day_summary}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </motion.section>
             )}
-          </AnimatePresence>
-        </motion.section>
 
-        {/* Recent Notes Section */}
-        {friendData.notes && friendData.notes.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
-          >
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Recent Notes
-            </h2>
+            {/* Send Encouragement Section */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
+            >
+              <div className="flex items-center space-x-2 mb-4">
+                <Heart className="w-5 h-5 text-pink-500" />
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Send Encouragement
+                </h2>
+              </div>
 
-            <div className="space-y-3">
-              {friendData.notes.slice(0, 5).map((note) => (
-                <motion.div
-                  key={note.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
-                >
-                  <p className="text-sm text-gray-700 mb-2">{note.note}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>From {note.from_name || 'Friend'}</span>
-                    <span>{formatDate(note.created_at)}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.section>
-        )}
+              <div className="space-y-4">
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder={`Send ${friendData.friend?.name || 'your friend'} an encouraging note...`}
+                  className="w-full p-4 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  rows={3}
+                  maxLength={500}
+                />
 
-        {/* Bottom Spacing */}
-        <div className="h-20" />
-      </main>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">
+                    {noteText.length}/500 characters
+                  </span>
+
+                  <button
+                    onClick={sendNote}
+                    disabled={!noteText.trim() || sendingNote}
+                    className="px-6 py-2 bg-pink-500 text-white rounded-xl font-medium hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {sendingNote ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <MessageCircle className="w-4 h-4" />
+                    )}
+                    <span>{sendingNote ? 'Sending...' : 'Send Note'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Success Message */}
+              <AnimatePresence>
+                {showNoteSuccess && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="mt-4 p-3 bg-green-100 border border-green-200 rounded-xl"
+                  >
+                    <p className="text-sm text-green-700 text-center">
+                      ✨ Your encouragement was sent successfully!
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.section>
+
+            {/* Recent Notes Section */}
+            {friendData.notes && friendData.notes.length > 0 && (
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
+              >
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                  Recent Notes
+                </h2>
+
+                <div className="space-y-3">
+                  {friendData.notes.slice(0, 5).map((note) => (
+                    <motion.div
+                      key={note.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
+                    >
+                      <p className="text-sm text-gray-700 mb-2">{note.note}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>From {note.from_name || 'Friend'}</span>
+                        <span>{formatDate(note.created_at)}</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.section>
+            )}
+
+            {/* Bottom Spacing */}
+            <div className="h-20" />
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
