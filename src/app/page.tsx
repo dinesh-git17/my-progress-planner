@@ -264,6 +264,7 @@ function HomeHeader({
   onProfileClick,
   profileButtonRef,
   showProfileDropdown,
+  onProfileClose,
   isUserAuthenticated,
   onLogin,
   onLogout,
@@ -279,6 +280,7 @@ function HomeHeader({
   onProfileClick: () => void;
   profileButtonRef: React.RefObject<HTMLButtonElement>;
   showProfileDropdown: boolean;
+  onProfileClose: () => void;
   isUserAuthenticated: boolean;
   onLogin: () => void;
   onLogout: () => Promise<void>;
@@ -482,7 +484,7 @@ function HomeHeader({
               <ProfileDropdown
                 name={name}
                 isOpen={showProfileDropdown}
-                onClose={() => {}}
+                onClose={onProfileClose}
                 profileButtonRef={profileButtonRef}
                 isAuthenticated={isUserAuthenticated}
                 onLogin={onLogin}
@@ -788,22 +790,22 @@ function ProfileDropdown({
 
           <div
             className="
-            bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/60
-            overflow-hidden min-w-[200px]
-            shadow-pink-100/40
-          "
+  bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-pink-200/40
+  overflow-hidden min-w-[200px]
+  shadow-pink-200/50
+"
           >
-            {/* User info header */}
-            <div className="px-4 py-4 bg-gradient-to-r from-pink-50 to-yellow-50 border-b border-gray-100/50">
+            {/* User info header - matching header gradient */}
+            <div className="px-4 py-4 bg-gradient-to-r from-pink-400 to-purple-400 border-b border-pink-300/30">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md select-none uppercase">
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md select-none uppercase border border-white/30">
                   {getInitials(name) || '🍽️'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+                  <p className="text-sm font-semibold text-white truncate drop-shadow-sm">
                     {name || 'Guest User'}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-white/80">
                     {isAuthenticated ? 'Logged in' : 'Guest user'}
                   </p>
                 </div>
@@ -813,30 +815,30 @@ function ProfileDropdown({
             {/* Menu options */}
             <div className="py-2">
               <motion.button
-                whileHover={{ backgroundColor: 'rgba(249, 168, 212, 0.1)' }}
+                whileHover={{ backgroundColor: 'rgba(236, 72, 153, 0.1)' }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleEditProfile}
                 className="
-                  w-full px-4 py-3 text-left flex items-center gap-3 
-                  text-gray-700 hover:text-pink-600 transition-colors
-                  border-none bg-transparent cursor-pointer
-                "
+    w-full px-4 py-3 text-left flex items-center gap-3 
+    text-gray-700 hover:text-pink-500 transition-colors
+    border-none bg-transparent cursor-pointer
+  "
               >
                 <i className="fas fa-user-edit text-sm w-4 text-center text-pink-500"></i>
                 <span className="text-sm font-medium">Edit Profile</span>
               </motion.button>
 
               <motion.button
-                whileHover={{ backgroundColor: 'rgba(168, 162, 250, 0.1)' }}
+                whileHover={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSettings}
                 className="
-                  w-full px-4 py-3 text-left flex items-center gap-3 
-                  text-gray-700 hover:text-purple-600 transition-colors
-                  border-none bg-transparent cursor-pointer
-                "
+    w-full px-4 py-3 text-left flex items-center gap-3 
+    text-gray-700 hover:text-purple-500 transition-colors
+    border-none bg-transparent cursor-pointer
+  "
               >
-                <i className="fas fa-cog text-sm w-4 text-center text-purple-500"></i>
+                <i className="fas fa-cog text-sm w-4 text-center text-purple-400"></i>
                 <span className="text-sm font-medium">Recover Data</span>
               </motion.button>
 
@@ -849,10 +851,10 @@ function ProfileDropdown({
                   whileTap={{ scale: 0.98 }}
                   onClick={handleLogout}
                   className="
-                    w-full px-4 py-3 text-left flex items-center gap-3 
-                    text-gray-700 hover:text-red-600 transition-colors
-                    border-none bg-transparent cursor-pointer
-                  "
+                  w-full px-4 py-3 text-left flex items-center gap-3 
+                  text-gray-700 hover:text-red-500 transition-colors
+                  border-none bg-transparent cursor-pointer
+                "
                 >
                   <i className="fas fa-sign-out-alt text-sm w-4 text-center text-red-500"></i>
                   <span className="text-sm font-medium">Logout</span>
@@ -2057,6 +2059,7 @@ export default function Home() {
                   }
                   profileButtonRef={profileButtonRef}
                   showProfileDropdown={showProfileDropdown}
+                  onProfileClose={() => setShowProfileDropdown(false)} // Add this line
                   isUserAuthenticated={isUserAuthenticated}
                   onLogin={() => setShowLoginModal(true)}
                   onLogout={handleLogout}
@@ -2095,7 +2098,7 @@ export default function Home() {
                         }}
                         className="pb-24"
                       >
-                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5 text-center">
                           Meals Today
                         </span>
                         <div className="flex flex-col gap-6">
@@ -2208,7 +2211,7 @@ export default function Home() {
                         className="pb-24"
                       >
                         {/* Your progress content here - same as before */}
-                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5 text-center">
                           Progress
                         </span>
                         <div className="flex flex-col gap-6">
@@ -2338,8 +2341,7 @@ export default function Home() {
                         }}
                         className="pb-24"
                       >
-                        {/* friends content */}
-                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
+                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5 text-center">
                           Friends & Support
                         </span>
                         <div className="flex flex-col gap-6">
