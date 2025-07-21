@@ -139,6 +139,34 @@ export default function MealChat({
         document.body.style.overflow = 'hidden';
         document.documentElement.style.overflow = 'hidden';
 
+        // SUPER AGGRESSIVE FIX: Lock header position with !important
+        const headerElement = document.querySelector('header');
+        if (headerElement) {
+          headerElement.style.setProperty('position', 'fixed', 'important');
+          headerElement.style.setProperty('top', '0px', 'important');
+          headerElement.style.setProperty('left', '0px', 'important');
+          headerElement.style.setProperty('right', '0px', 'important');
+          headerElement.style.setProperty('width', '100%', 'important');
+          headerElement.style.setProperty('z-index', '9999', 'important');
+          headerElement.style.setProperty(
+            'transform',
+            'translateZ(0)',
+            'important',
+          );
+          headerElement.style.setProperty(
+            'will-change',
+            'transform',
+            'important',
+          );
+          // Prevent any viewport changes from affecting it
+          headerElement.style.setProperty('margin', '0', 'important');
+          headerElement.style.setProperty(
+            'padding-top',
+            'env(safe-area-inset-top)',
+            'important',
+          );
+        }
+
         // Force scroll position to top
         window.scrollTo(0, 0);
         document.body.scrollTop = 0;
@@ -159,6 +187,16 @@ export default function MealChat({
         document.body.style.height = '';
         document.body.style.overflow = '';
         document.documentElement.style.overflow = '';
+
+        // RESTORE header position
+        const headerElement = document.querySelector('header');
+        if (headerElement) {
+          headerElement.style.position = '';
+          headerElement.style.top = '';
+          headerElement.style.left = '';
+          headerElement.style.right = '';
+          headerElement.style.transform = '';
+        }
 
         // Reset scroll position
         window.scrollTo(0, 0);
@@ -188,6 +226,16 @@ export default function MealChat({
       document.body.style.height = '';
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+
+      // RESTORE header position on cleanup
+      const headerElement = document.querySelector('header');
+      if (headerElement) {
+        headerElement.style.position = '';
+        headerElement.style.top = '';
+        headerElement.style.left = '';
+        headerElement.style.right = '';
+        headerElement.style.transform = '';
+      }
     };
   }, [initialViewportHeight]);
 
