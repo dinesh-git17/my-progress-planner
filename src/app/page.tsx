@@ -345,21 +345,27 @@ function HomeHeader({
             y1="0%"
             x2="100%"
             y2="100%"
-            style={{
-              transition: 'all 0.5s ease-in-out',
-            }}
           >
             <stop
               offset="0%"
               stopColor={getHeaderGradientColors(activeTab).start}
+              style={{
+                transition: 'stop-color 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
             />
             <stop
               offset="50%"
               stopColor={getHeaderGradientColors(activeTab).middle}
+              style={{
+                transition: 'stop-color 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
             />
             <stop
               offset="100%"
               stopColor={getHeaderGradientColors(activeTab).end}
+              style={{
+                transition: 'stop-color 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
             />
           </linearGradient>
         </defs>
