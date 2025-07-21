@@ -972,62 +972,6 @@ function ProfileDropdown({
   );
 }
 
-/**
- * Loading screen component with animated elements
- * Displays during app initialization
- */
-function LoadingScreen({ isVisible }: { isVisible: boolean }) {
-  return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-          className="loading-screen-image flex flex-col items-center justify-center safe-all"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            zIndex: 9999,
-          }}
-        >
-          <div className="flex-1" />
-
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
-            className="relative z-10 text-center px-6 pb-16"
-          >
-            <h1
-              className="text-lg font-light text-gray-600 mb-3 tracking-wide"
-              style={{
-                fontFamily:
-                  '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Arial, sans-serif',
-                letterSpacing: '0.5px',
-              }}
-            >
-              loading your meals
-            </h1>
-            <motion.div
-              animate={{ opacity: [0.3, 0.7, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              className="flex justify-center space-x-1.5"
-            >
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-            </motion.div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
 const setTabAndNavigate = (
   tab: 'meals' | 'progress' | 'friends',
   path: string = '/',
@@ -1060,7 +1004,7 @@ export default function Home() {
   // Content and UI state
   const [quote, setQuote] = useState('');
   const [loading, setLoading] = useState(true);
-  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
+  const [showSplashScreen, setShowSplashScreen] = useState(true);
   const [contentReady, setContentReady] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [hasAnimatedStreak, setHasAnimatedStreak] = useState(false);
@@ -1521,12 +1465,10 @@ export default function Home() {
    * Handles loading screen timing and content readiness
    */
   useEffect(() => {
-    if (!isClient) return; // Wait for client-side hydration to complete
+    if (!isClient) return;
 
-    // Add small delay to prevent hydration glitch
     setTimeout(() => {
-      const hasShownLoadingScreen =
-        sessionStorage.getItem('mealapp_has_loaded');
+      const hasShownSplashScreen = sessionStorage.getItem('mealapp_has_loaded');
       const isInternalNav = sessionStorage.getItem('mealapp_internal_nav');
 
       // Clear the internal nav flag
@@ -1534,21 +1476,22 @@ export default function Home() {
         sessionStorage.removeItem('mealapp_internal_nav');
       }
 
-      if (!isInternalNav && !hasShownLoadingScreen) {
-        // App launch - show loading screen
+      if (!isInternalNav && !hasShownSplashScreen) {
+        setContentReady(true);
+
+        const minSplashTime = 7000;
+
         const timer = setTimeout(() => {
-          setShowLoadingScreen(false);
+          setShowSplashScreen(false);
           sessionStorage.setItem('mealapp_has_loaded', 'true');
-          setTimeout(() => setContentReady(true), 100);
-        }, 3000);
+        }, minSplashTime);
 
         return () => clearTimeout(timer);
       } else {
-        // Internal navigation - skip loading
-        setShowLoadingScreen(false);
+        setShowSplashScreen(false);
         setContentReady(true);
       }
-    }, 50); // Small delay to ensure DOM is ready
+    }, 100);
   }, [isClient]);
 
   /**
@@ -1938,15 +1881,11 @@ export default function Home() {
 
   return (
     <>
-      {/* Loading screen overlay */}
-      <LoadingScreen isVisible={showLoadingScreen} />
-
       {/* Login modal */}
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
-
       {/* Data merging progress overlay */}
       {isMergingData && (
         <motion.div

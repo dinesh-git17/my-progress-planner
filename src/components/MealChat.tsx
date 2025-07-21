@@ -62,11 +62,11 @@ export default function MealChat({
   const answers = useRef<string[]>([]);
   const gptReplies = useRef<string[]>([]);
   const chatBodyRef = useRef<HTMLDivElement>(null);
+  const realInputRef = useRef<HTMLInputElement>(null);
 
   // Add overlay state for smooth transitions
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [initialViewportHeight, setInitialViewportHeight] = useState(0);
-  const [showScrollOverlay, setShowScrollOverlay] = useState(false);
 
   const router = useRouter();
 
@@ -114,152 +114,82 @@ export default function MealChat({
   }, [messages]);
 
   /**
-   * Keyboard scroll with overlay - ONLY when keyboard OPENS
-   */
-  useEffect(() => {
-    if (!chatBodyRef.current) return;
-
-    // Only show overlay when keyboard OPENS (not closes)
-    if (isKeyboardOpen) {
-      setShowScrollOverlay(true);
-    }
-
-    const gentleKeyboardScroll = () => {
-      const el = chatBodyRef.current;
-      if (!el) return;
-
-      // Only scroll if user was already at the very bottom
-      const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
-
-      if (isAtBottom) {
-        // Wait for the height transition to complete
-        setTimeout(() => {
-          if (el) {
-            el.scrollTo({
-              top: el.scrollHeight,
-              behavior: 'smooth',
-            });
-          }
-        }, 350); // After CSS transition completes
-      }
-    };
-
-    if (isKeyboardOpen) {
-      // Hide overlay after keyboard open transition completes
-      const hideOverlayTimeout = setTimeout(() => {
-        setShowScrollOverlay(false);
-      }, 800); // Cover keyboard open transition + scroll
-
-      // Scroll after keyboard animation
-      const scrollTimeout = setTimeout(gentleKeyboardScroll, 50);
-
-      return () => {
-        clearTimeout(hideOverlayTimeout);
-        clearTimeout(scrollTimeout);
-      };
-    } else {
-      // Keyboard closing - just scroll, no overlay
-      const scrollTimeout = setTimeout(gentleKeyboardScroll, 50);
-
-      return () => {
-        clearTimeout(scrollTimeout);
-      };
-    }
-  }, [isKeyboardOpen]);
-
-  /**
-   * iOS keyboard detection with page scroll prevention
+   * Simple viewport-based keyboard detection with scroll prevention
    */
   useEffect(() => {
     // Store initial viewport height
     setInitialViewportHeight(window.innerHeight);
 
-    // iOS keyboard detection using focus/blur events
-    const handleFocusIn = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      // Check if focused element can trigger keyboard
-      if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.contentEditable === 'true'
-      ) {
-        // Delay to ensure keyboard animation starts
-        setTimeout(() => {
-          setIsKeyboardOpen(true);
+    const handleResize = () => {
+      const currentHeight = window.visualViewport?.height || window.innerHeight;
+      const heightDifference = initialViewportHeight - currentHeight;
 
-          // PREVENT PAGE SCROLLING ONLY WHEN KEYBOARD IS OPEN
-          document.body.style.overflow = 'hidden';
-          document.documentElement.style.overflow = 'hidden';
+      // Keyboard is likely open if viewport shrunk by more than 150px
+      const keyboardOpen = heightDifference > 150;
 
-          // BUT ALLOW THE CHAT CONTAINER TO SCROLL
-          if (chatBodyRef.current) {
-            chatBodyRef.current.style.touchAction = 'pan-y';
-            chatBodyRef.current.style.overflowY = 'auto';
-          }
+      setIsKeyboardOpen(keyboardOpen);
 
-          // Prevent iOS from pushing viewport up
-          window.scrollTo(0, 0);
-          document.body.scrollTop = 0;
-          document.documentElement.scrollTop = 0;
+      if (keyboardOpen) {
+        // AGGRESSIVE viewport locking - prevent iOS from moving the page
+        document.body.style.position = 'fixed';
+        document.body.style.top = '0px';
+        document.body.style.left = '0px';
+        document.body.style.width = '100%';
+        document.body.style.height = '100vh';
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
 
-          // Auto-scroll to bottom after keyboard opens
-          setTimeout(() => {
-            if (chatBodyRef.current) {
-              chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
-            }
-          }, 300);
-
-          // Additional aggressive scrolls for iOS
-          setTimeout(() => {
-            if (chatBodyRef.current) {
-              chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
-            }
-          }, 600);
-
-          setTimeout(() => {
-            if (chatBodyRef.current) {
-              chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
-            }
-          }, 1000);
-        }, 100);
-      }
-    };
-
-    const handleFocusOut = () => {
-      setTimeout(() => {
-        setIsKeyboardOpen(false);
-
-        // RESTORE PAGE SCROLLING
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-
-        // Reset any scroll position
+        // Force scroll position to top
         window.scrollTo(0, 0);
         document.body.scrollTop = 0;
         document.documentElement.scrollTop = 0;
 
-        // Auto-scroll to bottom after keyboard closes
+        // Auto-scroll chat to bottom
         setTimeout(() => {
           if (chatBodyRef.current) {
             chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
           }
-        }, 300);
-      }, 100);
+        }, 100);
+      } else {
+        // Restore normal page behavior when keyboard closes
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+
+        // Reset scroll position
+        window.scrollTo(0, 0);
+      }
     };
 
-    // Add global event listeners
-    document.addEventListener('focusin', handleFocusIn);
-    document.addEventListener('focusout', handleFocusOut);
+    // Listen for viewport changes
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    } else {
+      // Fallback for older browsers
+      window.addEventListener('resize', handleResize);
+    }
 
     return () => {
-      document.removeEventListener('focusin', handleFocusIn);
-      document.removeEventListener('focusout', handleFocusOut);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
 
-      // Cleanup: restore scrolling on unmount
+      // Cleanup: restore normal styles
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
     };
-  }, []);
+  }, [initialViewportHeight]);
 
   // ============================================================================
   // CHAT HANDLERS
@@ -340,13 +270,6 @@ export default function MealChat({
       setMessages((msgs) => [...msgs, botMessage]);
       gptReplies.current.push(data.reply);
       setLoading(false);
-
-      // FORCE SCROLL TO NEW MESSAGE
-      setTimeout(() => {
-        if (chatBodyRef.current) {
-          chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
-        }
-      }, 100);
 
       // Finish chat if this was the last turn
       if (isLastTurn) {
@@ -749,6 +672,7 @@ export default function MealChat({
           <form className="flex items-center gap-3" onSubmit={handleSubmit}>
             <div className="relative flex-1">
               <input
+                ref={realInputRef}
                 disabled={loading}
                 className="
                w-full px-5 py-3 text-black placeholder-gray-500 outline-none transition-all duration-200
@@ -820,47 +744,6 @@ export default function MealChat({
           </form>
         </div>
       )}
-
-      {/* Modern Scroll Overlay - Hides scroll jumps */}
-      <AnimatePresence>
-        {showScrollOverlay && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-50 pointer-events-none"
-            style={{
-              background:
-                'linear-gradient(180deg, transparent 0%, rgba(253, 246, 227, 0.95) 70%, rgba(253, 246, 227, 1) 100%)',
-              backdropFilter: 'blur(2px)',
-              WebkitBackdropFilter: 'blur(2px)',
-            }}
-          >
-            {/* Subtle loading indicator */}
-            <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2">
-              <div className="flex items-center gap-1">
-                {[0, 100, 200].map((delay, i) => (
-                  <motion.div
-                    key={i}
-                    className="w-1.5 h-1.5 bg-pink-300/60 rounded-full"
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.6, 1, 0.6],
-                    }}
-                    transition={{
-                      duration: 0.8,
-                      repeat: Infinity,
-                      delay: delay / 1000,
-                      ease: 'easeInOut',
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Chat Complete Overlay */}
       <AnimatePresence>

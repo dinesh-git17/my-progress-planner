@@ -220,7 +220,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={dmSans.className} suppressHydrationWarning>
       <head>
-        <link rel="preload" href="/loading-image.png" as="image" />
         {/* ==============================================
             PWA NATIVE VIEWPORT - MANUAL OVERRIDE
             ============================================== */}
