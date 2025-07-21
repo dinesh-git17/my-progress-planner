@@ -12,7 +12,7 @@ import {
 } from '@/utils/auth';
 import { getUserName, saveUserName } from '@/utils/user';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, Sparkles } from 'lucide-react';
+import { Bell, Sparkles, TrendingUp, Users, Utensils } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useUserInitialization } from '../../hooks/useUserInitialization';
@@ -32,7 +32,7 @@ const mealLabels = [
 ];
 
 const UI_CONSTANTS = {
-  BANNER_TOP_PADDING: 20, // Increased from 24
+  BANNER_TOP_PADDING: 15, // Increased from 24
   BANNER_BOTTOM_PADDING: 50, // Increased from 32
   BANNER_TEXT_HEIGHT: 180, // Increased from 120
 };
@@ -217,6 +217,108 @@ function urlBase64ToUint8Array(base64String: string) {
   }
 
   return outputArray;
+}
+
+// ============================================================================
+// TAB TITLE COMPONENT
+// ============================================================================
+
+/**
+ * Context-aware tab title component that adapts based on user progress
+ */
+// ============================================================================
+// TAB TITLE COMPONENT
+// ============================================================================
+
+/**
+ * Ultra compact context-aware tab title component
+ */
+function TabTitle({
+  activeTab,
+  streak,
+  loggedMeals,
+}: {
+  activeTab: 'meals' | 'progress' | 'friends';
+  streak: number;
+  loggedMeals: string[];
+}) {
+  const getTitleConfig = () => {
+    switch (activeTab) {
+      case 'meals': {
+        const mealsToday = loggedMeals.length;
+        const isAllDone = mealsToday === 3;
+
+        return {
+          main: isAllDone ? 'Amazing! All meals logged 🎉' : "Today's Meals",
+          sub: isAllDone
+            ? "You're crushing it today!"
+            : `${mealsToday}/3 meals logged`,
+          icon: Utensils,
+          iconColor: isAllDone ? 'text-green-600' : 'text-gray-600',
+        };
+      }
+
+      case 'progress':
+        return {
+          main: streak > 0 ? `${streak} Day Streak! 🔥` : 'Your Progress',
+          sub:
+            streak > 0
+              ? 'Keep the momentum going!'
+              : 'Track your journey to success',
+          icon: TrendingUp,
+          iconColor: streak > 0 ? 'text-orange-600' : 'text-gray-600',
+        };
+
+      case 'friends':
+        return {
+          main: 'Friends & Support',
+          sub: 'Your caring community',
+          icon: Users,
+          iconColor: 'text-blue-600',
+        };
+
+      default:
+        return {
+          main: '',
+          sub: '',
+          icon: Utensils,
+          iconColor: 'text-gray-600',
+        };
+    }
+  };
+
+  const config = getTitleConfig();
+  const IconComponent = config.icon;
+
+  return (
+    <motion.div
+      key={`${activeTab}-${streak}-${loggedMeals.length}`}
+      initial={{ opacity: 0, y: 3 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      className="text-center mb-4"
+    >
+      {/* Ultra compact title */}
+      <div className="flex items-center justify-center gap-1.5 mb-0">
+        {' '}
+        {/* Removed bottom margin */}
+        <IconComponent className={`w-4 h-4 ${config.iconColor}`} />{' '}
+        {/* Small icon */}
+        <h2 className="text-sm font-bold text-gray-800 tracking-tight">
+          {' '}
+          {/* Reduced from text-base to text-sm */}
+          {config.main}
+        </h2>
+      </div>
+
+      {/* Micro subtitle */}
+      <p className="text-xs text-gray-500 font-medium mt-0.5">
+        {' '}
+        {/* Added tiny top margin */}
+        {config.sub}
+      </p>
+    </motion.div>
+  );
 }
 
 // ============================================================================
@@ -2117,8 +2219,15 @@ export default function Home() {
                 {/* Main content area with tabs - positioned below header */}
                 <div
                   className="pb-24 px-4 w-full max-w-lg mx-auto"
-                  style={{ marginTop: '265px' }}
+                  style={{ marginTop: '255px' }} // Reduced from 265px to 245px
                 >
+                  {/* Enhanced title component */}
+                  <TabTitle
+                    activeTab={activeTab}
+                    streak={streak}
+                    loggedMeals={loggedMeals}
+                  />
+
                   <AnimatePresence mode="wait">
                     {/* Meals tab content */}
                     {activeTab === 'meals' && (
@@ -2148,9 +2257,6 @@ export default function Home() {
                         }}
                         className="pb-24"
                       >
-                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5 text-center">
-                          Meals Today
-                        </span>
                         <div className="flex flex-col gap-6">
                           {mealLabels.map(({ meal, emoji, label }) => {
                             const isLogged = loggedMeals.includes(meal);
@@ -2260,10 +2366,6 @@ export default function Home() {
                         }}
                         className="pb-24"
                       >
-                        {/* Your progress content here - same as before */}
-                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5 text-center">
-                          Progress
-                        </span>
                         <div className="flex flex-col gap-6">
                           <motion.div
                             whileTap={{ scale: 0.98 }}
@@ -2391,9 +2493,6 @@ export default function Home() {
                         }}
                         className="pb-24"
                       >
-                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5 text-center">
-                          Friends & Support
-                        </span>
                         <div className="flex flex-col gap-6">
                           <motion.div
                             whileTap={{ scale: 0.98 }}

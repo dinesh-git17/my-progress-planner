@@ -184,7 +184,6 @@ function SummariesHeader({
           <div className="text-lg sm:text-xl text-white font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
             A gentle way to track your meal journey and celebrate your daily
             wins <Sparkles className="inline w-5 h-5 text-white ml-1" />
-            wins ✨
           </div>
         </div>
       </div>
