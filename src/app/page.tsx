@@ -806,14 +806,24 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
       }
     };
 
-    setLoading(true);
-    fetchStreakWithRetry();
+    // Add debounce to prevent rapid successive calls
+    const debounceDelay = 100;
+    const timeoutId = setTimeout(() => {
+      if (!isCancelled) {
+        setLoading(true);
+        fetchStreakWithRetry();
+      }
+    }, debounceDelay);
+
+    // REMOVED: setLoading(true); fetchStreakWithRetry();
+    // ↑ This was causing duplicate calls!
 
     // Cleanup function to prevent state updates on unmounted component
     return () => {
       isCancelled = true;
+      clearTimeout(timeoutId);
     };
-  }, [user_id, isAfterRecovery, refreshTrigger]); // Added refreshTrigger to dependencies
+  }, [user_id, isAfterRecovery, refreshTrigger]);
 
   return { streak, loading, refreshStreak };
 }
@@ -1089,6 +1099,13 @@ const setTabAndNavigate = (
 if (typeof window !== 'undefined') {
   (window as any).setTabAndNavigate = setTabAndNavigate;
 }
+
+// ============================================================================
+// GLOBAL REQUEST TRACKING
+// ============================================================================
+
+// Add global request tracking outside component to persist across renders
+const activeQuoteRequests = new Map<string, Promise<any>>();
 
 // ============================================================================
 // MAIN COMPONENT
@@ -1435,15 +1452,29 @@ export default function Home() {
    * Only fetches if no quote exists in session storage
    * @param {string} nameToUse - User's name for personalization
    */
+
   const fetchQuote = (nameToUse: string): void => {
     // Check if we already have a quote for this session
     const sessionQuote = sessionStorage.getItem('mealapp_daily_quote');
     const sessionQuoteName = sessionStorage.getItem('mealapp_quote_name');
 
     if (sessionQuote && sessionQuoteName === nameToUse) {
-      // Use existing quote from session
       setQuote(sessionQuote);
       setLoading(false);
+      return;
+    }
+
+    // Check if request is already in progress
+    const requestKey = `quote_${nameToUse}`;
+    if (activeQuoteRequests.has(requestKey)) {
+      // Wait for existing request
+      activeQuoteRequests.get(requestKey)?.then(() => {
+        const latestQuote = sessionStorage.getItem('mealapp_daily_quote');
+        if (latestQuote) {
+          setQuote(latestQuote);
+          setLoading(false);
+        }
+      });
       return;
     }
 
@@ -1451,14 +1482,13 @@ export default function Home() {
     setLoading(true);
     setQuote('');
 
-    fetch(
+    const requestPromise = fetch(
       `/api/gpt/quote?ts=${Date.now()}&name=${encodeURIComponent(nameToUse)}`,
     )
       .then((res: Response) => res.json())
       .then((data: QuoteResponse) => {
         let safeQuote = typeof data.quote === 'string' ? data.quote : '';
 
-        // Fallback for invalid or empty quotes
         if (
           !safeQuote ||
           safeQuote.toLowerCase().includes('undefined') ||
@@ -1468,8 +1498,6 @@ export default function Home() {
         }
 
         setQuote(safeQuote);
-
-        // Store in session storage for this session
         sessionStorage.setItem('mealapp_daily_quote', safeQuote);
         sessionStorage.setItem('mealapp_quote_name', nameToUse);
       })
@@ -1477,14 +1505,16 @@ export default function Home() {
         console.error('Quote fetch failed:', error);
         const fallbackQuote = "You're doing amazing! One step at a time.";
         setQuote(fallbackQuote);
-
-        // Store fallback quote in session too
         sessionStorage.setItem('mealapp_daily_quote', fallbackQuote);
         sessionStorage.setItem('mealapp_quote_name', nameToUse);
       })
-      .finally(() => setLoading(false));
-  };
+      .finally(() => {
+        setLoading(false);
+        activeQuoteRequests.delete(requestKey);
+      });
 
+    activeQuoteRequests.set(requestKey, requestPromise);
+  };
   /**
    * Fetches today's logged meals for the current user
    * Uses EST timezone for consistent daily boundaries
@@ -1690,7 +1720,6 @@ export default function Home() {
       } else {
         setName(existingName);
         fetchQuote(existingName);
-        fetchLoggedMealsAndRefreshStreak(userId);
         fetchFriendCode(userId);
       }
 
@@ -1699,14 +1728,17 @@ export default function Home() {
     };
 
     init();
-  }, [userId, contentReady, refreshStreak, fetchFriendCode]);
+  }, [userId, contentReady, fetchFriendCode]); // Remove refreshStreak dependency
 
   /**
-   * Enhanced meal data refresh effect with streak refresh
-   * Handles real-time updates when app regains focus
+   * Single consolidated effect for meal and streak data
+   * Handles initial fetch and real-time updates
    */
   useEffect(() => {
     if (!userId || !contentReady) return;
+
+    // Skip if already fetched for this user session
+    if (hasFetchedMeals.current) return;
 
     const refreshMealsAndStreak = () => {
       fetchLoggedMealsAndRefreshStreak(userId);
@@ -1714,6 +1746,7 @@ export default function Home() {
 
     // Initial fetch
     refreshMealsAndStreak();
+    hasFetchedMeals.current = true;
 
     // Set up event listeners for app state changes
     const handleVisibilityChange = () => {
@@ -1747,30 +1780,13 @@ export default function Home() {
       window.removeEventListener('pageshow', handlePageShow);
       clearInterval(interval);
     };
-  }, [userId, contentReady, refreshStreak]);
+  }, [userId, contentReady]);
 
   /**
-   * Initial meal fetch effect
-   * Ensures meals are loaded exactly once per user session
-   */
-  useEffect(() => {
-    if (userId && !hasFetchedMeals.current && contentReady) {
-      fetchLoggedMealsAndRefreshStreak(userId);
-      hasFetchedMeals.current = true;
-    }
-  });
-
-  /**
-   * Reset meal fetch tracking when user changes
+   * Reset state when user changes
    */
   useEffect(() => {
     hasFetchedMeals.current = false;
-  }, [userId]);
-
-  /**
-   * Reset streak animation when user changes
-   */
-  useEffect(() => {
     setHasAnimatedStreak(false);
   }, [userId]);
 
