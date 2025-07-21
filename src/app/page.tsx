@@ -249,6 +249,39 @@ interface QuoteResponse {
 // ============================================================================
 // HEADER COMPONENTS
 // ============================================================================
+
+/**
+ * Get gradient colors based on active tab
+ */
+function getHeaderGradientColors(activeTab: 'meals' | 'progress' | 'friends') {
+  switch (activeTab) {
+    case 'meals':
+      return {
+        start: '#ec4899', // Current pink gradient
+        middle: '#f472b6',
+        end: '#e879f9',
+      };
+    case 'progress':
+      return {
+        start: '#a855f7', // Purple to match tab
+        middle: '#c084fc',
+        end: '#d8b4fe',
+      };
+    case 'friends':
+      return {
+        start: '#3b82f6', // Blue to match tab
+        middle: '#60a5fa',
+        end: '#93c5fd',
+      };
+    default:
+      return {
+        start: '#ec4899',
+        middle: '#f472b6',
+        end: '#e879f9',
+      };
+  }
+}
+
 /**
  * Beautiful SVG Wave Header Component for Homepage
  */
@@ -268,6 +301,7 @@ function HomeHeader({
   isUserAuthenticated,
   onLogin,
   onLogout,
+  activeTab,
 }: {
   name: string;
   streak: number;
@@ -284,6 +318,7 @@ function HomeHeader({
   isUserAuthenticated: boolean;
   onLogin: () => void;
   onLogout: () => Promise<void>;
+  activeTab: 'meals' | 'progress' | 'friends';
 }) {
   return (
     <header
@@ -310,10 +345,22 @@ function HomeHeader({
             y1="0%"
             x2="100%"
             y2="100%"
+            style={{
+              transition: 'all 0.5s ease-in-out',
+            }}
           >
-            <stop offset="0%" stopColor="#ec4899" />
-            <stop offset="50%" stopColor="#f472b6" />
-            <stop offset="100%" stopColor="#e879f9" />
+            <stop
+              offset="0%"
+              stopColor={getHeaderGradientColors(activeTab).start}
+            />
+            <stop
+              offset="50%"
+              stopColor={getHeaderGradientColors(activeTab).middle}
+            />
+            <stop
+              offset="100%"
+              stopColor={getHeaderGradientColors(activeTab).end}
+            />
           </linearGradient>
         </defs>
         <path
@@ -1310,6 +1357,24 @@ export default function Home() {
   };
 
   // ========================================================================
+  // UI INTERACTION HANDLERS
+  // ========================================================================
+
+  /**
+   * Handles profile button click to toggle dropdown
+   */
+  const handleProfileClick = useCallback(() => {
+    setShowProfileDropdown((prev) => !prev);
+  }, []);
+
+  /**
+   * Handles closing the profile dropdown
+   */
+  const handleProfileClose = useCallback(() => {
+    setShowProfileDropdown(false);
+  }, []);
+
+  // ========================================================================
   // DATA FETCHING FUNCTIONS
   // ========================================================================
 
@@ -2095,15 +2160,14 @@ export default function Home() {
                   notificationsEnabled={notificationsEnabled}
                   showNotificationTooltip={showNotificationTooltip}
                   onNotificationClick={handleNotificationClick}
-                  onProfileClick={() =>
-                    setShowProfileDropdown(!showProfileDropdown)
-                  }
+                  onProfileClick={handleProfileClick}
                   profileButtonRef={profileButtonRef}
                   showProfileDropdown={showProfileDropdown}
-                  onProfileClose={() => setShowProfileDropdown(false)} // Add this line
+                  onProfileClose={handleProfileClose}
                   isUserAuthenticated={isUserAuthenticated}
-                  onLogin={() => setShowLoginModal(true)}
+                  onLogin={handleLogin}
                   onLogout={handleLogout}
+                  activeTab={activeTab}
                 />
                 {/* Main content area with tabs - positioned below header */}
                 <div
