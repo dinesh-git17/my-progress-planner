@@ -1,7 +1,7 @@
 // public/service-worker.js
 // Industry-standard service worker for meal tracking PWA
 
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v2.0.0';
 const IS_DEVELOPMENT =
   self.location.hostname === 'localhost' ||
   self.location.hostname === '127.0.0.1' ||

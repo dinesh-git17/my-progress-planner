@@ -372,51 +372,99 @@ export default function MealChat({
   const renderMessage = (msg: Message, index: number) => (
     <div
       key={`${msg.sender}-${index}`}
-      className={`flex w-full mb-1.5 ${
+      className={`flex w-full mb-3 ${
         msg.sender === 'user' ? 'justify-end' : 'justify-start'
       }`}
-      data-message={`${msg.sender}-${index}`} // Add data attribute for targeting
+      data-message={`${msg.sender}-${index}`}
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.8, y: -10 }}
-        transition={{
-          duration: 0.3,
-          ease: [0.25, 0.46, 0.45, 0.94],
-          type: 'spring',
-          stiffness: 300,
-          damping: 20,
-          delay: index === 0 ? 0.15 : 0,
-        }}
-        className={`
-         relative px-4 py-2.5 max-w-[75%] break-words select-text
-         ${
-           msg.sender === 'user'
-             ? 'rounded-[22px] rounded-br-[8px] text-white'
-             : 'rounded-[22px] rounded-bl-[8px] text-black'
-         }
-       `}
-        style={{
-          fontFamily: SYSTEM_FONT,
-          fontSize: '17px',
-          lineHeight: '22px',
-          letterSpacing: '-0.41px',
-          fontWeight: '400',
-          background:
-            msg.sender === 'user'
-              ? 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)'
-              : 'rgba(255, 255, 255, 0.75)',
-          boxShadow:
-            msg.sender === 'user'
-              ? '0 1px 3px rgba(232, 164, 201, 0.15), 0 1px 2px rgba(232, 164, 201, 0.1)'
-              : '0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
-          border:
-            msg.sender === 'bot' ? '0.5px solid rgba(0, 0, 0, 0.04)' : 'none',
-        }}
+      {/* Bot Avatar */}
+      {msg.sender === 'bot' && (
+        <div className="flex-shrink-0 mr-2">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-md text-lg">
+            🤖
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`${msg.sender === 'user' ? 'max-w-[75%]' : 'max-w-[75%]'}`}
       >
-        {msg.text}
-      </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 5 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: -5 }}
+          transition={{
+            duration: 0.2,
+            ease: [0.25, 0.46, 0.45, 0.94],
+            delay: index === 0 ? 0.15 : 0,
+          }}
+          className={`
+          relative px-4 py-2.5 break-words select-text
+          ${
+            msg.sender === 'user'
+              ? 'rounded-[20px] rounded-tr-[4px] text-white'
+              : 'rounded-[20px] rounded-tl-[4px] text-black'
+          }
+        `}
+          style={{
+            fontFamily: SYSTEM_FONT,
+            fontSize: '16px',
+            lineHeight: '21px',
+            letterSpacing: '-0.32px',
+            fontWeight: '400',
+            background:
+              msg.sender === 'user'
+                ? 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)'
+                : 'rgba(255, 255, 255, 0.9)',
+            boxShadow:
+              msg.sender === 'user'
+                ? '0 2px 12px rgba(236, 72, 153, 0.3), 0 1px 4px rgba(236, 72, 153, 0.2)'
+                : '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
+            border:
+              msg.sender === 'bot' ? '1px solid rgba(0, 0, 0, 0.06)' : 'none',
+          }}
+        >
+          {msg.text}
+        </motion.div>
+
+        {/* Read Status - Outside motion div to prevent overlap */}
+        {msg.sender === 'user' && index < messages.length - 1 && (
+          <div className="mt-1 text-xs text-gray-400 text-right">
+            <span className="flex items-center justify-end gap-1">
+              <span>
+                Read{' '}
+                {new Date().toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                })}
+              </span>
+              <svg
+                className="w-3.5 h-3.5 text-blue-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <svg
+                className="w-3.5 h-3.5 text-blue-500 -ml-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -424,24 +472,28 @@ export default function MealChat({
    * Renders typing indicator
    */
   const renderTypingIndicator = () => (
-    <div className="flex justify-start mb-1.5">
+    <div className="flex justify-start mb-3">
+      {/* Bot Avatar */}
+      <div className="flex-shrink-0 mr-2">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-md text-lg">
+          🤖
+        </div>
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, scale: 0.8, y: 15 }}
+        initial={{ opacity: 0, scale: 0.95, y: 5 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.8, y: -10 }}
+        exit={{ opacity: 0, scale: 0.9, y: -5 }}
         transition={{
-          duration: 0.25,
+          duration: 0.2,
           ease: [0.25, 0.46, 0.45, 0.94],
-          type: 'spring',
-          stiffness: 350,
-          damping: 25,
         }}
-        className="px-4 py-2.5 rounded-[22px] rounded-bl-[8px] max-w-[75%]"
+        className="px-4 py-2.5 rounded-[20px] rounded-tl-[4px] max-w-[75%]"
         style={{
-          background: 'rgba(255, 255, 255, 0.7)',
-          border: '0.5px solid rgba(0, 0, 0, 0.04)',
+          background: 'rgba(255, 255, 255, 0.9)',
+          border: '1px solid rgba(0, 0, 0, 0.06)',
           boxShadow:
-            '0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+            '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
         }}
       >
         <div className="flex items-center gap-1">

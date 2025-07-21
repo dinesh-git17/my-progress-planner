@@ -38,12 +38,6 @@ Keep it under 35 words.`;
       })),
     ];
 
-    console.log('Sending to OpenAI:', {
-      meal,
-      messageCount: messages?.length,
-      closing,
-    });
-
     const completion = await fetch(
       'https://api.openai.com/v1/chat/completions',
       {
@@ -70,7 +64,6 @@ Keep it under 35 words.`;
     }
 
     const data = await completion.json();
-    console.log('OpenAI Response:', data);
 
     // Validate the response structure
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
@@ -103,7 +96,6 @@ Keep it under 35 words.`;
       });
     }
 
-    console.log('Final reply:', reply);
     return NextResponse.json({ reply });
   } catch (error) {
     console.error('Meal chat API error:', error);
