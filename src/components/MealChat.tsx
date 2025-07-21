@@ -629,7 +629,10 @@ export default function MealChat({
           )}
 
           <button
-            onClick={() => navigate('/')}
+            onClick={() => {
+              sessionStorage.setItem('isReturningToHome', 'true');
+              navigate('/');
+            }}
             className="w-full py-3.5 text-gray-600 font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
             style={{
               background: 'rgba(120, 120, 128, 0.12)',
@@ -708,7 +711,10 @@ export default function MealChat({
         <div className="flex items-center justify-between px-4 py-3">
           {/* Left: Back Button */}
           <button
-            onClick={() => navigate('/')}
+            onClick={() => {
+              sessionStorage.setItem('isReturningToHome', 'true');
+              navigate('/');
+            }}
             className="flex items-center justify-center w-8 h-8 text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Go Back to Home"
           >

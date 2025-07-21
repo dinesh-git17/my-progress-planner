@@ -27,6 +27,7 @@ export default function DonePage() {
 
   // Handle back button navigation
   const handleReturnHome = () => {
+    sessionStorage.setItem('isReturningToHome', 'true');
     navigate('/');
   };
 

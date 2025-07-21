@@ -508,7 +508,10 @@ export default function StreaksPage() {
         transition={{ duration: 0.3 }}
       >
         <button
-          onClick={() => navigate('/')}
+          onClick={() => {
+            sessionStorage.setItem('isReturningToHome', 'true');
+            navigate('/');
+          }}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-orange-200/50 transition-all shadow-sm"
           aria-label="Go back to home"
         >

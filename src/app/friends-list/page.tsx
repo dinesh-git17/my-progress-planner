@@ -241,6 +241,7 @@ export default function FriendsListPage() {
    * Navigate back to home page
    */
   const handleBackClick = () => {
+    sessionStorage.setItem('isReturningToHome', 'true');
     navigate('/');
   };
 

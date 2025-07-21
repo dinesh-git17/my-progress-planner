@@ -1,6 +1,7 @@
 'use client';
 
 import AuthPrompt from '@/components/AuthPrompt';
+import HomePageSkeleton from '@/components/HomePageSkeleton';
 import LoginModal from '@/components/LoginModal';
 import { useNavigation } from '@/contexts/NavigationContext';
 import {
@@ -1123,6 +1124,7 @@ export default function Home() {
   const [contentReady, setContentReady] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [hasAnimatedStreak, setHasAnimatedStreak] = useState(false);
+  const [isNavigationLoading, setIsNavigationLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'meals' | 'progress' | 'friends'>(
     'meals',
@@ -1147,6 +1149,24 @@ export default function Home() {
       sessionStorage.setItem('mealapp_active_tab', activeTab);
     }
   }, [activeTab, isClient]);
+
+  // Detect navigation back to homepage
+  useEffect(() => {
+    if (!isClient) return;
+
+    const isReturningToHome = sessionStorage.getItem('isReturningToHome');
+    if (isReturningToHome === 'true') {
+      setIsNavigationLoading(true);
+      sessionStorage.removeItem('isReturningToHome');
+
+      // Brief delay to let layout stabilize
+      const timer = setTimeout(() => {
+        setIsNavigationLoading(false);
+      }, 800);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isClient]);
 
   // User and authentication state
   const [name, setName] = useState('');
@@ -1992,6 +2012,11 @@ export default function Home() {
   // ========================================================================
   // RENDER
   // ========================================================================
+
+  // Show skeleton during navigation loading
+  if (isNavigationLoading) {
+    return <HomePageSkeleton />;
+  }
 
   return (
     <>

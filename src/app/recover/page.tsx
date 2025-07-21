@@ -97,6 +97,7 @@ export default function RecoverDataPage() {
   };
 
   const handleGoHome = () => {
+    sessionStorage.setItem('isReturningToHome', 'true');
     navigate('/');
   };
 

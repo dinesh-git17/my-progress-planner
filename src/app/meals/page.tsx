@@ -752,6 +752,7 @@ export default function MealsPage() {
         <button
           onClick={() => {
             localStorage.setItem('activeTab', 'progress');
+            sessionStorage.setItem('isReturningToHome', 'true');
             navigate('/');
           }}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
@@ -820,6 +821,7 @@ export default function MealsPage() {
                     <button
                       onClick={() => {
                         localStorage.setItem('activeTab', 'meals');
+                        sessionStorage.setItem('isReturningToHome', 'true');
                         navigate('/');
                       }}
                       className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
