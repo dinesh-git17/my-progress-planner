@@ -14,7 +14,7 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      console.log('🔄 Processing auth callback...');
+
 
       try {
         const { data, error } = await supabase.auth.getSession();
@@ -26,10 +26,10 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
-          console.log('✅ Auth successful, redirecting to home');
+
           router.push('/');
         } else {
-          console.log('⚠️ No session found, redirecting to home');
+
           router.push('/');
         }
       } catch (error) {

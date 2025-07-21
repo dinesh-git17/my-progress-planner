@@ -79,9 +79,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log(
-      `🔍 Friend data request: ${user_id} viewing ${friend_id} for ${date}`,
-    );
+
 
     // Step 1: Verify friendship exists (bidirectional check)
     const { data: friendship, error: friendshipError } = await supabase
@@ -255,9 +253,7 @@ export async function GET(req: NextRequest) {
       },
     };
 
-    console.log(
-      `✅ Friend data fetched successfully for ${friend_id} on ${date}`,
-    );
+
     return NextResponse.json(response);
   } catch (error: any) {
     console.error('💥 Friend data API error:', error);

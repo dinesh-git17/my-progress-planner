@@ -10,9 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     const { legacyUserId, currentUserId } = await req.json();
 
-    console.log('🔄 === RECOVERY API V2 ===');
-    console.log('📝 Legacy User ID:', legacyUserId);
-    console.log('🔐 Current User ID:', currentUserId);
+
 
     // Validate input
     if (!legacyUserId || !currentUserId || legacyUserId === currentUserId) {
@@ -23,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     // === STEP 1: Find all legacy data ===
-    console.log('🔍 === STEP 1: Finding legacy data ===');
+
 
     const { data: legacyMealLogs, error: mealError } = await supabase
       .from('meal_logs')
@@ -49,9 +47,7 @@ export async function POST(req: NextRequest) {
     const hasUserData = legacyUserData && legacyUserData.length > 0;
     const legacyUserName = hasUserData ? legacyUserData[0]?.name : null;
 
-    console.log(
-      `📊 Found: ${legacyMealLogs?.length || 0} meals, ${legacySummaries?.length || 0} summaries, ${hasUserData ? '1' : '0'} user (${legacyUserName || 'no name'})`,
-    );
+
 
     if (!hasMealData && !hasSummaryData && !hasUserData) {
       return NextResponse.json(
@@ -61,12 +57,12 @@ export async function POST(req: NextRequest) {
     }
 
     // === STEP 2: Create current user record FIRST ===
-    console.log('🥇 === STEP 2: Creating current user record FIRST ===');
+
 
     let nameTransferred = false;
 
     if (legacyUserName) {
-      console.log('👤 Creating user record with name:', legacyUserName);
+
       const { data: newUserData, error: createUserError } = await supabase
         .from('users')
         .upsert({
@@ -81,9 +77,9 @@ export async function POST(req: NextRequest) {
       }
 
       nameTransferred = true;
-      console.log('✅ User created successfully:', newUserData[0]);
+
     } else {
-      console.log('👤 Creating user record without name');
+
       const { data: newUserData, error: createUserError } = await supabase
         .from('users')
         .upsert({
@@ -97,11 +93,11 @@ export async function POST(req: NextRequest) {
         throw createUserError;
       }
 
-      console.log('✅ User created successfully:', newUserData[0]);
+
     }
 
     // === STEP 3: Transfer meal logs ===
-    console.log('🥈 === STEP 3: Transferring meal logs ===');
+
 
     let mealLogsTransferred = 0;
 
@@ -118,16 +114,16 @@ export async function POST(req: NextRequest) {
       }
 
       mealLogsTransferred = updatedMeals?.length || 0;
-      console.log(`✅ Transferred ${mealLogsTransferred} meal logs`);
+
     }
 
     // === STEP 4: Transfer summaries (user now exists!) ===
-    console.log('🥉 === STEP 4: Transferring summaries ===');
+
 
     let summariesTransferred = 0;
 
     if (hasSummaryData) {
-      console.log(`📋 Transferring ${legacySummaries.length} summaries...`);
+
 
       const { data: updatedSummaries, error: summaryUpdateError } =
         await supabase
@@ -142,13 +138,12 @@ export async function POST(req: NextRequest) {
         // Don't throw - continue without summaries
       } else {
         summariesTransferred = updatedSummaries?.length || 0;
-        console.log(`✅ Transferred ${summariesTransferred} summaries`);
-        console.log('📋 Summary details:', updatedSummaries);
+
       }
     }
 
     // === STEP 5: Clean up legacy user ===
-    console.log('🧹 === STEP 5: Cleaning up legacy user ===');
+
 
     if (hasUserData) {
       const { error: deleteError } = await supabase
@@ -159,15 +154,12 @@ export async function POST(req: NextRequest) {
       if (deleteError) {
         console.error('❌ Failed to delete legacy user:', deleteError);
       } else {
-        console.log('✅ Legacy user deleted');
+
       }
     }
 
     // === SUCCESS ===
-    console.log('🎉 === RECOVERY COMPLETED ===');
-    console.log(
-      `📊 Results: ${mealLogsTransferred} meals, ${summariesTransferred} summaries, name: ${nameTransferred}`,
-    );
+
 
     return NextResponse.json({
       success: true,

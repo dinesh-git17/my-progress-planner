@@ -98,20 +98,14 @@ export async function GET(req: Request) {
         gptPromises.push(
           generateMealSummary(type, data)
             .then((summary) => {
-              console.log(
-                `📝 Generated summary for ${type}:`,
-                summary?.substring(0, 50) + '...',
-              );
               if (summary) {
                 mealLists[type] = summary;
                 newSummaries[cacheKey] = summary;
-                console.log(`✅ Added ${cacheKey} to newSummaries`);
+
               } else {
                 mealLists[type] =
                   `${type.charAt(0).toUpperCase() + type.slice(1)} logged`;
-                console.log(
-                  `⚠️ No summary generated for ${type}, using fallback`,
-                );
+
               }
             })
             .catch((error) => {
@@ -128,12 +122,11 @@ export async function GET(req: Request) {
     // Wait for all GPT requests to complete
     await Promise.all(gptPromises);
 
-    console.log('🔍 Final newSummaries object:', newSummaries);
-    console.log('🔍 Keys in newSummaries:', Object.keys(newSummaries));
+
 
     // STEP 3: Cache new summaries to database if any were generated
     if (Object.keys(newSummaries).length > 0) {
-      console.log('💾 Saving new summaries to database:', newSummaries);
+
 
       // First, check if a row already exists
       const { data: existingRow } = await supabase
@@ -145,7 +138,7 @@ export async function GET(req: Request) {
 
       if (existingRow) {
         // Row exists - just UPDATE the meal summary columns
-        console.log('📝 Updating existing row with new meal summaries');
+
         const { data: updateResult, error: updateError } = await supabase
           .from('daily_summaries')
           .update(newSummaries) // Only update the meal summary columns
@@ -156,11 +149,11 @@ export async function GET(req: Request) {
         if (updateError) {
           console.error('❌ Error updating summaries:', updateError);
         } else {
-          console.log('✅ Successfully updated meal summaries:', updateResult);
+
         }
       } else {
         // No row exists - INSERT with name
-        console.log('🆕 Creating new row with meal summaries');
+
         const insertData = {
           user_id,
           date,
@@ -176,13 +169,11 @@ export async function GET(req: Request) {
         if (insertError) {
           console.error('❌ Error inserting summaries:', insertError);
         } else {
-          console.log('✅ Successfully inserted meal summaries:', insertResult);
+
         }
       }
     } else {
-      console.log(
-        'ℹ️ No new summaries to save - all were from cache or no meal data',
-      );
+
     }
 
     return NextResponse.json({

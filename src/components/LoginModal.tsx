@@ -121,7 +121,7 @@ export default function LoginModal({
           throw new Error('Authentication failed - no user returned');
         }
 
-        console.log('✅ Email authentication successful:', authResult.user.id);
+
 
         /**
          * Critical: Wait for session establishment
@@ -178,11 +178,11 @@ export default function LoginModal({
         const session = await getCurrentSession();
 
         if (session?.user?.id === userId) {
-          console.log(`✅ Session established after ${attempt} attempt(s)`);
+
           return;
         }
 
-        console.log(`⏳ Session not ready, attempt ${attempt}/${maxRetries}`);
+
 
         // Exponential backoff: 500ms, 1s, 2s, 4s, 8s
         const delay = Math.min(500 * Math.pow(2, attempt - 1), 8000);

@@ -17,16 +17,16 @@ function LunchContent() {
         // First check if user is authenticated
         const session = await getCurrentSession();
         if (session?.user) {
-          console.log('🔐 Lunch: Using auth ID:', session.user.id);
+
           setUserId(session.user.id);
         } else {
           // Fall back to local user ID
           const localUserId = getLocalUserId();
           if (localUserId) {
-            console.log('📱 Lunch: Using local ID:', localUserId);
+
             setUserId(localUserId);
           } else {
-            console.log('❌ No user ID found, redirecting to home');
+
             router.push('/');
             return;
           }
@@ -63,7 +63,7 @@ function LunchContent() {
       nextMealHref="/dinner"
       onComplete={() => {
         // Navigate to dinner with proper user context
-        console.log('✅ Lunch completed, going to dinner');
+
         router.push('/dinner');
       }}
     />

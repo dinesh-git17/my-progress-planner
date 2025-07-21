@@ -19,16 +19,14 @@ export default function ServiceWorkerRegister() {
   useEffect(() => {
     // 🔥 CRITICAL: Skip service worker entirely in development
     if (process.env.NODE_ENV === 'development') {
-      console.log(
-        '🚫 Development mode: Service worker disabled to prevent caching issues',
-      );
+      
 
       // Unregister any existing service workers in development
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then((registrations) => {
           registrations.forEach((registration) => {
             registration.unregister();
-            console.log('🗑️ Unregistered existing service worker');
+
           });
         });
       }
@@ -44,7 +42,7 @@ export default function ServiceWorkerRegister() {
 
   const registerServiceWorker = async () => {
     try {
-      console.log('🔄 Registering service worker (production only)...');
+
 
       const registration = await navigator.serviceWorker.register(
         '/service-worker.js',
@@ -54,7 +52,7 @@ export default function ServiceWorkerRegister() {
         },
       );
 
-      console.log('✅ Service worker registered:', registration.scope);
+
       setSwState((prev) => ({ ...prev, isRegistered: true }));
 
       // Set up update detection
@@ -70,14 +68,14 @@ export default function ServiceWorkerRegister() {
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;
       if (newWorker) {
-        console.log('🆕 New service worker installing...');
+
 
         newWorker.addEventListener('statechange', () => {
           if (
             newWorker.state === 'installed' &&
             navigator.serviceWorker.controller
           ) {
-            console.log('✨ New service worker installed, update available');
+
             setSwState((prev) => ({ ...prev, updateAvailable: true }));
             setShowUpdatePrompt(true);
           }
@@ -86,7 +84,7 @@ export default function ServiceWorkerRegister() {
     });
 
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      console.log('🔄 Service worker controller changed');
+
       window.location.reload();
     });
 
@@ -103,14 +101,14 @@ export default function ServiceWorkerRegister() {
     registration: ServiceWorkerRegistration,
   ) => {
     navigator.serviceWorker.addEventListener('message', (event) => {
-      console.log('📨 Message from service worker:', event.data);
+
 
       if (event.data && event.data.type === 'CACHE_UPDATED') {
-        console.log('📦 Cache updated for:', event.data.url);
+
       }
 
       if (event.data && event.data.type === 'SYNC_COMPLETE') {
-        console.log('🔄 Background sync completed');
+
       }
     });
   };
@@ -121,10 +119,10 @@ export default function ServiceWorkerRegister() {
       setSwState((prev) => ({ ...prev, isOnline }));
 
       if (isOnline) {
-        console.log('🌐 App is online');
+        
         triggerBackgroundSync();
       } else {
-        console.log('📴 App is offline');
+
       }
     };
 
@@ -147,7 +145,7 @@ export default function ServiceWorkerRegister() {
         const registration = await navigator.serviceWorker.ready;
         if (registration.sync) {
           await registration.sync.register('meal-log-sync');
-          console.log('🔄 Background sync registered');
+
         }
       } catch (error) {
         console.error('Failed to register background sync:', error);

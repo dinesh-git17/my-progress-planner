@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log(`👥 Friends list request for user: ${userId}`);
+
 
     // Get friends list using our utility function
     // Get friends list using direct query to avoid foreign key issues
@@ -126,9 +126,7 @@ export async function GET(req: NextRequest) {
       displayName: friend.name || 'Anonymous Friend',
     }));
 
-    console.log(
-      `✅ Retrieved ${enhancedFriends.length} friends for user ${userId}`,
-    );
+
 
     return NextResponse.json({
       success: true,
@@ -286,7 +284,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    console.log(`🗑️ Removing ALL friends for user: ${userId}`);
+
 
     // Remove all friendships for this user (both directions)
     const { error } = await supabase
@@ -305,7 +303,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    console.log(`✅ Removed all friends for user: ${userId}`);
+
 
     return NextResponse.json({
       success: true,

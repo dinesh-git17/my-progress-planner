@@ -10,9 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     const { guestUserId, authUserId } = await req.json();
 
-    console.log('🔄 API: Starting data merge...');
-    console.log('📝 Guest ID:', guestUserId);
-    console.log('🔐 Auth ID:', authUserId);
+
 
     if (!guestUserId || !authUserId) {
       return NextResponse.json(
@@ -22,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (guestUserId === authUserId) {
-      console.log('ℹ️ Guest and auth IDs are the same, no merge needed');
+
       return NextResponse.json({
         success: true,
         message: 'No merge needed - IDs are identical',
@@ -31,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 1: Update meal logs
-    console.log('🍽️ Updating meal logs...');
+
     const { data: mealUpdateData, error: mealUpdateError } = await supabase
       .from('meal_logs')
       .update({ user_id: authUserId })
@@ -42,10 +40,10 @@ export async function POST(req: NextRequest) {
       throw mealUpdateError;
     }
 
-    console.log('✅ Meal logs updated successfully');
+
 
     // Step 2: Update user names table
-    console.log('👤 Updating user names...');
+
     const { data: nameUpdateData, error: nameUpdateError } = await supabase
       .from('user_names')
       .update({ user_id: authUserId })
@@ -54,11 +52,11 @@ export async function POST(req: NextRequest) {
     if (nameUpdateError) {
       console.error('❌ Error updating user names:', nameUpdateError);
       // Don't throw - this table might not exist or have data
-      console.log('ℹ️ Continuing despite user_names error...');
+
     }
 
     // Step 3: Update any push notification subscriptions
-    console.log('🔔 Updating push subscriptions...');
+
     const { data: pushUpdateData, error: pushUpdateError } = await supabase
       .from('push_subscriptions')
       .update({ user_id: authUserId })
@@ -67,7 +65,7 @@ export async function POST(req: NextRequest) {
     if (pushUpdateError) {
       console.error('❌ Error updating push subscriptions:', pushUpdateError);
       // Don't throw - this table might not exist or have data
-      console.log('ℹ️ Continuing despite push_subscriptions error...');
+
     }
 
     // Step 4: Check what data was actually moved
@@ -81,9 +79,7 @@ export async function POST(req: NextRequest) {
       .select('*')
       .eq('user_id', authUserId);
 
-    console.log('✅ Data merge completed successfully');
-    console.log('📊 Final meal logs count:', finalMealCheck?.length || 0);
-    console.log('📊 Final name records count:', finalNameCheck?.length || 0);
+
 
     return NextResponse.json({
       success: true,

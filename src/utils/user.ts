@@ -134,7 +134,6 @@ export async function saveUserName(
       return false;
     }
 
-    console.log('✅ User name saved successfully:', { user_id, name });
     return true;
   } catch (error) {
     console.error('Unexpected error in saveUserName:', error);
@@ -167,7 +166,7 @@ export async function getUserFriendCode(
       return null;
     }
 
-    console.log(`🔍 Retrieving friend code for user: ${user_id}`);
+
 
     // First, attempt to retrieve existing friend code
     const { data: userData, error: fetchError } = await supabase
@@ -184,12 +183,12 @@ export async function getUserFriendCode(
 
     // Return existing code if available
     if (userData?.friend_code) {
-      console.log(`✅ Found existing friend code: ${userData.friend_code}`);
+
       return userData.friend_code;
     }
 
     // Generate new unique friend code with collision handling
-    console.log('🎲 Generating new friend code...');
+
     const maxAttempts = 10;
     let attempts = 0;
     let newCode: string;
@@ -236,7 +235,7 @@ export async function getUserFriendCode(
       return null;
     }
 
-    console.log(`✅ Generated and saved friend code: ${newCode}`);
+
     return newCode;
   } catch (error) {
     console.error('Unexpected error in getUserFriendCode:', error);
@@ -271,9 +270,6 @@ export async function addFriend(
       return { success: false, error: 'Invalid input parameters' };
     }
 
-    console.log(
-      `🤝 Adding friend with code: ${friendCode} for user: ${user_id}`,
-    );
 
     // Validate friend code format
     if (!isValidFriendCode(friendCode)) {
@@ -338,7 +334,6 @@ export async function addFriend(
     }
 
     const friendName = friendUser.name || 'Your friend';
-    console.log(`✅ Successfully added friend: ${friendName}`);
 
     return {
       success: true,
@@ -367,7 +362,7 @@ export async function getFriendsList(
       return { success: false, friends: [], error: 'Invalid user ID' };
     }
 
-    console.log(`👥 Retrieving friends list for user: ${user_id}`);
+
 
     // Query friendships with user metadata via foreign key join
     const { data: friendships, error: friendshipError } = await supabase
@@ -403,7 +398,6 @@ export async function getFriendsList(
       created_at: friendship.created_at,
     }));
 
-    console.log(`✅ Retrieved ${friends.length} friends`);
     return { success: true, friends };
   } catch (error) {
     console.error('Unexpected error in getFriendsList:', error);
@@ -445,9 +439,7 @@ export async function getFriendData(
       return { success: false, error: 'Invalid user parameters' };
     }
 
-    console.log(
-      `📊 Retrieving friend data for: ${friend_id}, date: ${date || 'today'}`,
-    );
+
 
     // Privacy check: verify friendship exists
     const { data: friendship, error: friendshipError } = await supabase
@@ -562,7 +554,7 @@ export async function getFriendData(
       from_user_name: (note.users as any)?.name || 'Anonymous',
     }));
 
-    console.log('✅ Successfully aggregated friend data');
+
 
     return {
       success: true,
@@ -661,7 +653,7 @@ export async function sendFriendNote(
       };
     }
 
-    console.log(`💌 Sending note from ${from_user_id} to ${to_user_id}`);
+
 
     // Privacy check: verify friendship exists
     const { data: friendship, error: friendshipError } = await supabase
@@ -693,7 +685,7 @@ export async function sendFriendNote(
       };
     }
 
-    console.log('✅ Encouragement note sent successfully');
+
     return { success: true };
   } catch (error) {
     console.error('Unexpected error in sendFriendNote:', error);

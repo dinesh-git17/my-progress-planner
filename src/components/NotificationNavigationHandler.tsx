@@ -13,12 +13,12 @@ export function NotificationNavigationHandler() {
     }
 
     const handleServiceWorkerMessage = (event: MessageEvent) => {
-      console.log('📨 Message from service worker:', event.data);
+      
 
       // Handle notification click navigation
       if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
         const targetUrl = event.data.url;
-        console.log('🔔 Navigating to notification target:', targetUrl);
+
 
         // Use Next.js router to navigate
         router.push(targetUrl);

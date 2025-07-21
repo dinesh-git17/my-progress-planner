@@ -134,7 +134,6 @@ export async function triggerMealLogSync(): Promise<boolean> {
     }
 
     await registration.sync.register('meal-log-sync');
-    console.log('🔄 Background sync registered for meal logs');
     return true;
   } catch (error) {
     console.error('Failed to register background sync:', error);
@@ -201,7 +200,6 @@ export class OfflineStorage {
       const request = store.add(pendingLog);
 
       request.onsuccess = () => {
-        console.log('📱 Meal log saved offline:', id);
         resolve(id);
       };
       request.onerror = () => reject(request.error);
@@ -233,7 +231,6 @@ export class OfflineStorage {
       const request = store.delete(id);
 
       request.onsuccess = () => {
-        console.log('✅ Pending meal log removed:', id);
         resolve();
       };
       request.onerror = () => reject(request.error);
@@ -252,7 +249,6 @@ export class OfflineStorage {
       const request = store.clear();
 
       request.onsuccess = () => {
-        console.log('🧹 All pending meal logs cleared');
         resolve();
       };
       request.onerror = () => reject(request.error);
@@ -330,7 +326,7 @@ export class CacheManager {
       const cacheNames = await caches.keys();
       await Promise.all(
         cacheNames.map((cacheName) => {
-          console.log(`🧹 Clearing cache: ${cacheName}`);
+          
           return caches.delete(cacheName);
         }),
       );
@@ -365,7 +361,6 @@ export class NetworkStatus {
   static init() {
     const updateStatus = () => {
       const isOnline = navigator.onLine;
-      console.log(`Network status changed: ${isOnline ? 'online' : 'offline'}`);
       this.listeners.forEach((listener) => listener());
     };
 
@@ -375,18 +370,14 @@ export class NetworkStatus {
 
   static addListener(listener: () => void) {
     this.listeners.push(listener);
-    console.log(
-      `Added network status listener. Total listeners: ${this.listeners.length}`,
-    );
+
   }
 
   static removeListener(listener: () => void) {
     const index = this.listeners.indexOf(listener);
     if (index > -1) {
       this.listeners.splice(index, 1);
-      console.log(
-        `Removed network status listener. Total listeners: ${this.listeners.length}`,
-      );
+
     }
   }
 
@@ -424,7 +415,6 @@ export class PerformanceMonitor {
 
       navigator.serviceWorker.ready.then(() => {
         const installTime = performance.now() - startTime;
-        console.log(`⚡ Service worker ready in ${installTime.toFixed(2)}ms`);
 
         // You could send this to analytics
         if ('gtag' in window) {
@@ -441,9 +431,6 @@ export class PerformanceMonitor {
    * Monitor cache hit rates
    */
   static monitorCacheHits(url: string, wasFromCache: boolean): void {
-    console.log(
-      `${wasFromCache ? '💾' : '🌐'} ${url} - ${wasFromCache ? 'Cache Hit' : 'Network'}`,
-    );
 
     // Track cache hit rates
     const key = wasFromCache ? 'cache_hits' : 'cache_misses';
@@ -472,13 +459,11 @@ export class PWAInstaller {
 
   static init() {
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('💾 PWA install prompt available');
       e.preventDefault();
       this.deferredPrompt = e;
     });
 
     window.addEventListener('appinstalled', () => {
-      console.log('🎉 PWA installed successfully');
       this.deferredPrompt = null;
 
       // Track installation
@@ -501,8 +486,6 @@ export class PWAInstaller {
       // Type assertion for the prompt method
       (this.deferredPrompt as any).prompt();
       const { outcome } = await (this.deferredPrompt as any).userChoice;
-
-      console.log(`PWA install prompt: ${outcome}`);
       this.deferredPrompt = null;
 
       return outcome === 'accepted';
@@ -542,7 +525,6 @@ export async function logMealOfflineFirst(mealData: {
       });
 
       if (response.ok) {
-        console.log('✅ Meal logged successfully online');
         return { success: true, offline: false };
       }
     } catch (error) {
@@ -560,7 +542,6 @@ export async function logMealOfflineFirst(mealData: {
     // Register background sync
     await triggerMealLogSync();
 
-    console.log('📱 Meal logged offline, will sync when online');
     return { success: true, offline: true, id };
   } catch (error) {
     console.error('Failed to log meal offline:', error);

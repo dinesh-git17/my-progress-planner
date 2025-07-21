@@ -13,7 +13,7 @@ export default function AuthPrompt({
   onContinueAsGuest,
   onLogin,
 }: AuthPromptProps) {
-  console.log('🔐 AuthPrompt component rendered');
+
 
   return (
     <motion.div
@@ -37,7 +37,6 @@ export default function AuthPrompt({
           {/* Login Button */}
           <button
             onClick={() => {
-              console.log('🔑 Login button clicked');
               onLogin();
             }}
             className="
@@ -60,7 +59,6 @@ export default function AuthPrompt({
           {/* Continue as Guest Button */}
           <button
             onClick={() => {
-              console.log('👥 Guest button clicked');
               onContinueAsGuest();
             }}
             className="

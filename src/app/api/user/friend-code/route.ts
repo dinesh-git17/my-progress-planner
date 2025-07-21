@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log(`🔍 Friend code request for user: ${userId}`);
+
 
     // Get or generate friend code using our utility function
     const friendCode = await getUserFriendCode(userId);
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log(`✅ Friend code ready: ${friendCode}`);
+
 
     // Return successful response
     return NextResponse.json({
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`🔄 Force regenerating friend code for user: ${userId}`);
+
 
     // Clear existing friend code first
     const { error: clearError } = await supabase
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`✅ New friend code generated: ${newFriendCode}`);
+
 
     return NextResponse.json({
       success: true,

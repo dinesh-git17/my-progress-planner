@@ -321,13 +321,7 @@ export default function NotesPage() {
           timeZone: 'America/New_York',
         }).format(new Date());
 
-        console.log(`🔍 Filtering notes for today (EST): ${todayEst}`);
-        filteredNotes = data.notes.filter((note) => {
-          console.log(
-            `📝 Note date: ${note.date}, Today: ${todayEst}, Match: ${note.date === todayEst}`,
-          );
-          return note.date === todayEst;
-        });
+        filteredNotes = data.notes.filter((note) => note.date === todayEst);
       }
 
       setNotes(filteredNotes);

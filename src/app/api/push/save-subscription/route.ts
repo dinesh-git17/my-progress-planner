@@ -11,13 +11,13 @@ export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('📥 Received POST request to save-subscription');
+
 
     // Safely parse the JSON body
     let body;
     try {
       const rawBody = await req.text();
-      console.log('🔍 Raw request body:', rawBody);
+
 
       if (!rawBody || rawBody.trim() === '') {
         return NextResponse.json(
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     const { subscription, user_id } = body;
 
-    console.log('💾 Saving push subscription:', {
+    
       endpoint: subscription?.endpoint,
       hasKeys: subscription?.keys ? 'yes' : 'no',
       user_id: user_id || 'not provided',
@@ -96,9 +96,9 @@ export async function POST(req: NextRequest) {
     // Include user_id if provided
     if (user_id) {
       subscriptionData.user_id = user_id;
-      console.log(`🔗 Linking subscription to user: ${user_id}`);
+      
     } else {
-      console.log('⚠️ No user_id provided - subscription will be anonymous');
+      
     }
 
     // Check if the table has the user_id column
@@ -112,9 +112,7 @@ export async function POST(req: NextRequest) {
 
       if (existingData) {
         // Update existing subscription
-        console.log(
-          `📝 Updating existing subscription (ID: ${existingData.id})`,
-        );
+
 
         const updateData: any = {
           subscription: subscription,
@@ -124,9 +122,7 @@ export async function POST(req: NextRequest) {
         // Only update user_id if provided and different
         if (user_id && user_id !== existingData.user_id) {
           updateData.user_id = user_id;
-          console.log(
-            `🔄 Updating user_id from ${existingData.user_id} to ${user_id}`,
-          );
+
         }
 
         const { data, error } = await supabase
@@ -146,7 +142,7 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        console.log('✅ Push subscription updated successfully');
+
         return NextResponse.json({
           ok: true,
           message: 'Subscription updated successfully',
@@ -155,7 +151,7 @@ export async function POST(req: NextRequest) {
         });
       } else {
         // Insert new subscription
-        console.log('🆕 Creating new subscription');
+
 
         const { data, error } = await supabase
           .from('push_subscriptions')
@@ -173,7 +169,7 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        console.log('✅ Push subscription created successfully');
+
         return NextResponse.json({
           ok: true,
           message: 'Subscription created successfully',

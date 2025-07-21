@@ -325,7 +325,7 @@ export default function FriendDetailPage() {
 
       const data = await response.json();
 
-      console.log('Friend data received:', data);
+
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to load friend data');

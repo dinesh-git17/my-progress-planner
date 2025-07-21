@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`📝 Note request: ${from_user_id} → ${to_user_id}`);
+
 
     // Step 1: Verify friendship exists (bidirectional check)
     const { data: friendship, error: friendshipError } = await supabase
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       timeZone: 'America/New_York',
     }).format(new Date());
 
-    console.log(`📅 Using EST date: ${todayEst} for note storage`);
+
 
     // Step 3: Check if user already sent 5 notes today (NEW LIMIT: 5 per day per friend)
     const { data: existingNotes, error: checkError } = await supabase
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     }
 
     const notesCountToday = existingNotes?.length || 0;
-    console.log(`📊 Notes sent today: ${notesCountToday}/5`);
+
 
     if (notesCountToday >= 5) {
       return NextResponse.json(
@@ -143,9 +143,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(
-      `✅ Note sent successfully: ${newNote.id} (${notesCountToday + 1}/5 today)`,
-    );
+
 
     // Step 5: Send push notification (don't fail if this fails)
     try {
@@ -169,7 +167,7 @@ export async function POST(req: NextRequest) {
         }),
       });
 
-      console.log(`📱 Notification sent for note ${newNote.id}`);
+
     } catch (notificationError) {
       console.error('Failed to send notification:', notificationError);
       // Continue - note was saved successfully even if notification failed
@@ -236,9 +234,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log(
-      `📖 Notes request for user: ${user_id}, date: ${date || 'all'}`,
-    );
+
 
     // Build query
     let query = supabase
@@ -305,7 +301,7 @@ export async function GET(req: NextRequest) {
       }),
     );
 
-    console.log(`✅ Found ${notesWithNames.length} notes for user ${user_id}`);
+
 
     return NextResponse.json({
       success: true,

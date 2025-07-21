@@ -9,7 +9,7 @@ const supabase = createClient(
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('📋 Fetching all push subscriptions...');
+
 
     const { data: subscriptions, error } = await supabase
       .from('push_subscriptions')
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log(`✅ Found ${subscriptions?.length || 0} subscription(s)`);
+
 
     // Return sanitized subscription data (no sensitive info)
     const sanitizedSubscriptions =

@@ -10,7 +10,6 @@ const supabase = createClient(
 export function getLocalUserId(): string | null {
   if (typeof window === 'undefined') return null;
   const userId = localStorage.getItem('user_id');
-  console.log('📱 getLocalUserId:', userId);
   return userId;
 }
 
@@ -28,20 +27,17 @@ export function generateUserId(): string {
       return v.toString(16);
     });
   }
-  console.log('🆔 Generated new user ID:', uuid);
   return uuid;
 }
 
 export function setLocalUserId(user_id: string): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem('user_id', user_id);
-  console.log('💾 Saved user_id to localStorage:', user_id);
 }
 
 // NEW AUTHENTICATION FUNCTIONS:
 
 export async function signInWithGoogle() {
-  console.log('🔑 Starting Google sign in...');
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -55,12 +51,10 @@ export async function signInWithGoogle() {
     throw error;
   }
 
-  console.log('✅ Google sign in initiated');
   return data;
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  console.log('📧 Starting email sign in...');
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -72,12 +66,10 @@ export async function signInWithEmail(email: string, password: string) {
     throw error;
   }
 
-  console.log('✅ Email sign in successful');
   return data;
 }
 
 export async function signUpWithEmail(email: string, password: string) {
-  console.log('📧 Starting email sign up...');
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -92,12 +84,10 @@ export async function signUpWithEmail(email: string, password: string) {
     throw error;
   }
 
-  console.log('✅ Email sign up successful');
   return data;
 }
 
 export async function signOut() {
-  console.log('🚪 Signing out...');
 
   const { error } = await supabase.auth.signOut();
 
@@ -106,7 +96,6 @@ export async function signOut() {
     throw error;
   }
 
-  console.log('✅ Signed out successfully');
 }
 
 export async function getCurrentSession() {
@@ -139,6 +128,5 @@ export async function saveUserName(
   name: string,
 ): Promise<boolean> {
   const { error } = await supabase.from('users').upsert({ user_id, name });
-  console.log('💾 Saving user name:', { user_id, name, success: !error });
   return !error;
 }

@@ -737,12 +737,6 @@ export default function MealChat({
           const el = e.currentTarget;
           const isAtBottom =
             el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
-          console.log('Scroll position:', {
-            scrollTop: el.scrollTop,
-            scrollHeight: el.scrollHeight,
-            clientHeight: el.clientHeight,
-            isAtBottom,
-          });
         }}
       >
         <AnimatePresence initial={false}>

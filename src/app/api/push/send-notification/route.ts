@@ -21,11 +21,7 @@ export async function POST(req: NextRequest) {
   try {
     const { title, message, targetUserId } = await req.json();
 
-    console.log('📤 Sending push notification:', {
-      title,
-      message: message.slice(0, 50) + '...',
-      targetUserId: targetUserId || 'all users',
-    });
+
 
     if (!title || !message) {
       return NextResponse.json(
@@ -62,7 +58,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log(`📱 Found ${subscriptions.length} subscription(s)`);
+
 
     // Prepare notification payload
     const notificationPayload = {
@@ -118,9 +114,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    console.log(
-      `✅ Notification summary: ${successful} successful, ${failed} failed`,
-    );
+
 
     return NextResponse.json({
       success: true,

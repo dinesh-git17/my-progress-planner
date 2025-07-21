@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      console.log(`📱 No push subscriptions found for user: ${to_user_id}`);
+
       return NextResponse.json({
         success: true,
         message: 'Note sent, but user has no push subscriptions',
@@ -74,9 +74,7 @@ export async function POST(req: NextRequest) {
           });
 
           await webpush.sendNotification(sub.subscription, payload);
-          console.log(
-            `✅ Notification sent successfully to subscription ${sub.id}`,
-          );
+
           return { success: true, subscriptionId: sub.id };
         } catch (err: any) {
           console.error(
@@ -86,7 +84,7 @@ export async function POST(req: NextRequest) {
 
           // Handle expired/invalid subscriptions
           if (err.statusCode === 410 || err.statusCode === 404) {
-            console.log(`🗑️ Removing expired subscription ${sub.id}`);
+
             // Remove expired subscription from database
             await supabase.from('push_subscriptions').delete().eq('id', sub.id);
 
@@ -118,9 +116,7 @@ export async function POST(req: NextRequest) {
 
     const failed = results.length - successful - removed;
 
-    console.log(
-      `📱 Notification results for ${to_user_id}: ${successful} sent, ${removed} expired (cleaned), ${failed} failed`,
-    );
+
 
     return NextResponse.json({
       success: true,

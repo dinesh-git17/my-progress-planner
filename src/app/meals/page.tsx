@@ -393,17 +393,15 @@ export default function MealsPage() {
 
         if (session?.user) {
           user_id = session.user.id;
-          console.log('🔐 Meals: Using auth ID:', user_id);
         } else {
           const localUserId = getLocalUserId();
           if (localUserId) {
             user_id = localUserId;
-            console.log('📱 Meals: Using local ID:', user_id);
           }
         }
 
         if (!user_id) {
-          console.log('❌ No user ID found for meals');
+
           setLoading(false);
           return;
         }

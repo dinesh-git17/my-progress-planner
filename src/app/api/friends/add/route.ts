@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`🤝 Add friend request: ${userId} wants to add ${friendCode}`);
+
 
     // Use our utility function to add the friend
     const result = await addFriend(userId, friendCode.trim().toUpperCase());
@@ -97,7 +97,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Success case
-    console.log(`✅ Successfully added friend: ${result.friendName}`);
 
     return NextResponse.json({
       success: true,

@@ -1103,7 +1103,6 @@ export default function Home() {
         if (data.success && data.friendCode) {
           setFriendCode(data.friendCode);
         } else {
-          console.log('No friend code found for user');
           setFriendCode('');
         }
       } catch (error) {
@@ -1138,7 +1137,7 @@ export default function Home() {
    */
   const handleNotificationClick = async () => {
     try {
-      console.log('🔔 Starting notification setup...');
+
 
       // 1. Check if service workers are supported
       if (!('serviceWorker' in navigator)) {
@@ -1155,16 +1154,16 @@ export default function Home() {
         registration = await navigator.serviceWorker.getRegistration();
 
         if (!registration) {
-          console.log('📝 Registering service worker...');
+
           registration = await navigator.serviceWorker.register(
             '/service-worker.js',
             {
               scope: '/',
             },
           );
-          console.log('✅ Service worker registered successfully');
+
         } else {
-          console.log('✅ Service worker already registered');
+
         }
 
         // Wait for service worker to be ready
@@ -1175,7 +1174,7 @@ export default function Home() {
       }
 
       // 3. Request notification permission
-      console.log('🔐 Requesting notification permission...');
+
       const permission = await Notification.requestPermission();
 
       if (permission !== 'granted') {
@@ -1184,22 +1183,22 @@ export default function Home() {
         );
       }
 
-      console.log('✅ Notification permission granted');
+
 
       // 4. Create push subscription
       const vapidPublicKey =
         'BAEWVqKa9ASTlGbc7Oo_BJGAsYBtlYAS1IkI1gKMz5Ot6WnNQuP-WQ2u3sDRDV4Ca5kZQwo8aKOshT3wOrUugxk';
 
-      console.log('📱 Creating push subscription...');
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
-      console.log('✅ Push subscription created');
+
 
       // 5. Save subscription to backend WITH user_id
-      console.log('💾 Saving subscription to backend...');
+
       const response = await fetch('/api/push/save-subscription', {
         method: 'POST',
         headers: {
@@ -1220,7 +1219,7 @@ export default function Home() {
       }
 
       const result = await response.json();
-      console.log('✅ Subscription saved to backend:', result);
+
 
       // 6. Update UI state
       setNotificationsEnabled(true);
@@ -1689,10 +1688,7 @@ export default function Home() {
 
         if (session?.user) {
           // User is authenticated - use their auth user ID
-          console.log(
-            '🔐 User is authenticated, using auth ID:',
-            session.user.id,
-          );
+
 
           setShowLoginModal(false);
           setIsUserAuthenticated(true);
@@ -1741,11 +1737,11 @@ export default function Home() {
           fetchFriendCode(session.user.id); // Also fetch friend code for authenticated users
         } else {
           // 2. ONLY if not authenticated, use localStorage
-          console.log('👤 User not authenticated, checking localStorage');
+
           setIsUserAuthenticated(false);
 
           if (localUserId) {
-            console.log('📱 Using local user ID:', localUserId);
+
             setUserId(localUserId);
 
             const existingName = await getUserName(localUserId);
@@ -1754,7 +1750,7 @@ export default function Home() {
               fetchQuote(existingName);
             }
           } else {
-            console.log('❌ No user ID found');
+
             // No user ID at all - will show auth prompt
           }
         }

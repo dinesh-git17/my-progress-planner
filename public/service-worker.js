@@ -43,16 +43,9 @@ const SYNC_TAGS = {
 
 // Utility functions
 function log(message, data = null) {
-  console.log(`[SW ${CACHE_VERSION}] ${message}`, data || '');
-}
-
-function isNavigationRequest(request) {
-  return (
-    request.mode === 'navigate' ||
-    (request.method === 'GET' &&
-      request.headers.get('accept') &&
-      request.headers.get('accept').includes('text/html'))
-  );
+  if (IS_DEVELOPMENT) {
+    console.log(`[SW ${CACHE_VERSION}] ${message}`, data || '');
+  }
 }
 
 function shouldCacheRequest(request) {
@@ -400,20 +393,6 @@ self.addEventListener('notificationclick', (event) => {
     }
   }
 
-  console.log('🔔 Notification clicked, navigating to:', urlToOpen);
-
-  event.waitUntil(
-    self.clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
-        // Check if we already have a window open with the target URL
-        for (const client of clientList) {
-          if (client.url.includes(self.location.origin)) {
-            // Navigate the existing client to the target URL
-            console.log(
-              '📱 Focusing existing window and navigating to:',
-              urlToOpen,
-            );
             client.postMessage({
               type: 'NOTIFICATION_CLICK',
               url: urlToOpen,
@@ -423,9 +402,6 @@ self.addEventListener('notificationclick', (event) => {
         }
 
         // No existing window found, open a new one
-        console.log('🆕 Opening new window at:', urlToOpen);
-        const fullUrl = self.location.origin + urlToOpen;
-        return self.clients.openWindow(fullUrl);
       })
       .catch((error) => {
         console.error('❌ Error handling notification click:', error);
