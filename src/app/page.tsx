@@ -681,12 +681,7 @@ export default function Home() {
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [contentReady, setContentReady] = useState(false);
   const [isClient, setIsClient] = useState(false);
-
-  const [previousTab, setPreviousTab] = useState<
-    'meals' | 'progress' | 'friends'
-  >('meals');
-
-  const [enterDirection, setEnterDirection] = useState(0);
+  const [hasAnimatedStreak, setHasAnimatedStreak] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'meals' | 'progress' | 'friends'>(
     'meals',
@@ -977,54 +972,14 @@ export default function Home() {
   };
 
   /**
-   * Calculate directions for tab transition
-   */
-  const getTransitionDirections = (fromTab: string, toTab: string) => {
-    const TAB_ORDER = ['meals', 'progress', 'friends'];
-    const fromIndex = TAB_ORDER.indexOf(fromTab);
-    const toIndex = TAB_ORDER.indexOf(toTab);
-
-    if (toIndex > fromIndex) {
-      // Moving forward: current exits LEFT, new enters from RIGHT
-      return {
-        exitDirection: -100,
-        enterDirection: 100,
-      };
-    } else {
-      // Moving backward: current exits RIGHT, new enters from LEFT
-      return {
-        exitDirection: 100,
-        enterDirection: -100,
-      };
-    }
-  };
-
-  /**
-   * Get exit direction for a tab when transitioning TO the current activeTab
-   */
-  const getExitDirectionForTab = (tabName: string) => {
-    // When this tab is exiting, where are we going?
-    // The target is the current activeTab (since we're transitioning to it)
-    if (tabName === activeTab) return 0; // Tab is not exiting
-
-    // Calculate exit direction from this tab TO the activeTab
-    return getTransitionDirections(tabName, activeTab).exitDirection;
-  };
-
-  /**
-   * Handle tab change - only set enter direction
+   * Handle tab change - simplified for opacity animation
    */
   const handleTabChange = (newTab: 'meals' | 'progress' | 'friends') => {
     if (newTab !== activeTab) {
-      const directions = getTransitionDirections(activeTab, newTab);
-
-      // Only set enter direction - exit direction will be calculated dynamically
-      setEnterDirection(directions.enterDirection);
-
-      setPreviousTab(activeTab);
       setActiveTab(newTab);
     }
   };
+
   // ========================================================================
   // DATA FETCHING FUNCTIONS
   // ========================================================================
@@ -1361,6 +1316,13 @@ export default function Home() {
    */
   useEffect(() => {
     hasFetchedMeals.current = false;
+  }, [userId]);
+
+  /**
+   * Reset streak animation when user changes
+   */
+  useEffect(() => {
+    setHasAnimatedStreak(false);
   }, [userId]);
 
   /**
@@ -1803,14 +1765,22 @@ export default function Home() {
                     {/* Streak indicator */}
                     {!streakLoading && streak > 0 && (
                       <motion.span
-                        key={streak}
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1.1, opacity: 1 }}
+                        initial={
+                          !hasAnimatedStreak
+                            ? { scale: 0.8, opacity: 0 }
+                            : false
+                        }
+                        animate={
+                          !hasAnimatedStreak ? { scale: 1.1, opacity: 1 } : {}
+                        }
                         transition={{
                           type: 'spring',
                           stiffness: 320,
                           damping: 18,
                         }}
+                        onAnimationComplete={() =>
+                          !hasAnimatedStreak && setHasAnimatedStreak(true)
+                        }
                         className="flex items-center mt-1 text-[1rem] font-medium text-gray-700 pl-2"
                       >
                         <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400 mr-2" />
@@ -2007,19 +1977,25 @@ export default function Home() {
                         key="meals"
                         initial={{
                           opacity: 0,
-                          x: enterDirection,
+                          scale: 0.95,
+                          y: 10,
                         }}
                         animate={{
                           opacity: 1,
-                          x: 0,
+                          scale: 1,
+                          y: 0,
                         }}
                         exit={{
                           opacity: 0,
-                          x: getExitDirectionForTab('meals'),
+                          scale: 0.95,
+                          y: -5,
                         }}
                         transition={{
-                          duration: 0.4,
+                          duration: 0.3,
                           ease: [0.4, 0, 0.2, 1],
+                          type: 'spring',
+                          stiffness: 300,
+                          damping: 30,
                         }}
                         className="pb-24"
                       >
@@ -2113,19 +2089,25 @@ export default function Home() {
                         key="progress"
                         initial={{
                           opacity: 0,
-                          x: enterDirection,
+                          scale: 0.95,
+                          y: 10,
                         }}
                         animate={{
                           opacity: 1,
-                          x: 0,
+                          scale: 1,
+                          y: 0,
                         }}
                         exit={{
                           opacity: 0,
-                          x: getExitDirectionForTab('progress'),
+                          scale: 0.95,
+                          y: -5,
                         }}
                         transition={{
-                          duration: 0.4,
+                          duration: 0.3,
                           ease: [0.4, 0, 0.2, 1],
+                          type: 'spring',
+                          stiffness: 300,
+                          damping: 30,
                         }}
                         className="pb-24"
                       >
@@ -2238,19 +2220,25 @@ export default function Home() {
                         key="friends"
                         initial={{
                           opacity: 0,
-                          x: enterDirection,
+                          scale: 0.95,
+                          y: 10,
                         }}
                         animate={{
                           opacity: 1,
-                          x: 0,
+                          scale: 1,
+                          y: 0,
                         }}
                         exit={{
                           opacity: 0,
-                          x: getExitDirectionForTab('friends'),
+                          scale: 0.95,
+                          y: -5,
                         }}
                         transition={{
-                          duration: 0.4,
+                          duration: 0.3,
                           ease: [0.4, 0, 0.2, 1],
+                          type: 'spring',
+                          stiffness: 300,
+                          damping: 30,
                         }}
                         className="pb-24"
                       >
