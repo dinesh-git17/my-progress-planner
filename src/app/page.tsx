@@ -535,6 +535,7 @@ function HomeHeader({
 /**
  * Custom hook to fetch and calculate user's current meal logging streak
  * Handles data recovery scenarios with retry logic and manual refresh capability
+ * NOW WITH SESSION STORAGE CACHING to prevent multiple API calls
  */
 function useUserStreak(user_id?: string, isAfterRecovery = false) {
   const [streak, setStreak] = useState(0);
@@ -546,8 +547,13 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
    * Useful for triggering updates after data changes
    */
   const refreshStreak = useCallback(() => {
+    // Clear session cache when manually refreshing
+    if (user_id) {
+      sessionStorage.removeItem(`mealapp_streak_${user_id}`);
+      sessionStorage.removeItem(`mealapp_streak_timestamp_${user_id}`);
+    }
     setRefreshTrigger((prev) => prev + 1);
-  }, []);
+  }, [user_id]);
 
   useEffect(() => {
     if (!user_id) {
@@ -559,6 +565,27 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
 
     const fetchStreakWithRetry = async (attempt = 1): Promise<void> => {
       try {
+        // Check session storage first (unless this is a recovery or manual refresh)
+        if (!isAfterRecovery && refreshTrigger === 0) {
+          const cachedStreak = sessionStorage.getItem(
+            `mealapp_streak_${user_id}`,
+          );
+          const cachedTimestamp = sessionStorage.getItem(
+            `mealapp_streak_timestamp_${user_id}`,
+          );
+
+          if (cachedStreak !== null && cachedTimestamp) {
+            const cacheAge = Date.now() - parseInt(cachedTimestamp);
+            // Use cached data if it's less than 5 minutes old
+            if (cacheAge < 5 * 60 * 1000) {
+              const parsedStreak = parseInt(cachedStreak);
+              setStreak(isNaN(parsedStreak) ? 0 : parsedStreak);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
         // For users who just recovered data, add delay to ensure backend sync completion
         if (isAfterRecovery && attempt === 1) {
           await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -592,6 +619,16 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
           await new Promise((resolve) => setTimeout(resolve, backoffDelay));
           return fetchStreakWithRetry(attempt + 1);
         }
+
+        // Cache the result in session storage
+        sessionStorage.setItem(
+          `mealapp_streak_${user_id}`,
+          calculatedStreak.toString(),
+        );
+        sessionStorage.setItem(
+          `mealapp_streak_timestamp_${user_id}`,
+          Date.now().toString(),
+        );
 
         setStreak(calculatedStreak);
       } catch (error) {
@@ -1382,6 +1419,7 @@ export default function Home() {
 
   /**
    * Enhanced meal refresh that also updates streak
+   * NOW CLEARS STREAK CACHE when meals are updated
    */
   const fetchLoggedMealsAndRefreshStreak = async (
     user_id: string,
@@ -1389,10 +1427,13 @@ export default function Home() {
     // Fetch meals first
     await fetchLoggedMeals(user_id);
 
+    // Clear streak cache since meals changed
+    sessionStorage.removeItem(`mealapp_streak_${user_id}`);
+    sessionStorage.removeItem(`mealapp_streak_timestamp_${user_id}`);
+
     // Then refresh streak to get latest data
     refreshStreak();
   };
-
   // ========================================================================
   // EFFECT HOOKS
   // ========================================================================
