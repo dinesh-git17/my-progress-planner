@@ -12,7 +12,7 @@ import {
 } from '@/utils/auth';
 import { getUserName, saveUserName } from '@/utils/user';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell } from 'lucide-react';
+import { Bell, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useUserInitialization } from '../../hooks/useUserInitialization';
@@ -30,6 +30,17 @@ const mealLabels = [
   { meal: 'lunch', emoji: '🫐', label: 'Lunch' },
   { meal: 'dinner', emoji: '🍜', label: 'Dinner' },
 ];
+
+const UI_CONSTANTS = {
+  BANNER_TOP_PADDING: 20, // Increased from 24
+  BANNER_BOTTOM_PADDING: 50, // Increased from 32
+  BANNER_TEXT_HEIGHT: 180, // Increased from 120
+};
+
+const BANNER_TOTAL_HEIGHT =
+  UI_CONSTANTS.BANNER_TOP_PADDING +
+  UI_CONSTANTS.BANNER_BOTTOM_PADDING +
+  UI_CONSTANTS.BANNER_TEXT_HEIGHT;
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -140,45 +151,44 @@ function getMsUntilNextEstMidnight() {
 function highlightQuote(quote: string): string {
   const highlights: HighlightedWord[] = [
     // PRIORITY 1: Multi-word phrases and hyphenated words (MUST come first)
-    { regex: /self-care/gi, className: 'text-pink-500 font-semibold' },
-    { regex: /small steps/gi, className: 'text-yellow-500 font-semibold' },
-    { regex: /step by step/gi, className: 'text-slate-600 font-semibold' },
-    { regex: /one step/gi, className: 'text-gray-600 font-semibold' },
+    { regex: /self-care/gi, className: 'text-pink-200 font-semibold' },
+    { regex: /small steps/gi, className: 'text-yellow-200 font-semibold' },
+    { regex: /step by step/gi, className: 'text-purple-200 font-semibold' },
+    { regex: /one step/gi, className: 'text-indigo-200 font-semibold' },
 
     // PRIORITY 2: Single words (processed after multi-word phrases)
-    { regex: /progress/gi, className: 'text-purple-500 font-semibold' },
-    { regex: /amazing/gi, className: 'text-green-500 font-semibold' },
-    { regex: /love/gi, className: 'text-red-500 font-semibold' },
-    { regex: /motivation/gi, className: 'text-blue-500 font-semibold' },
-    { regex: /healthy/gi, className: 'text-teal-500 font-semibold' },
-    { regex: /victory/gi, className: 'text-teal-500 font-semibold' },
-    { regex: /eating/gi, className: 'text-orange-500 font-semibold' },
-    { regex: /nourish/gi, className: 'text-green-600 font-semibold' },
-    { regex: /caring/gi, className: 'text-pink-600 font-semibold' },
-    { regex: /gentle/gi, className: 'text-purple-400 font-semibold' },
-    { regex: /sweet/gi, className: 'text-pink-400 font-semibold' },
-    { regex: /proud/gi, className: 'text-yellow-600 font-semibold' },
-    { regex: /beautiful/gi, className: 'text-rose-500 font-semibold' },
-    { regex: /strong/gi, className: 'text-blue-600 font-semibold' },
-    { regex: /wonderful/gi, className: 'text-purple-600 font-semibold' },
-    { regex: /special/gi, className: 'text-indigo-500 font-semibold' },
-    { regex: /care/gi, className: 'text-teal-400 font-semibold' },
-    { regex: /nurture/gi, className: 'text-green-400 font-semibold' },
-    { regex: /kindness/gi, className: 'text-pink-300 font-semibold' },
-    { regex: /support/gi, className: 'text-blue-400 font-semibold' },
-    { regex: /encourage/gi, className: 'text-yellow-400 font-semibold' },
-    { regex: /celebrate/gi, className: 'text-orange-400 font-semibold' },
-    { regex: /growth/gi, className: 'text-emerald-500 font-semibold' },
-    { regex: /journey/gi, className: 'text-violet-500 font-semibold' },
-    { regex: /succeed/gi, className: 'text-green-700 font-semibold' },
-    { regex: /overcome/gi, className: 'text-blue-700 font-semibold' },
-    { regex: /believe/gi, className: 'text-indigo-600 font-semibold' },
-    { regex: /trust/gi, className: 'text-cyan-600 font-semibold' },
-    { regex: /positive/gi, className: 'text-lime-500 font-semibold' },
-    { regex: /affection/gi, className: 'text-red-400 font-semibold' },
-    { regex: /embrace/gi, className: 'text-amber-500 font-semibold' },
+    { regex: /progress/gi, className: 'text-purple-200 font-semibold' },
+    { regex: /amazing/gi, className: 'text-green-200 font-semibold' },
+    { regex: /love/gi, className: 'text-red-200 font-semibold' },
+    { regex: /motivation/gi, className: 'text-blue-200 font-semibold' },
+    { regex: /healthy/gi, className: 'text-teal-200 font-semibold' },
+    { regex: /victory/gi, className: 'text-emerald-200 font-semibold' },
+    { regex: /eating/gi, className: 'text-orange-200 font-semibold' },
+    { regex: /nourish/gi, className: 'text-green-200 font-semibold' },
+    { regex: /caring/gi, className: 'text-pink-200 font-semibold' },
+    { regex: /gentle/gi, className: 'text-purple-200 font-semibold' },
+    { regex: /sweet/gi, className: 'text-pink-200 font-semibold' },
+    { regex: /proud/gi, className: 'text-yellow-200 font-semibold' },
+    { regex: /beautiful/gi, className: 'text-rose-200 font-semibold' },
+    { regex: /strong/gi, className: 'text-blue-200 font-semibold' },
+    { regex: /wonderful/gi, className: 'text-purple-200 font-semibold' },
+    { regex: /special/gi, className: 'text-indigo-200 font-semibold' },
+    { regex: /care/gi, className: 'text-teal-200 font-semibold' },
+    { regex: /nurture/gi, className: 'text-green-200 font-semibold' },
+    { regex: /kindness/gi, className: 'text-pink-200 font-semibold' },
+    { regex: /support/gi, className: 'text-blue-200 font-semibold' },
+    { regex: /encourage/gi, className: 'text-yellow-200 font-semibold' },
+    { regex: /celebrate/gi, className: 'text-orange-200 font-semibold' },
+    { regex: /growth/gi, className: 'text-emerald-200 font-semibold' },
+    { regex: /journey/gi, className: 'text-violet-200 font-semibold' },
+    { regex: /succeed/gi, className: 'text-green-200 font-semibold' },
+    { regex: /overcome/gi, className: 'text-blue-200 font-semibold' },
+    { regex: /believe/gi, className: 'text-indigo-200 font-semibold' },
+    { regex: /trust/gi, className: 'text-cyan-200 font-semibold' },
+    { regex: /positive/gi, className: 'text-lime-200 font-semibold' },
+    { regex: /affection/gi, className: 'text-red-200 font-semibold' },
+    { regex: /embrace/gi, className: 'text-amber-200 font-semibold' },
   ];
-
   let highlighted = quote;
   for (const { regex, className } of highlights) {
     highlighted = highlighted.replace(
@@ -234,6 +244,286 @@ interface MealLogResponse {
 
 interface QuoteResponse {
   quote?: string;
+}
+
+// ============================================================================
+// HEADER COMPONENTS
+// ============================================================================
+/**
+ * Beautiful SVG Wave Header Component for Homepage
+ */
+function HomeHeader({
+  name,
+  streak,
+  quote,
+  loading,
+  streakLoading,
+  notificationsEnabled,
+  showNotificationTooltip,
+  onNotificationClick,
+  onProfileClick,
+  profileButtonRef,
+  showProfileDropdown,
+  isUserAuthenticated,
+  onLogin,
+  onLogout,
+}: {
+  name: string;
+  streak: number;
+  quote: string;
+  loading: boolean;
+  streakLoading: boolean;
+  notificationsEnabled: boolean;
+  showNotificationTooltip: boolean;
+  onNotificationClick: () => void;
+  onProfileClick: () => void;
+  profileButtonRef: React.RefObject<HTMLButtonElement>;
+  showProfileDropdown: boolean;
+  isUserAuthenticated: boolean;
+  onLogin: () => void;
+  onLogout: () => Promise<void>;
+}) {
+  return (
+    <header
+      className="fixed top-0 left-0 w-full z-30"
+      style={{
+        background: 'transparent',
+      }}
+    >
+      {/* SVG Wave Header */}
+      <svg
+        className="w-full"
+        viewBox="0 0 500 280"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="none"
+        style={{
+          height: `calc(${BANNER_TOTAL_HEIGHT + 60}px + env(safe-area-inset-top))`,
+        }}
+      >
+        <defs>
+          <linearGradient
+            id="homeHeaderGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <stop offset="0%" stopColor="#ec4899" />
+            <stop offset="50%" stopColor="#f472b6" />
+            <stop offset="100%" stopColor="#e879f9" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M0 0 L500 0 L500 220 C400 260 350 200 250 240 C150 280 100 220 0 260 L0 0 Z"
+          fill="url(#homeHeaderGradient)"
+        />
+      </svg>
+
+      {/* Header Content */}
+      <div
+        className="absolute top-0 left-0 w-full h-full flex flex-col"
+        style={{
+          paddingTop: `calc(${UI_CONSTANTS.BANNER_TOP_PADDING}px + env(safe-area-inset-top))`,
+          paddingBottom: UI_CONSTANTS.BANNER_BOTTOM_PADDING,
+        }}
+      >
+        {/* Top row: Greeting + Action buttons */}
+        <div className="w-full max-w-lg mx-auto px-6 flex flex-row items-start justify-between mb-4">
+          <div className="flex flex-col">
+            <span className="text-[1.7rem] font-bold text-white leading-snug flex items-center gap-2">
+              {name ? (
+                <>
+                  Hello, {name.split(' ')[0]}{' '}
+                  <span className="text-2xl">👋</span>
+                </>
+              ) : (
+                <>
+                  Hello! <span className="text-2xl">👋</span>
+                </>
+              )}
+            </span>
+            {/* Streak indicator */}
+            {!streakLoading && streak > 0 && (
+              <motion.span
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 320,
+                  damping: 18,
+                }}
+                className="flex items-center mt-1 text-[1rem] font-medium text-white/90 pl-1"
+              >
+                <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-300 mr-2 shadow-sm" />
+                <span>
+                  {streak} day{streak > 1 && 's'} streak!
+                </span>
+              </motion.span>
+            )}
+          </div>
+
+          {/* Action buttons and profile */}
+          <div className="flex items-center gap-3 relative">
+            {/* Notification bell */}
+            {!notificationsEnabled && (
+              <div className="relative">
+                <motion.button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onNotificationClick();
+                  }}
+                  className="
+                    w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm
+                    flex items-center justify-center shadow-lg 
+                    cursor-pointer hover:scale-110 active:scale-95 transition-transform
+                    border border-white/30 outline-none focus:ring-2 focus:ring-white/40
+                  "
+                  animate={{
+                    y: [0, -4, 0],
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    repeat: Infinity,
+                    repeatDelay: 3,
+                    ease: [0.4, 0, 0.6, 1],
+                  }}
+                  whileHover={{
+                    scale: 1.15,
+                    transition: { duration: 0.2 },
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  type="button"
+                  aria-label="Enable notifications"
+                >
+                  <Bell className="w-4 h-4 text-white pointer-events-none" />
+                </motion.button>
+
+                {/* Notification tooltip */}
+                <AnimatePresence>
+                  {showNotificationTooltip && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                      transition={{
+                        duration: 0.5,
+                        ease: [0.4, 0, 0.2, 1],
+                        type: 'spring',
+                        stiffness: 300,
+                        damping: 30,
+                      }}
+                      className="absolute top-12 -left-32 z-50 pointer-events-none"
+                    >
+                      <div className="relative">
+                        <p
+                          className="text-white text-sm whitespace-nowrap font-medium drop-shadow-sm"
+                          style={{
+                            fontFamily: "'Dancing Script', cursive",
+                            fontSize: '16px',
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          click here to allow notifications ✨
+                        </p>
+                        <svg
+                          className="absolute -top-4 left-28"
+                          width="30"
+                          height="20"
+                          viewBox="0 0 30 20"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <motion.path
+                            d="M6 16 C 10 16, 16 12, 24 4 L 20 2 M 24 4 L 22 8"
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                            initial={{ pathLength: 0, opacity: 0 }}
+                            animate={{ pathLength: 1, opacity: 1 }}
+                            transition={{
+                              duration: 1,
+                              delay: 0.3,
+                              ease: 'easeInOut',
+                            }}
+                          />
+                        </svg>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Profile dropdown */}
+            <div className="relative">
+              <motion.button
+                ref={profileButtonRef}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onProfileClick}
+                className="
+                  w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full 
+                  flex items-center justify-center text-lg font-bold text-white shadow-lg 
+                  select-none uppercase cursor-pointer transition-all duration-200
+                  hover:bg-white/30 border border-white/30
+                  focus:outline-none focus:ring-2 focus:ring-white/40
+                "
+                type="button"
+                aria-label="Profile menu"
+              >
+                {getInitials(name) || '🍽️'}
+              </motion.button>
+
+              <ProfileDropdown
+                name={name}
+                isOpen={showProfileDropdown}
+                onClose={() => {}}
+                profileButtonRef={profileButtonRef}
+                isAuthenticated={isUserAuthenticated}
+                onLogin={onLogin}
+                onLogout={onLogout}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Quote section */}
+        <div className="w-full max-w-lg mx-auto px-6 mt-2">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="
+              relative flex items-start px-5 py-4 rounded-2xl
+              bg-white/10 backdrop-blur-sm border border-white/20
+              min-h-[60px] shadow-sm
+            "
+          >
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 text-lg mr-4 flex-shrink-0 mt-0.5">
+              <Sparkles className="w-4 h-4 text-white" />
+            </span>
+            {loading || !quote ? (
+              <span className="animate-pulse text-base font-normal italic text-white/70 flex-1">
+                Loading motivation…
+              </span>
+            ) : (
+              <span
+                className="font-semibold text-[1rem] sm:text-lg leading-snug text-white break-words flex-1 drop-shadow-sm"
+                dangerouslySetInnerHTML={{
+                  __html: highlightQuote(quote),
+                }}
+              />
+            )}
+          </motion.div>
+        </div>
+      </div>
+    </header>
+  );
 }
 
 // ============================================================================
@@ -1598,7 +1888,10 @@ export default function Home() {
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -50 }}
-          className="fixed left-1/2 transform -translate-x-1/2 z-50 bg-red-100 border border-red-300 rounded-lg p-4 max-w-sm notch-safe"
+          className="fixed left-1/2 transform -translate-x-1/2 z-50 bg-green-100 border border-green-300 rounded-lg p-4 max-w-sm"
+          style={{
+            top: `calc(env(safe-area-inset-top) + 1rem)`,
+          }}
         >
           <div className="flex items-center">
             <div className="text-green-600 mr-3">✅</div>
@@ -1749,227 +2042,30 @@ export default function Home() {
 
             {!askName && userId && (
               <>
-                {/* Header with greeting and profile */}
-                <div className="w-full max-w-lg mx-auto safe-x flex flex-row items-center justify-between mb-8">
-                  <div className="flex flex-col">
-                    <span className="text-[1.5rem] font-bold text-gray-900 leading-snug flex items-center gap-1">
-                      {name ? (
-                        <>
-                          Hello, {name.split(' ')[0]}{' '}
-                          <span className="ml-1">👋</span>
-                        </>
-                      ) : (
-                        'Hello! 👋'
-                      )}
-                    </span>
-                    {/* Streak indicator */}
-                    {!streakLoading && streak > 0 && (
-                      <motion.span
-                        initial={
-                          !hasAnimatedStreak
-                            ? { scale: 0.8, opacity: 0 }
-                            : false
-                        }
-                        animate={
-                          !hasAnimatedStreak ? { scale: 1.1, opacity: 1 } : {}
-                        }
-                        transition={{
-                          type: 'spring',
-                          stiffness: 320,
-                          damping: 18,
-                        }}
-                        onAnimationComplete={() =>
-                          !hasAnimatedStreak && setHasAnimatedStreak(true)
-                        }
-                        className="flex items-center mt-1 text-[1rem] font-medium text-gray-700 pl-2"
-                      >
-                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400 mr-2" />
-                        <span>
-                          {streak} day{streak > 1 && 's'} streak!
-                        </span>
-                      </motion.span>
-                    )}
-                  </div>
-
-                  {/* Action buttons and profile */}
-                  <div className="flex items-center gap-3 relative">
-                    {/* Notification bell - only show if not enabled */}
-                    {!notificationsEnabled && userId && (
-                      <div className="relative">
-                        <motion.button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setShowNotificationTooltip(false); // Hide tooltip on click
-                            handleNotificationClick(); // Call the proper function!
-                          }}
-                          className="
-          w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 
-          flex items-center justify-center shadow-lg 
-          cursor-pointer hover:scale-110 active:scale-95 transition-transform
-          border-none outline-none focus:ring-2 focus:ring-pink-300
-        "
-                          animate={{
-                            y: [0, -4, 0],
-                            scale: [1, 1.05, 1],
-                          }}
-                          transition={{
-                            duration: 0.8,
-                            repeat: Infinity,
-                            repeatDelay: 3,
-                            ease: [0.4, 0, 0.6, 1],
-                          }}
-                          whileHover={{
-                            scale: 1.15,
-                            transition: { duration: 0.2 },
-                          }}
-                          whileTap={{ scale: 0.95 }}
-                          style={{
-                            zIndex: 10000,
-                            WebkitTapHighlightColor: 'transparent',
-                          }}
-                          type="button"
-                          aria-label="Enable notifications"
-                        >
-                          <Bell className="w-3.5 h-3.5 text-white pointer-events-none" />
-                        </motion.button>
-
-                        {/* Cursive tooltip with curvy arrow */}
-                        <AnimatePresence>
-                          {showNotificationTooltip && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                              transition={{
-                                duration: 0.5,
-                                ease: [0.4, 0, 0.2, 1],
-                                type: 'spring',
-                                stiffness: 300,
-                                damping: 30,
-                              }}
-                              className="absolute top-12 -left-32 z-50 pointer-events-none"
-                            >
-                              <div className="relative">
-                                {/* Just the text without background */}
-                                <p
-                                  className="text-pink-700 text-sm whitespace-nowrap font-medium"
-                                  style={{
-                                    fontFamily:
-                                      "'Dancing Script', 'Brush Script MT', cursive",
-                                    fontSize: '16px',
-                                    letterSpacing: '0.5px',
-                                    textShadow:
-                                      '0 1px 3px rgba(255, 255, 255, 0.8)',
-                                  }}
-                                >
-                                  click here to allow notifications ✨
-                                </p>
-
-                                {/* Arrow pointing up to bell - flipped 180 degrees */}
-                                <svg
-                                  className="absolute -top-4 left-28"
-                                  width="30"
-                                  height="20"
-                                  viewBox="0 0 30 20"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  <motion.path
-                                    d="M6 16 C 10 16, 16 12, 24 4 L 20 2 M 24 4 L 22 8"
-                                    stroke="#ec4899"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    fill="none"
-                                    initial={{ pathLength: 0, opacity: 0 }}
-                                    animate={{ pathLength: 1, opacity: 1 }}
-                                    transition={{
-                                      duration: 1,
-                                      delay: 0.3,
-                                      ease: 'easeInOut',
-                                    }}
-                                  />
-                                </svg>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    )}
-
-                    {/* Profile dropdown */}
-                    <div className="relative">
-                      <motion.button
-                        ref={profileButtonRef}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() =>
-                          setShowProfileDropdown(!showProfileDropdown)
-                        }
-                        className="
-        w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full 
-        flex items-center justify-center text-lg font-bold text-white shadow-lg 
-        select-none uppercase cursor-pointer transition-all duration-200
-        hover:shadow-xl hover:from-pink-300 hover:to-yellow-300
-        focus:outline-none focus:ring-2 focus:ring-pink-300/40
-        border-none
-      "
-                        type="button"
-                        aria-label="Profile menu"
-                        style={{ WebkitTapHighlightColor: 'transparent' }}
-                      >
-                        {getInitials(name) || '🍽️'}
-                      </motion.button>
-
-                      <ProfileDropdown
-                        name={name}
-                        isOpen={showProfileDropdown}
-                        onClose={() => setShowProfileDropdown(false)}
-                        profileButtonRef={profileButtonRef}
-                        isAuthenticated={isUserAuthenticated}
-                        onLogin={() => setShowLoginModal(true)}
-                        onLogout={handleLogout}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Motivational quote section */}
-                <div className="w-full max-w-lg mx-auto safe-x mb-6">
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12, duration: 0.5 }}
-                    className="
-                      relative flex items-start px-6 py-5 rounded-2xl shadow-xl shadow-pink-100/40
-                      bg-gradient-to-tr from-[#fff3fc] via-[#f9f3fd] to-[#e7ffe7] border border-white/60
-                      min-h-[72px] z-10 w-full
-                      before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-2xl
-                      before:bg-gradient-to-tr before:from-pink-200/40 before:via-purple-100/40 before:to-yellow-100/40
-                      before:blur-2xl
-                    "
-                  >
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-pink-50 text-xl mr-4 ml-0 flex-shrink-0 mt-0.5">
-                      💡
-                    </span>
-                    {loading || !quote ? (
-                      <span className="animate-pulse text-base font-normal italic text-gray-400 flex-1">
-                        Loading motivation…
-                      </span>
-                    ) : (
-                      <span
-                        className="font-semibold text-[1.11rem] sm:text-lg leading-snug text-gray-800 break-words flex-1"
-                        dangerouslySetInnerHTML={{
-                          __html: highlightQuote(quote),
-                        }}
-                      />
-                    )}
-                  </motion.div>
-                </div>
-
-                {/* Main content area with tabs */}
-                <div className="w-full max-w-lg mx-auto safe-x flex-1 overflow-y-auto">
+                {/* Beautiful SVG Wave Header */}
+                <HomeHeader
+                  name={name}
+                  streak={streak}
+                  quote={quote}
+                  loading={loading}
+                  streakLoading={streakLoading}
+                  notificationsEnabled={notificationsEnabled}
+                  showNotificationTooltip={showNotificationTooltip}
+                  onNotificationClick={handleNotificationClick}
+                  onProfileClick={() =>
+                    setShowProfileDropdown(!showProfileDropdown)
+                  }
+                  profileButtonRef={profileButtonRef}
+                  showProfileDropdown={showProfileDropdown}
+                  isUserAuthenticated={isUserAuthenticated}
+                  onLogin={() => setShowLoginModal(true)}
+                  onLogout={handleLogout}
+                />
+                {/* Main content area with tabs - positioned below header */}
+                <div
+                  className="pb-24 px-4 w-full max-w-lg mx-auto"
+                  style={{ marginTop: '265px' }}
+                >
                   <AnimatePresence mode="wait">
                     {/* Meals tab content */}
                     {activeTab === 'meals' && (
