@@ -315,9 +315,13 @@ export default function MealChat({
       const data = await response.json();
       const botMessage: Message = { sender: 'bot', text: data.reply };
 
-      setMessages((msgs) => [...msgs, botMessage]);
-      gptReplies.current.push(data.reply);
       setLoading(false);
+
+      // Small delay, then add the message smoothly
+      setTimeout(() => {
+        setMessages((msgs) => [...msgs, botMessage]);
+        gptReplies.current.push(data.reply);
+      }, 250);
 
       // Finish chat if this was the last turn
       if (isLastTurn) {
@@ -372,9 +376,12 @@ export default function MealChat({
   const renderMessage = (msg: Message, index: number) => (
     <div
       key={`${msg.sender}-${index}`}
-      className={`flex w-full mb-3 ${
+      className={`flex w-full ${
         msg.sender === 'user' ? 'justify-end' : 'justify-start'
       }`}
+      style={{
+        marginBottom: msg.sender === 'user' ? '25px' : '12px',
+      }}
       data-message={`${msg.sender}-${index}`}
     >
       {/* Bot Avatar */}
@@ -388,15 +395,16 @@ export default function MealChat({
 
       <div
         className={`${msg.sender === 'user' ? 'max-w-[75%]' : 'max-w-[75%]'}`}
+        style={{ position: 'relative' }}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 5 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: -5 }}
           transition={{
-            duration: 0.2,
+            duration: 0.4,
             ease: [0.25, 0.46, 0.45, 0.94],
-            delay: index === 0 ? 0.15 : 0,
+            delay: 0,
           }}
           className={`
           relative px-4 py-2.5 break-words select-text
@@ -415,11 +423,23 @@ export default function MealChat({
             background:
               msg.sender === 'user'
                 ? 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)'
-                : 'rgba(255, 255, 255, 0.9)',
+                : 'rgba(255, 255, 255, 0.35)',
             boxShadow:
               msg.sender === 'user'
-                ? '0 2px 12px rgba(236, 72, 153, 0.3), 0 1px 4px rgba(236, 72, 153, 0.2)'
-                : '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
+                ? `
+                0 4px 20px rgba(236, 72, 153, 0.35),
+                0 2px 8px rgba(236, 72, 153, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2)
+                `
+                : `
+                0 8px 32px rgba(0, 0, 0, 0.06),
+                0 4px 16px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4)
+              `,
+            backdropFilter:
+              msg.sender === 'bot' ? 'saturate(180%) blur(25px)' : 'none',
+            WebkitBackdropFilter:
+              msg.sender === 'bot' ? 'saturate(180%) blur(25px)' : 'none',
             border:
               msg.sender === 'bot' ? '1px solid rgba(0, 0, 0, 0.06)' : 'none',
           }}
@@ -427,41 +447,56 @@ export default function MealChat({
           {msg.text}
         </motion.div>
 
-        {/* Read Status - Outside motion div to prevent overlap */}
-        {msg.sender === 'user' && index < messages.length - 1 && (
-          <div className="mt-1 text-xs text-gray-400 text-right">
-            <span className="flex items-center justify-end gap-1">
-              <span>
-                Read{' '}
-                {new Date().toLocaleTimeString('en-US', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true,
-                })}
+        {/* Read Status - Absolutely positioned to not affect bubble layout */}
+        {msg.sender === 'user' && (
+          <div
+            className="text-xs text-right"
+            style={{
+              position: 'absolute',
+              bottom: '-22px',
+              right: '0px',
+              width: '100%',
+              height: '20px',
+              opacity: index < messages.length - 1 ? 1 : 0,
+              transition: 'opacity 0.3s ease',
+              overflow: 'hidden',
+              pointerEvents: 'none',
+            }}
+          >
+            {index < messages.length - 1 && (
+              <span className="flex items-center justify-end gap-1 text-gray-400 whitespace-nowrap">
+                <span>
+                  Read{' '}
+                  {new Date().toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </span>
+                <svg
+                  className="w-3.5 h-3.5 text-blue-500"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <svg
+                  className="w-3.5 h-3.5 text-blue-500 -ml-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
               </span>
-              <svg
-                className="w-3.5 h-3.5 text-blue-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <svg
-                className="w-3.5 h-3.5 text-blue-500 -ml-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </span>
+            )}
           </div>
         )}
       </div>
@@ -490,10 +525,15 @@ export default function MealChat({
         }}
         className="px-4 py-2.5 rounded-[20px] rounded-tl-[4px] max-w-[75%]"
         style={{
-          background: 'rgba(255, 255, 255, 0.9)',
-          border: '1px solid rgba(0, 0, 0, 0.06)',
-          boxShadow:
-            '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
+          background: 'rgba(255, 255, 255, 0.15)', // ✅ Same 35% opacity as header
+          backdropFilter: 'saturate(180%) blur(25px)', // ✅ Same blur as header
+          WebkitBackdropFilter: 'saturate(180%) blur(25px)',
+          boxShadow: `
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4)
+  `,
+          border: '1px solid rgba(255, 255, 255, 0.4)',
         }}
       >
         <div className="flex items-center gap-1">
@@ -631,7 +671,8 @@ export default function MealChat({
       className="flex flex-col w-full max-w-md mx-auto shadow-xl"
       style={{
         fontFamily: SYSTEM_FONT,
-        background: '#fdf6e3',
+        background:
+          'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f3e8ff 100%)',
         height: '100vh',
         position: 'fixed', // Critical for iOS PWA
         top: 0,
@@ -656,10 +697,11 @@ export default function MealChat({
           left: 0,
           right: 0,
           zIndex: 30,
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'saturate(180%) blur(20px)',
-          WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-          borderBottom: '0.5px solid rgba(0, 0, 0, 0.08)',
+          background: 'rgba(255, 255, 255, 0.35)', // ✅ Much more opaque for contrast
+          backdropFilter: 'saturate(180%) blur(25px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(25px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.4)',
+          boxShadow: '0 2px 20px rgba(0, 0, 0, 0.08)', // ✅ Adds depth
           paddingTop: 'env(safe-area-inset-top)',
         }}
       >
@@ -717,7 +759,11 @@ export default function MealChat({
           right: 0,
           bottom: isKeyboardOpen ? '350px' : '100px', // CHANGE HEIGHT for available space
           WebkitOverflowScrolling: 'touch',
-          background: 'transparent',
+          background: 'rgba(255, 255, 255, 0.08)', // ✅ Subtle glass effect
+          backdropFilter: 'saturate(180%) blur(20px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+          borderRadius: '20px 20px 0 0',
+          border: '0.5px solid rgba(255, 255, 255, 0.15)',
           overscrollBehavior: 'contain',
           touchAction: 'pan-y',
           scrollBehavior: 'auto',
@@ -784,12 +830,15 @@ export default function MealChat({
                   lineHeight: '22px',
                   letterSpacing: '-0.41px',
                   borderRadius: '24px',
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  border: '0.5px solid rgba(0, 0, 0, 0.04)',
-                  boxShadow:
-                    '0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
-                  backdropFilter: 'saturate(180%) blur(20px)',
-                  WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+                  background: 'rgba(255, 255, 255, 0.25)', // ✅ Enhanced glass effect
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  boxShadow: `
+                    0 4px 16px rgba(0, 0, 0, 0.08),
+                    0 2px 8px rgba(0, 0, 0, 0.04),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.4)
+                  `,
+                  backdropFilter: 'saturate(180%) blur(30px)',
+                  WebkitBackdropFilter: 'saturate(180%) blur(30px)',
                   paddingRight: '52px',
                 }}
                 type="text"
