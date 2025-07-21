@@ -1,7 +1,7 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 // ============================================================================
@@ -179,7 +179,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
 // MAIN COMPONENT (CLEANED)
 // ============================================================================
 export default function FriendsPage() {
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // State management
   const [activeTab, setActiveTab] = useState<TabType>('my-code');
@@ -201,11 +201,11 @@ export default function FriendsPage() {
   useEffect(() => {
     const storedUserId = localStorage.getItem('user_id');
     if (!storedUserId) {
-      router.push('/');
+      navigate('/');
       return;
     }
     setUserId(storedUserId);
-  }, [router]);
+  }, [navigate]);
 
   /**
    * Fetch user's friend code and friends list
@@ -333,7 +333,7 @@ export default function FriendsPage() {
    * Handles navigation to friend's profile
    */
   const handleFriendClick = (friendUserId: string) => {
-    router.push(`/friends/${friendUserId}`);
+    navigate(`/friends/${friendUserId}`);
   };
 
   // ============================================================================
@@ -578,7 +578,7 @@ export default function FriendsPage() {
       <div className="fixed left-4 z-40 notch-safe">
         <button
           onClick={() => {
-            router.push('/');
+            navigate('/');
           }}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go back to home"

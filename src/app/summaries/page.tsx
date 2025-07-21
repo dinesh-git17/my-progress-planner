@@ -1,12 +1,11 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { getOrCreateUserId } from '@/utils/mealLog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-
 // ============================================================================
 // FONT CONFIGURATION
 // ============================================================================
@@ -402,7 +401,7 @@ export default function SummariesPage() {
   const [storyAutoKey, setStoryAutoKey] = useState(0);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // ============================================================================
   // DATA FETCHING & INITIALIZATION
@@ -521,7 +520,7 @@ export default function SummariesPage() {
         <button
           onClick={() => {
             localStorage.setItem('activeTab', 'progress');
-            router.push('/');
+            navigate('/');
           }}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go Back to Home"

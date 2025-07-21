@@ -1,5 +1,6 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -10,7 +11,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 // ============================================================================
@@ -274,7 +275,7 @@ function MealCard({
 
 export default function FriendDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const { navigate } = useNavigation();
   const friendId = params.friendId as string;
 
   // State management
@@ -420,7 +421,7 @@ export default function FriendDetailPage() {
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => {
-              router.push('/');
+              navigate('/');
             }}
             className="w-full bg-pink-500 text-white py-3 rounded-xl font-medium hover:bg-pink-600 transition-colors"
           >
@@ -445,7 +446,7 @@ export default function FriendDetailPage() {
         transition={{ duration: 0.3 }}
       >
         <button
-          onClick={() => router.push('/friends-list')}
+          onClick={() => navigate('/friends-list')}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go back to friends"
         >

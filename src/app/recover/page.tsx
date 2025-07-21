@@ -1,10 +1,10 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { getCurrentSession } from '@/utils/auth';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { DM_Sans } from 'next/font/google';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 // ============================================================================
@@ -22,7 +22,7 @@ export default function RecoverDataPage() {
   >('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [recoveredData, setRecoveredData] = useState<any>(null);
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // Check authentication status
   useEffect(() => {
@@ -97,7 +97,7 @@ export default function RecoverDataPage() {
   };
 
   const handleGoHome = () => {
-    router.push('/');
+    navigate('/');
   };
 
   return (

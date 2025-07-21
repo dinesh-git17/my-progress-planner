@@ -1,9 +1,9 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, Heart, Mail } from 'lucide-react';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 // ============================================================================
@@ -271,7 +271,7 @@ function EmptyState() {
 // ============================================================================
 
 export default function NotesPage() {
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // State management
   const [notes, setNotes] = useState<Note[]>([]);
@@ -358,7 +358,7 @@ export default function NotesPage() {
         transition={{ duration: 0.3 }}
       >
         <button
-          onClick={() => router.push('/')}
+          onClick={() => navigate('/')}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go back to home"
         >

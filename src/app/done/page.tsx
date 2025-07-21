@@ -1,7 +1,7 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 // ============================================================================
@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
  * Clean implementation without notch extensions or complex gradients
  */
 export default function DonePage() {
-  const router = useRouter();
+  const { navigate } = useNavigation();
   const [contentReady, setContentReady] = useState(false);
 
   // Handle content timing for smooth entry animation
@@ -27,7 +27,7 @@ export default function DonePage() {
 
   // Handle back button navigation
   const handleReturnHome = () => {
-    router.push('/');
+    navigate('/');
   };
 
   return (

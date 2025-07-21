@@ -1,7 +1,7 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 type Message = {
@@ -31,7 +31,7 @@ export default function MealLogPage() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // Always scroll to bottom on new message or keyboard
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function MealLogPage() {
         transition={{ duration: 0.3 }}
       >
         <button
-          onClick={() => router.push('/')}
+          onClick={() => navigate('/')}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go Back to Home"
         >
@@ -258,7 +258,7 @@ export default function MealLogPage() {
             }}
           >
             <button
-              onClick={() => router.push('/')}
+              onClick={() => navigate('/')}
               className="px-6 py-2 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 text-white font-semibold text-base shadow-md transition hover:scale-105 mt-3"
             >
               Back to Home

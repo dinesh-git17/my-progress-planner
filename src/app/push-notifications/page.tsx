@@ -1,7 +1,7 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function PushNotificationsPage() {
@@ -14,7 +14,7 @@ export default function PushNotificationsPage() {
   const [showAllSubscriptions, setShowAllSubscriptions] = useState(false);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
 
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // Predefined message templates
   const templates = [
@@ -135,7 +135,7 @@ export default function PushNotificationsPage() {
             </p>
           </div>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => navigate('/')}
             className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
           >
             ← Back

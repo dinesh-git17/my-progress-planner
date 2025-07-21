@@ -1,9 +1,9 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, Users } from 'lucide-react';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 // ============================================================================
@@ -169,7 +169,7 @@ function FriendsListHeader({
 // ============================================================================
 
 export default function FriendsListPage() {
-  const router = useRouter();
+  const { navigate } = useNavigation();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -185,11 +185,11 @@ export default function FriendsListPage() {
   useEffect(() => {
     const storedUserId = localStorage.getItem('user_id');
     if (!storedUserId) {
-      router.push('/');
+      navigate('/');
       return;
     }
     setUserId(storedUserId);
-  }, [router]);
+  }, [navigate]);
 
   /**
    * Fetch friends list data
@@ -241,14 +241,14 @@ export default function FriendsListPage() {
    * Navigate back to home page
    */
   const handleBackClick = () => {
-    router.push('/');
+    navigate('/');
   };
 
   /**
    * Navigate to friend's detail page
    */
   const handleFriendClick = (friendId: string) => {
-    router.push(`/friends/${friendId}`);
+    navigate(`/friends/${friendId}`);
   };
 
   // ============================================================================
@@ -301,7 +301,7 @@ export default function FriendsListPage() {
         your progress!
       </p>
       <button
-        onClick={() => router.push('/friends')}
+        onClick={() => navigate('/friends')}
         className="px-6 py-3 bg-gradient-to-r from-pink-400 to-pink-500 text-white rounded-xl font-medium hover:shadow-lg transition-all"
       >
         Add Your First Friend

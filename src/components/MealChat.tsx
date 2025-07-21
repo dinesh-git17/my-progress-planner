@@ -1,9 +1,9 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { upsertMealLog } from '@/utils/mealLog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Dancing_Script } from 'next/font/google';
-import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 
 const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' });
@@ -68,7 +68,7 @@ export default function MealChat({
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [initialViewportHeight, setInitialViewportHeight] = useState(0);
 
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // ============================================================================
   // INITIALIZATION & EFFECTS
@@ -629,7 +629,7 @@ export default function MealChat({
           )}
 
           <button
-            onClick={() => router.push('/')}
+            onClick={() => navigate('/')}
             className="w-full py-3.5 text-gray-600 font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
             style={{
               background: 'rgba(120, 120, 128, 0.12)',
@@ -708,7 +708,7 @@ export default function MealChat({
         <div className="flex items-center justify-between px-4 py-3">
           {/* Left: Back Button */}
           <button
-            onClick={() => router.push('/')}
+            onClick={() => navigate('/')}
             className="flex items-center justify-center w-8 h-8 text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Go Back to Home"
           >

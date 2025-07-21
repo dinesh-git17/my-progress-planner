@@ -1,12 +1,12 @@
 // src/app/breakfast/page.tsx
 'use client';
 import MealChat from '@/components/MealChat';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { getCurrentSession, getLocalUserId } from '@/utils/auth';
-import { useRouter } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 function BreakfastContent() {
-  const router = useRouter();
+  const { navigate } = useNavigation();
   const [userId, setUserId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -27,20 +27,20 @@ function BreakfastContent() {
             setUserId(localUserId);
           } else {
             console.log('❌ No user ID found, redirecting to home');
-            router.push('/');
+            navigate('/');
             return;
           }
         }
       } catch (error) {
         console.error('Error getting user ID:', error);
-        router.push('/');
+        navigate('/');
       } finally {
         setIsLoading(false);
       }
     };
 
     getUserId();
-  }, [router]);
+  }, [navigate]);
 
   if (isLoading) {
     return (
@@ -64,7 +64,7 @@ function BreakfastContent() {
       onComplete={() => {
         // Navigate to lunch with proper user context
         console.log('✅ Breakfast completed, going to lunch');
-        router.push('/lunch');
+        navigate('/lunch');
       }}
     />
   );

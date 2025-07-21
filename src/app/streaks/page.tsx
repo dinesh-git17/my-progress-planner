@@ -1,12 +1,11 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { getOrCreateUserId } from '@/utils/mealLog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Flame } from 'lucide-react';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
 // ============================================================================
 // FONT CONFIGURATION
 // ============================================================================
@@ -484,7 +483,7 @@ function MilestoneCard({
 export default function StreaksPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const { streak, loading } = useUserStreak(userId ?? undefined);
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // Initialize user ID on component mount
   useEffect(() => {
@@ -509,7 +508,7 @@ export default function StreaksPage() {
         transition={{ duration: 0.3 }}
       >
         <button
-          onClick={() => router.push('/')}
+          onClick={() => navigate('/')}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-orange-200/50 transition-all shadow-sm"
           aria-label="Go back to home"
         >

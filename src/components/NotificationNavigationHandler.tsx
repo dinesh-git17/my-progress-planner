@@ -1,10 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { useEffect } from 'react';
 
 export function NotificationNavigationHandler() {
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   useEffect(() => {
     // Only set up listener if service workers are supported
@@ -21,7 +21,7 @@ export function NotificationNavigationHandler() {
         console.log('🔔 Navigating to notification target:', targetUrl);
 
         // Use Next.js router to navigate
-        router.push(targetUrl);
+        navigate(targetUrl);
       }
     };
 
@@ -38,7 +38,7 @@ export function NotificationNavigationHandler() {
         handleServiceWorkerMessage,
       );
     };
-  }, [router]);
+  }, [navigate]);
 
   return null; // This component doesn't render anything
 }

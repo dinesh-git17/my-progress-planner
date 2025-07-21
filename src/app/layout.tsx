@@ -1,4 +1,5 @@
 import { NotificationNavigationHandler } from '@/components/NotificationNavigationHandler';
+import { NavigationProvider } from '@/contexts/NavigationContext';
 import type { Metadata, Viewport } from 'next';
 import { DM_Sans } from 'next/font/google';
 import React from 'react';
@@ -221,6 +222,14 @@ export default function RootLayout({
     <html lang="en" className={dmSans.className} suppressHydrationWarning>
       <head>
         {/* ==============================================
+            iOS META TAGS
+            ============================================== */}
+        <meta name="view-transition" content="same-origin" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-touch-fullscreen" content="yes" />
+
+        {/* ==============================================
             PWA NATIVE VIEWPORT - MANUAL OVERRIDE
             ============================================== */}
 
@@ -293,8 +302,10 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className={`${dmSans.className} antialiased`}>
-        <NotificationNavigationHandler />
-        {children}
+        <NavigationProvider>
+          <NotificationNavigationHandler />
+          {children}
+        </NavigationProvider>
       </body>
     </html>
   );

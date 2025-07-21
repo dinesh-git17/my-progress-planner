@@ -1,9 +1,9 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { getCurrentSession, getLocalUserId } from '@/utils/auth';
 import { AnimatePresence, motion } from 'framer-motion';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 // ============================================================================
@@ -375,7 +375,7 @@ export default function MealsPage() {
   const [activeStoryIdx, setActiveStoryIdx] = useState(0);
   const [storyAutoKey, setStoryAutoKey] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // ============================================================================
   // DATA FETCHING
@@ -570,7 +570,7 @@ export default function MealsPage() {
         Start logging your meals to see them here!
       </p>
       <button
-        onClick={() => router.push('/')}
+        onClick={() => navigate('/')}
         className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
       >
         Log Your First Meal
@@ -752,7 +752,7 @@ export default function MealsPage() {
         <button
           onClick={() => {
             localStorage.setItem('activeTab', 'progress');
-            router.push('/');
+            navigate('/');
           }}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go Back to Home"
@@ -820,7 +820,7 @@ export default function MealsPage() {
                     <button
                       onClick={() => {
                         localStorage.setItem('activeTab', 'meals');
-                        router.push('/');
+                        navigate('/');
                       }}
                       className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
                     >

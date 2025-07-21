@@ -2,6 +2,7 @@
 
 import AuthPrompt from '@/components/AuthPrompt';
 import LoginModal from '@/components/LoginModal';
+import { useNavigation } from '@/contexts/NavigationContext';
 import {
   generateUserId,
   getUserName as getAuthUserName,
@@ -13,7 +14,6 @@ import {
 import { getUserName, saveUserName } from '@/utils/user';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Sparkles, TrendingUp, Users, Utensils } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useUserInitialization } from '../../hooks/useUserInitialization';
 
@@ -920,7 +920,7 @@ function ProfileDropdown({
   onLogout: () => Promise<void>;
 }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // Handle clicks outside dropdown to close it
   useEffect(() => {
@@ -957,12 +957,12 @@ function ProfileDropdown({
   };
 
   const handleEditProfile = () => {
-    router.push('/');
+    navigate('/');
     onClose();
   };
 
   const handleSettings = () => {
-    router.push('/recover');
+    navigate('/recover');
     onClose();
   };
 
@@ -1192,7 +1192,7 @@ export default function Home() {
 
   useUserInitialization(userId);
 
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // ========================================================================
   // DATA FETCHING FUNCTIONS
@@ -1409,7 +1409,7 @@ export default function Home() {
    * Navigates to data recovery page
    */
   const handleRecoverData = () => {
-    router.push('/recover');
+    navigate('/recover');
   };
 
   /**
@@ -2288,7 +2288,7 @@ export default function Home() {
               `}
                                 onClick={() =>
                                   !isLogged &&
-                                  router.push(`/${meal}?user_id=${userId}`)
+                                  navigate(`/${meal}?user_id=${userId}`)
                                 }
                                 tabIndex={isLogged ? -1 : 0}
                                 aria-disabled={isLogged}
@@ -2298,7 +2298,7 @@ export default function Home() {
                                     !isLogged &&
                                     (e.key === 'Enter' || e.key === ' ')
                                   ) {
-                                    router.push(`/${meal}`);
+                                    navigate(`/${meal}`);
                                   }
                                 }}
                               >
@@ -2382,7 +2382,7 @@ export default function Home() {
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-pink-50 hover:shadow-lg cursor-pointer"
-                            onClick={() => router.push('/summaries')}
+                            onClick={() => navigate('/summaries')}
                             tabIndex={0}
                             role="button"
                           >
@@ -2413,7 +2413,7 @@ export default function Home() {
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-green-50 hover:shadow-lg cursor-pointer"
-                            onClick={() => router.push('/meals')}
+                            onClick={() => navigate('/meals')}
                             tabIndex={0}
                             role="button"
                           >
@@ -2444,7 +2444,7 @@ export default function Home() {
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-orange-50 hover:shadow-lg cursor-pointer"
-                            onClick={() => router.push('/streaks')}
+                            onClick={() => navigate('/streaks')}
                             tabIndex={0}
                             role="button"
                           >
@@ -2509,7 +2509,7 @@ export default function Home() {
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-purple-50 hover:shadow-lg cursor-pointer"
-                            onClick={() => router.push('/friends-list')}
+                            onClick={() => navigate('/friends-list')}
                             tabIndex={0}
                             role="button"
                           >
@@ -2540,7 +2540,7 @@ export default function Home() {
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-blue-50 hover:shadow-lg cursor-pointer"
-                            onClick={() => router.push('/friends')}
+                            onClick={() => navigate('/friends')}
                             tabIndex={0}
                             role="button"
                           >
@@ -2571,7 +2571,7 @@ export default function Home() {
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-pink-50 hover:shadow-lg cursor-pointer"
-                            onClick={() => router.push('/notes')}
+                            onClick={() => navigate('/notes')}
                             tabIndex={0}
                             role="button"
                           >

@@ -1,7 +1,7 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { createClient } from '@supabase/supabase-js';
-import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 const supabase = createClient(
@@ -10,7 +10,7 @@ const supabase = createClient(
 );
 
 export default function AuthCallback() {
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -21,25 +21,25 @@ export default function AuthCallback() {
 
         if (error) {
           console.error('❌ Auth callback error:', error);
-          router.push('/?error=auth_failed');
+          navigate('/?error=auth_failed');
           return;
         }
 
         if (data.session) {
           console.log('✅ Auth successful, redirecting to home');
-          router.push('/');
+          navigate('/');
         } else {
           console.log('⚠️ No session found, redirecting to home');
-          router.push('/');
+          navigate('/');
         }
       } catch (error) {
         console.error('💥 Auth callback exception:', error);
-        router.push('/?error=auth_exception');
+        navigate('/?error=auth_exception');
       }
     };
 
     handleAuthCallback();
-  }, [router]);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50">
