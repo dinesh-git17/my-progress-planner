@@ -806,17 +806,14 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
       }
     };
 
-    // Add debounce to prevent rapid successive calls
+    // Add debounce to prevent rapid successive calls - ONLY execution path
     const debounceDelay = 100;
     const timeoutId = setTimeout(() => {
       if (!isCancelled) {
         setLoading(true);
-        fetchStreakWithRetry();
+        fetchStreakWithRetry(); // ← THIS WAS MISSING!
       }
     }, debounceDelay);
-
-    // REMOVED: setLoading(true); fetchStreakWithRetry();
-    // ↑ This was causing duplicate calls!
 
     // Cleanup function to prevent state updates on unmounted component
     return () => {
@@ -827,7 +824,6 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
 
   return { streak, loading, refreshStreak };
 }
-
 // ============================================================================
 // DATA HANDLING FUNCTIONS
 // ============================================================================
