@@ -495,7 +495,7 @@ function HomeHeader({
         </div>
 
         {/* Quote section */}
-        <div className="w-full max-w-lg mx-auto px-6 mt-2">
+        <div className="w-full max-w-lg mx-auto px-6 mt-0">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
