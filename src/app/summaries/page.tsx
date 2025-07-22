@@ -464,15 +464,18 @@ export default function SummariesPage() {
 
     if (timerRef.current) clearTimeout(timerRef.current);
 
-    timerRef.current = setTimeout(() => {
-      if (activeStoryIdx >= availableStories.length - 1) {
-        setActiveSummary(null);
-      } else {
-        setActiveStoryIdx((idx) =>
-          Math.min(idx + 1, availableStories.length - 1),
-        );
-      }
-    }, UI_CONSTANTS.STORY_DURATION);
+    // Only set timer if there are stories AND we're not at the last one
+    if (availableStories.length > 0) {
+      timerRef.current = setTimeout(() => {
+        if (activeStoryIdx >= availableStories.length - 1) {
+          setActiveSummary(null);
+        } else {
+          setActiveStoryIdx((idx) =>
+            Math.min(idx + 1, availableStories.length - 1),
+          );
+        }
+      }, UI_CONSTANTS.STORY_DURATION);
+    }
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -841,6 +844,7 @@ export default function SummariesPage() {
                   {(() => {
                     const availableStories = getAvailableStories(activeSummary);
                     const tab = availableStories[activeStoryIdx];
+                    if (!tab) return 'No Story Available'; // Add this safety check
                     return `${tab.emoji} ${tab.label}`;
                   })()}
                 </div>
@@ -867,6 +871,7 @@ export default function SummariesPage() {
                   {(() => {
                     const availableStories = getAvailableStories(activeSummary);
                     const tab = availableStories[activeStoryIdx];
+                    if (!tab) return 'No content available for this story.'; // Add this safety check
                     const storyContent = prettifyText(
                       activeSummary[tab.key as keyof Summary] as string,
                     );

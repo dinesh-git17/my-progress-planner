@@ -19,12 +19,9 @@
   }
 }
 
-/* 🔥 PRIMARY BACKGROUND: Only HTML has the gradient - this extends into notch */
 html {
-  /* The gradient background that extends into notch area */
-  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f3e8ff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 35%, #f1f5f9 70%, #e2e8f0 100%);
   background-attachment: fixed;
-  /* NO padding on HTML - let background extend into notch */
   min-height: 100vh;
 }
 
