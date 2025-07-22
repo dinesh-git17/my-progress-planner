@@ -122,23 +122,3 @@ export async function getCurrentSession() {
 
   return session;
 }
-
-export async function getUserName(user_id: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('users')
-    .select('name')
-    .eq('user_id', user_id)
-    .single();
-
-  if (error || !data?.name) return null;
-  return data.name;
-}
-
-export async function saveUserName(
-  user_id: string,
-  name: string,
-): Promise<boolean> {
-  const { error } = await supabase.from('users').upsert({ user_id, name });
-  console.log('💾 Saving user name:', { user_id, name, success: !error });
-  return !error;
-}

@@ -6,13 +6,17 @@ import LoginModal from '@/components/LoginModal';
 import { useNavigation } from '@/contexts/NavigationContext';
 import {
   generateUserId,
-  getUserName as getAuthUserName,
   getCurrentSession,
   getLocalUserId,
   setLocalUserId,
   signOut,
 } from '@/utils/auth';
-import { getUserName, saveUserName } from '@/utils/user';
+import {
+  clearAllUserNameCaches,
+  getUserName,
+  preloadUserName,
+  saveUserName,
+} from '@/utils/userNameCache';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Sparkles, TrendingUp, Users, Utensils } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -1166,7 +1170,7 @@ export default function Home() {
 
       return () => clearTimeout(timer);
     }
-  }, [isClient]);
+  }, [isClient]); // ✅ FIXED: Remove userId and name dependencies
 
   // User and authentication state
   const [name, setName] = useState('');
@@ -1393,18 +1397,28 @@ export default function Home() {
   const handleSaveName = async () => {
     if (!tempName.trim() || !userId) return;
 
-    const success = await saveUserName(userId, tempName.trim());
-    if (success) {
-      setName(tempName.trim());
-      fetchQuote(tempName.trim());
-      setShowNameSaved(true);
-      setTimeout(() => {
-        setAskName(false);
-        fetchLoggedMealsAndRefreshStreak(userId);
-      }, 1200);
+    try {
+      const success = await saveUserName(userId, tempName.trim()); // Now uses cached version
+      if (success) {
+        setName(tempName.trim());
+        fetchQuote(tempName.trim());
+        setShowNameSaved(true);
+        setTimeout(() => {
+          setAskName(false);
+          fetchLoggedMealsAndRefreshStreak(userId);
+        }, 1200);
+        console.log('✅ User name saved and cached successfully');
+      } else {
+        console.error('❌ Failed to save user name');
+        // 🆕 NEW: Could add user feedback here in the future
+        alert('Failed to save name. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving user name:', error);
+      // 🆕 NEW: Could add user feedback here in the future
+      alert('An error occurred while saving your name. Please try again.');
     }
   };
-
   /**
    * Handles user logout and cleanup
    */
@@ -1416,11 +1430,18 @@ export default function Home() {
       setAskName(false);
       setLoggedMeals([]);
       setIsAfterRecovery(false);
+
+      // Clear user ID from localStorage
       localStorage.removeItem('user_id');
 
-      // Clear session quote so new user gets fresh quote
+      // 🆕 NEW: Clear ALL user name caches (important!)
+      clearAllUserNameCaches();
+
+      // Clear session data
       sessionStorage.removeItem('mealapp_daily_quote');
       sessionStorage.removeItem('mealapp_quote_name');
+
+      console.log('✅ Logout complete, all caches cleared');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -1441,6 +1462,32 @@ export default function Home() {
       setActiveTab(newTab);
     }
   };
+
+  // Preload user name when returning from meal chat
+  useEffect(() => {
+    if (!isClient || !userId) return;
+
+    const preloadNameOnReturn = async () => {
+      // Check if we're returning from meal chat and don't have a name
+      const isReturning = sessionStorage.getItem('isReturningToHome');
+      if (isReturning === 'true' && !name) {
+        console.log('🔄 Returning from meal chat, preloading user name...');
+        try {
+          await preloadUserName(userId);
+          const cachedName = await getUserName(userId);
+          if (cachedName) {
+            setName(cachedName);
+            setAskName(false);
+            console.log('✅ User name preloaded on return:', cachedName);
+          }
+        } catch (error) {
+          console.error('Error preloading user name on return:', error);
+        }
+      }
+    };
+
+    preloadNameOnReturn();
+  }, [isClient, userId, name]);
 
   // ========================================================================
   // UI INTERACTION HANDLERS
@@ -1838,8 +1885,8 @@ export default function Home() {
 
           setShowLoginModal(false);
           setIsUserAuthenticated(true);
-          setUserId(session.user.id); // Set the correct user ID
-          setLocalUserId(session.user.id); // Update localStorage
+          setUserId(session.user.id);
+          setLocalUserId(session.user.id);
 
           // Handle data migration if needed
           if (localUserId && localUserId !== session.user.id) {
@@ -1868,19 +1915,30 @@ export default function Home() {
             }
           }
 
-          // Load user name from authenticated account
-          const existingName = await getAuthUserName(session.user.id);
-          if (existingName) {
-            setName(existingName);
-            fetchQuote(existingName);
-            setAskName(false);
-          } else {
+          // 🆕 NEW: Load user name with caching and better error handling
+          try {
+            const existingName = await getUserName(session.user.id); // Now uses cached version
+            if (existingName) {
+              setName(existingName);
+              fetchQuote(existingName);
+              setAskName(false);
+              console.log(
+                '✅ User name loaded from cache/database:',
+                existingName,
+              );
+            } else {
+              console.log('❌ No user name found, showing ask name screen');
+              setAskName(true);
+            }
+          } catch (nameError) {
+            console.error('Error loading user name:', nameError);
+            // On error, show ask name screen as fallback
             setAskName(true);
           }
 
           // Fetch meals using the authenticated user ID
           fetchLoggedMealsAndRefreshStreak(session.user.id);
-          fetchFriendCode(session.user.id); // Also fetch friend code for authenticated users
+          fetchFriendCode(session.user.id);
         } else {
           // 2. ONLY if not authenticated, use localStorage
           console.log('👤 User not authenticated, checking localStorage');
@@ -1890,10 +1948,26 @@ export default function Home() {
             console.log('📱 Using local user ID:', localUserId);
             setUserId(localUserId);
 
-            const existingName = await getUserName(localUserId);
-            if (existingName) {
-              setName(existingName);
-              fetchQuote(existingName);
+            // 🆕 NEW: Use cached getUserName for local users too with error handling
+            try {
+              const existingName = await getUserName(localUserId); // Now uses cached version
+              if (existingName) {
+                setName(existingName);
+                fetchQuote(existingName);
+                setAskName(false);
+                console.log(
+                  '✅ Local user name loaded from cache/database:',
+                  existingName,
+                );
+              } else {
+                console.log(
+                  '❌ No local user name found, showing ask name screen',
+                );
+                setAskName(true);
+              }
+            } catch (nameError) {
+              console.error('Error loading local user name:', nameError);
+              setAskName(true);
             }
           } else {
             console.log('❌ No user ID found');
