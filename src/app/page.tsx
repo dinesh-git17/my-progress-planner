@@ -1202,6 +1202,7 @@ export default function Home() {
   // Refs and hooks
   const profileButtonRef = useRef<HTMLButtonElement>(null);
   const hasFetchedMeals = useRef(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Use the enhanced streak hook with recovery awareness and refresh capability
   const {
@@ -1602,10 +1603,17 @@ export default function Home() {
   // ========================================================================
 
   /**
-   * client-side detection
+   * client-side detection AND initial loading
    */
   useEffect(() => {
     setIsClient(true);
+
+    // Add initial loading delay for content to settle
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 500); // 1.5 seconds for content to load and settle
+
+    return () => clearTimeout(timer);
   }, []);
 
   /**
@@ -1627,7 +1635,7 @@ export default function Home() {
       if (!isInternalNav && !hasShownSplashScreen) {
         setContentReady(true);
 
-        const minSplashTime = 7000;
+        const minSplashTime = 100;
 
         const timer = setTimeout(() => {
           setShowSplashScreen(false);
@@ -2013,8 +2021,8 @@ export default function Home() {
   // RENDER
   // ========================================================================
 
-  // Show skeleton during navigation loading
-  if (isNavigationLoading) {
+  // Show skeleton during navigation loading OR initial loading
+  if (isNavigationLoading || isInitialLoading) {
     return <HomePageSkeleton />;
   }
 
@@ -2101,7 +2109,7 @@ export default function Home() {
 
       {/* Main app content */}
       <AnimatePresence>
-        {contentReady && isClient && (
+        {contentReady && isClient && !isInitialLoading && (
           <motion.main
             className="
               min-h-[100dvh] w-full h-[100dvh] overflow-hidden
@@ -2403,7 +2411,7 @@ export default function Home() {
                         }}
                         className="pb-24"
                       >
-                        <div className="flex flex-col gap-6">
+                        <div className="flex flex-col gap-4">
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-pink-50 hover:shadow-lg cursor-pointer"
@@ -2530,7 +2538,7 @@ export default function Home() {
                         }}
                         className="pb-24"
                       >
-                        <div className="flex flex-col gap-6">
+                        <div className="flex flex-col gap-4">
                           <motion.div
                             whileTap={{ scale: 0.98 }}
                             className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-purple-50 hover:shadow-lg cursor-pointer"
