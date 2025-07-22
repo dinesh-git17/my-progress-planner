@@ -186,7 +186,7 @@ export default function MobileInstallPrompt({
                       key={index}
                       className="flex items-start text-sm text-gray-700"
                     >
-                      <span className="inline-block w-5 h-5 bg-pink-100 text-pink-600 rounded-full text-xs font-semibold flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
+                      <span className="w-5 h-5 bg-pink-100 text-pink-600 rounded-full text-xs font-semibold flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
                         {index + 1}
                       </span>
                       <span className="leading-relaxed">{step}</span>

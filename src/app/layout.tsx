@@ -128,11 +128,11 @@ export const metadata: Metadata = {
 
   // Open Graph and Twitter metadata for social sharing
   openGraph: {
-    title: 'My Progress Planner',
+    title: 'Sweethearty',
     description:
       'Track your meals with love and support - your personal nutrition companion',
-    url: 'https://my-progress-planner.vercel.app',
-    siteName: 'My Progress Planner',
+    url: 'https://sweethearty.app',
+    siteName: 'Sweethearty',
     locale: 'en_US',
     type: 'website',
     images: [
