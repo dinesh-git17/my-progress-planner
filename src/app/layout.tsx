@@ -1,9 +1,12 @@
+// src/app/layout.tsx - Updated with Mobile Install Prompt
+import MobileInstallPrompt from '@/components/MobileInstallPrompt';
 import { NotificationNavigationHandler } from '@/components/NotificationNavigationHandler';
 import { NavigationProvider } from '@/contexts/NavigationContext';
 import type { Metadata, Viewport } from 'next';
 import { DM_Sans } from 'next/font/google';
 import React from 'react';
 import './globals.css';
+
 // ============================================================================
 // FONT CONFIGURATION
 // ============================================================================
@@ -66,17 +69,11 @@ export const metadata: Metadata = {
         media:
           '(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
       },
-      // iPhone 14, iPhone 13, iPhone 12
+      // iPhone 14, iPhone 13 Pro, iPhone 13, iPhone 12 Pro, iPhone 12
       {
         url: '/splash/iphone-14.png',
         media:
           '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
-      },
-      // iPhone 14 Plus, iPhone 13 Pro Max, iPhone 12 Pro Max
-      {
-        url: '/splash/iphone-14-plus.png',
-        media:
-          '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
       },
       // iPhone 13 mini, iPhone 12 mini
       {
@@ -84,67 +81,43 @@ export const metadata: Metadata = {
         media:
           '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
       },
-      // iPhone SE 3rd gen, iPhone SE 2nd gen
+      // iPhone SE (3rd generation), iPhone SE (2nd generation)
       {
         url: '/splash/iphone-se.png',
         media:
           '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
-      // iPhone 11 Pro Max, iPhone XS Max
-      {
-        url: '/splash/iphone-11-pro-max.png',
-        media:
-          '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
-      },
-      // iPhone 11, iPhone XR
-      {
-        url: '/splash/iphone-11.png',
-        media:
-          '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
-      },
-      // iPhone 11 Pro, iPhone XS, iPhone X
-      {
-        url: '/splash/iphone-11-pro.png',
-        media:
-          '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
-      },
-      // iPhone 8 Plus, iPhone 7 Plus, iPhone 6s Plus, iPhone 6 Plus
-      {
-        url: '/splash/iphone-8-plus.png',
-        media:
-          '(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
-      },
-      // iPhone 8, iPhone 7, iPhone 6s, iPhone 6
-      {
-        url: '/splash/iphone-8.png',
-        media:
-          '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
-      },
-      // iPad Pro 12.9" (6th gen, 5th gen, 4th gen, 3rd gen)
+      // iPad Pro 12.9" (6th generation), iPad Pro 12.9" (5th generation)
       {
         url: '/splash/ipad-pro-12-9.png',
         media:
           '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
-      // iPad Pro 11" (4th gen, 3rd gen, 2nd gen, 1st gen)
+      // iPad Pro 11" (4th generation), iPad Pro 11" (3rd generation)
       {
         url: '/splash/ipad-pro-11.png',
         media:
           '(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
-      // iPad Air (5th gen, 4th gen), iPad Pro 10.5"
+      // iPad Air (5th generation), iPad Air (4th generation)
       {
         url: '/splash/ipad-air.png',
         media:
           '(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
-      // iPad (10th gen, 9th gen, 8th gen, 7th gen), iPad Air (3rd gen, 2nd gen)
+      // iPad (10th generation)
       {
-        url: '/splash/ipad.png',
+        url: '/splash/ipad-10th.png',
         media:
           '(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
-      // iPad mini (6th gen, 5th gen)
+      // iPad (9th generation), iPad (8th generation), iPad (7th generation)
+      {
+        url: '/splash/ipad-9th.png',
+        media:
+          '(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
+      },
+      // iPad mini (6th generation)
       {
         url: '/splash/ipad-mini.png',
         media:
@@ -153,38 +126,34 @@ export const metadata: Metadata = {
     ],
   },
 
-  // Icons configuration
-  icons: {
-    icon: [
-      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180' },
-      { url: '/apple-touch-icon-152x152.png', sizes: '152x152' },
-      { url: '/apple-touch-icon-144x144.png', sizes: '144x144' },
-    ],
-  },
-
-  // Open Graph for social sharing
+  // Open Graph and Twitter metadata for social sharing
   openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    siteName: 'Sweethearty',
-    title: 'Sweethearty - Track Your Nutrition Journey',
+    title: 'My Progress Planner',
     description:
-      'Build healthy eating habits with our intuitive meal tracking app',
+      'Track your meals with love and support - your personal nutrition companion',
+    url: 'https://my-progress-planner.vercel.app',
+    siteName: 'My Progress Planner',
+    locale: 'en_US',
+    type: 'website',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Sweethearty - Meal Tracking App',
+        alt: 'My Progress Planner - Meal Tracking with Love',
       },
     ],
   },
 
-  // Robots configuration
+  twitter: {
+    card: 'summary_large_image',
+    title: 'My Progress Planner',
+    description:
+      'Track your meals with love and support - your personal nutrition companion',
+    images: ['/og-image.png'],
+  },
+
+  // Additional metadata for better SEO
   robots: {
     index: true,
     follow: true,
@@ -305,6 +274,8 @@ export default function RootLayout({
         <NavigationProvider>
           <NotificationNavigationHandler />
           {children}
+          {/* Mobile Install Prompt - Only shows on mobile touch devices */}
+          <MobileInstallPrompt />
         </NavigationProvider>
       </body>
     </html>
