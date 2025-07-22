@@ -57,6 +57,7 @@ export default function MealChat({
   const [chatEnded, setChatEnded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showClosing, setShowClosing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Refs for data persistence during chat
   const answers = useRef<string[]>([]);
@@ -73,17 +74,6 @@ export default function MealChat({
   // ============================================================================
   // INITIALIZATION & EFFECTS
   // ============================================================================
-
-  /**
-   * Initialize chat with first bot message
-   */
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMessages([{ sender: 'bot', text: FIRST_PROMPT[meal] }]);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [meal]);
 
   /**
    * Single smooth auto-scroll - no overlay for regular messages
@@ -238,6 +228,19 @@ export default function MealChat({
       }
     };
   }, [initialViewportHeight]);
+
+  useEffect(() => {
+    // Minimum loading time for smooth animation
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+      // Then start the chat after loading completes
+      setTimeout(() => {
+        setMessages([{ sender: 'bot', text: FIRST_PROMPT[meal] }]);
+      }, 300);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [meal]);
 
   // ============================================================================
   // CHAT HANDLERS
@@ -669,6 +672,83 @@ export default function MealChat({
   // ============================================================================
   // MAIN RENDER
   // ============================================================================
+
+  // Loading state - show full screen
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="text-center"
+        >
+          {/* Animated chat bubble icon */}
+          <motion.div
+            className="relative mb-8"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <motion.div
+              className="w-20 h-20 mx-auto bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-2, 2, -2],
+                rotate: [0, 1, -1, 0],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <span className="text-3xl">💬</span>
+            </motion.div>
+          </motion.div>
+
+          {/* Loading text */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mb-6"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Starting {meal.charAt(0).toUpperCase() + meal.slice(1)} Chat
+            </h2>
+            <p className="text-gray-600 max-w-sm mx-auto">
+              Getting ready to hear about your delicious meal...
+            </p>
+          </motion.div>
+
+          {/* Progress dots */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="flex items-center justify-center space-x-1"
+          >
+            {[0, 1, 2].map((index) => (
+              <motion.div
+                key={index}
+                className="w-2 h-2 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"
+                animate={{
+                  scale: [0.8, 1.2, 0.8],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: index * 0.2,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
   return (
     <div
       className="flex flex-col w-full max-w-md mx-auto shadow-xl"

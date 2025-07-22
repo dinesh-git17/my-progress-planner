@@ -408,19 +408,35 @@ export default function MealsPage() {
           return;
         }
 
-        // FAST: Only fetch dates that have meals (no GPT processing)
-        const datesRes = await fetch(`/api/meals/dates?user_id=${user_id}`);
-        const datesData = await datesRes.json();
+        // Create minimum loading delay promise
+        const minLoadingDelay = new Promise((resolve) =>
+          setTimeout(resolve, 2000),
+        );
 
-        if (datesData.mealDates && datesData.mealDates.length > 0) {
-          // Store just the dates without GPT-processed content
-          const mealDatesList = datesData.mealDates.map((dateInfo: any) => ({
-            date: dateInfo.date,
-            created_at: dateInfo.created_at,
-            isLoaded: false, // Mark as not loaded yet
-          }));
-          setMealLists(mealDatesList);
-        }
+        // Create data fetch promise
+        const dataFetch = fetch(`/api/meals/dates?user_id=${user_id}`).then(
+          async (datesRes) => {
+            const datesData = await datesRes.json();
+
+            if (datesData.mealDates && datesData.mealDates.length > 0) {
+              // Store just the dates without GPT-processed content
+              const mealDatesList = datesData.mealDates.map(
+                (dateInfo: any) => ({
+                  date: dateInfo.date,
+                  created_at: dateInfo.created_at,
+                  isLoaded: false, // Mark as not loaded yet
+                }),
+              );
+              return mealDatesList;
+            }
+            return [];
+          },
+        );
+
+        // Wait for both the data and minimum loading time
+        const [mealDatesList] = await Promise.all([dataFetch, minLoadingDelay]);
+
+        setMealLists(mealDatesList);
       } catch (error) {
         console.error('Error fetching meal dates:', error);
       } finally {
@@ -740,6 +756,176 @@ export default function MealsPage() {
   // ============================================================================
   // MAIN RENDER
   // ============================================================================
+
+  // Loading state - show full screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="text-center"
+        >
+          {/* Animated meal icons */}
+          <motion.div
+            className="relative mb-8"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            {/* Floating background */}
+            <motion.div
+              className="absolute inset-0 w-32 h-20 mx-auto"
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.2, 0.05, 0.2],
+              }}
+              transition={{
+                duration: 2.5,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <div className="w-full h-full bg-gradient-to-r from-pink-400 to-purple-400 rounded-full blur-xl" />
+            </motion.div>
+
+            {/* Meal icons container */}
+            <div className="relative flex items-center justify-center space-x-3">
+              {/* Breakfast */}
+              <motion.div
+                className="w-14 h-14 bg-gradient-to-r from-orange-400 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg"
+                animate={{
+                  y: [-3, 3, -3],
+                  rotate: [0, 2, -2, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: 0,
+                }}
+              >
+                <span className="text-2xl">🌅</span>
+              </motion.div>
+
+              {/* Lunch - Center (larger) */}
+              <motion.div
+                className="w-18 h-18 bg-gradient-to-r from-pink-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-xl z-10"
+                animate={{
+                  y: [-2, 4, -2],
+                  scale: [1, 1.05, 1],
+                }}
+                transition={{
+                  duration: 3.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: 0.5,
+                }}
+              >
+                <span className="text-3xl">🍽️</span>
+              </motion.div>
+
+              {/* Dinner */}
+              <motion.div
+                className="w-14 h-14 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg"
+                animate={{
+                  y: [-3, 3, -3],
+                  rotate: [0, -2, 2, 0],
+                }}
+                transition={{
+                  duration: 2.8,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: 1,
+                }}
+              >
+                <span className="text-2xl">🌙</span>
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Loading text */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mb-6"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Loading Your Meals
+            </h2>
+            <p className="text-gray-600 max-w-sm mx-auto">
+              Gathering your delicious food journey...
+            </p>
+          </motion.div>
+
+          {/* Progress dots */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="flex items-center justify-center space-x-1"
+          >
+            {[0, 1, 2].map((index) => (
+              <motion.div
+                key={index}
+                className="w-2 h-2 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"
+                animate={{
+                  scale: [0.8, 1.2, 0.8],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: index * 0.2,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </motion.div>
+
+          {/* Progress bar */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
+            className="mt-8"
+          >
+            <motion.div
+              className="w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1, duration: 0.5 }}
+            >
+              <motion.div
+                className="h-full bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+            </motion.div>
+            <motion.p
+              className="text-xs text-gray-500 mt-2"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              Loading your meal calendar...
+            </motion.p>
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className={`h-screen w-full overflow-hidden ${dmSans.className}`}>
       {/* Back Button */}

@@ -414,14 +414,27 @@ export default function SummariesPage() {
     const fetchSummaries = async (): Promise<void> => {
       try {
         const user_id = getOrCreateUserId();
-        const res = await fetch(`/api/summaries?user_id=${user_id}`);
 
-        if (!res.ok) {
-          throw new Error(`Failed to fetch summaries: ${res.status}`);
-        }
+        // Create minimum loading delay promise
+        const minLoadingDelay = new Promise((resolve) =>
+          setTimeout(resolve, 2000),
+        );
 
-        const data = await res.json();
-        setSummaries(data.summaries || []);
+        // Create data fetch promise
+        const dataFetch = fetch(`/api/summaries?user_id=${user_id}`).then(
+          async (res) => {
+            if (!res.ok) {
+              throw new Error(`Failed to fetch summaries: ${res.status}`);
+            }
+            const data = await res.json();
+            return data.summaries || [];
+          },
+        );
+
+        // Wait for both the data and minimum loading time
+        const [summaries] = await Promise.all([dataFetch, minLoadingDelay]);
+
+        setSummaries(summaries);
       } catch (error) {
         console.error('Error fetching summaries:', error);
         setSummaries([]);
@@ -507,6 +520,136 @@ export default function SummariesPage() {
   // ============================================================================
   // RENDER
   // ============================================================================
+  // Loading state - show full screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-purple-100 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="text-center"
+        >
+          {/* Animated calendar icon */}
+          <motion.div
+            className="relative mb-8"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            {/* Floating background */}
+            <motion.div
+              className="absolute inset-0 w-24 h-24 mx-auto"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.1, 0.3],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <div className="w-full h-full bg-gradient-to-r from-purple-400 to-indigo-400 rounded-full blur-xl" />
+            </motion.div>
+
+            {/* Main calendar icon */}
+            <motion.div
+              className="relative w-20 h-20 mx-auto bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-2, 2, -2],
+                rotate: [0, 1, -1, 0],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <span className="text-3xl">📅</span>
+            </motion.div>
+          </motion.div>
+
+          {/* Loading text */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mb-6"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Loading Summaries
+            </h2>
+            <p className="text-gray-600 max-w-sm mx-auto">
+              Gathering your meal journey and daily progress...
+            </p>
+          </motion.div>
+
+          {/* Progress dots */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="flex items-center justify-center space-x-1"
+          >
+            {[0, 1, 2].map((index) => (
+              <motion.div
+                key={index}
+                className="w-2 h-2 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full"
+                animate={{
+                  scale: [0.8, 1.2, 0.8],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: index * 0.2,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </motion.div>
+
+          {/* Progress bar */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
+            className="mt-8"
+          >
+            <motion.div
+              className="w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1, duration: 0.5 }}
+            >
+              <motion.div
+                className="h-full bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+            </motion.div>
+            <motion.p
+              className="text-xs text-gray-500 mt-2"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              Loading your daily meal summaries...
+            </motion.p>
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className={`h-screen w-full overflow-hidden ${dmSans.className}`}>

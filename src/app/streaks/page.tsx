@@ -218,13 +218,22 @@ function useUserStreak(user_id?: string) {
 
     setLoading(true);
 
-    // Cache-bust to ensure fresh data
-    fetch(`/api/streak?user_id=${user_id}&t=${Date.now()}`)
+    // Create minimum loading delay promise
+    const minLoadingDelay = new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // Create data fetch promise
+    const dataFetch = fetch(`/api/streak?user_id=${user_id}&t=${Date.now()}`)
       .then((res) => res.json())
-      .then(({ dates }) => setStreak(calculateStreak(dates ?? [])))
+      .then(({ dates }) => calculateStreak(dates ?? []))
       .catch((err) => {
         console.error('Failed to fetch streak data:', err);
-        setStreak(0);
+        return 0;
+      });
+
+    // Wait for both the data and minimum loading time
+    Promise.all([dataFetch, minLoadingDelay])
+      .then(([streakData]) => {
+        setStreak(streakData);
       })
       .finally(() => setLoading(false));
   }, [user_id]);
@@ -497,6 +506,137 @@ export default function StreaksPage() {
   const completionPercentage = Math.round(
     (earnedCount / streakMilestones.length) * 100,
   );
+
+  // Loading state - show full screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-purple-100 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="text-center"
+        >
+          {/* Animated streak icon */}
+          <motion.div
+            className="relative mb-8"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            {/* Floating background */}
+            <motion.div
+              className="absolute inset-0 w-24 h-24 mx-auto"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.1, 0.3],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <div className="w-full h-full bg-gradient-to-r from-purple-400 to-indigo-400 rounded-full blur-xl" />
+            </motion.div>
+
+            {/* Main streak icon */}
+            <motion.div
+              className="relative w-20 h-20 mx-auto bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-2, 2, -2],
+                rotate: [0, 1, -1, 0],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <Flame className="w-8 h-8 text-white" />
+            </motion.div>
+          </motion.div>
+
+          {/* Loading text */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mb-6"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Loading Streak Awards
+            </h2>
+            <p className="text-gray-600 max-w-sm mx-auto">
+              Calculating your consistency and achievements...
+            </p>
+          </motion.div>
+
+          {/* Progress dots */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="flex items-center justify-center space-x-1"
+          >
+            {[0, 1, 2].map((index) => (
+              <motion.div
+                key={index}
+                className="w-2 h-2 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full"
+                animate={{
+                  scale: [0.8, 1.2, 0.8],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: index * 0.2,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </motion.div>
+
+          {/* Progress bar */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
+            className="mt-8"
+          >
+            <motion.div
+              className="w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1, duration: 0.5 }}
+            >
+              <motion.div
+                className="h-full bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+            </motion.div>
+            <motion.p
+              className="text-xs text-gray-500 mt-2"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              Loading your streak milestones...
+            </motion.p>
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen w-full ${dmSans.className}`}>
