@@ -1162,7 +1162,7 @@ export default function Home() {
       // Brief delay to let layout stabilize
       const timer = setTimeout(() => {
         setIsNavigationLoading(false);
-      }, 800);
+      }, 500);
 
       return () => clearTimeout(timer);
     }
