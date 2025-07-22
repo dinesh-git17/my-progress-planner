@@ -140,14 +140,14 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'My Progress Planner - Meal Tracking with Love',
+        alt: 'Sweethearty - Meal Tracking with Love',
       },
     ],
   },
 
   twitter: {
     card: 'summary_large_image',
-    title: 'My Progress Planner',
+    title: 'Sweethearty',
     description:
       'Track your meals with love and support - your personal nutrition companion',
     images: ['/og-image.png'],
