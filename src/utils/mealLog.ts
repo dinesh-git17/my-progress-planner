@@ -45,12 +45,6 @@ export async function upsertMealLog({
   answers: any;
   gpt_response: string[];
 }) {
-  console.log('🔧 upsertMealLog called:', {
-    user_id,
-    meal,
-    answers: answers?.length,
-    gpt_response: gpt_response?.length,
-  });
   const gptField = `${meal}_gpt`;
 
   // Convert the EST date to ensure it's stored correctly in the database
@@ -92,7 +86,6 @@ export async function upsertMealLog({
   const name = userData.name;
 
   // 🧠 Generate GPT summary for this meal
-  console.log('🧠 About to call /api/gpt/summary:', { name, meal });
   try {
     const res = await fetch('/api/gpt/summary', {
       method: 'POST',
