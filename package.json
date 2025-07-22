@@ -1,5 +1,5 @@
 {
-  "name": "my-progress-planner",
+  "name": "sweethearty",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,7 +14,27 @@
     "clean": "rm -rf .next && npm run kill-cache",
     "dev:clean": "npm run clean && npm run dev",
     "build:clean": "npm run clean && npm run build",
-    "test:pwa": "npm run build && npm run start"
+    "test:pwa": "npm run build && npm run start",
+    "// Environment Management": "// Environment switching scripts",
+    "env:test": "cp .env.test.local .env.local && echo '🧪 Switched to TEST database'",
+    "env:prod": "cp .env.production.local .env.local && echo '🚀 Switched to PRODUCTION database'",
+    "env:check": "echo 'Current environment:' && head -3 .env.local",
+    "// Test Environment Scripts": "// Development with test database",
+    "dev:test": "npm run env:test && npm run dev",
+    "dev:test:clean": "npm run env:test && npm run clean && npm run dev",
+    "dev:test:fresh": "npm run env:test && npm run kill-cache && npm run dev",
+    "dev:test:ultra": "npm run env:test && npm run clean && npm run kill-cache && npm run dev",
+    "// Production Environment Scripts": "// Development with production database",
+    "dev:prod": "npm run env:prod && npm run dev",
+    "dev:prod:clean": "npm run env:prod && npm run clean && npm run dev",
+    "dev:prod:fresh": "npm run env:prod && npm run kill-cache && npm run dev",
+    "dev:prod:ultra": "npm run env:prod && npm run clean && npm run kill-cache && npm run dev",
+    "// Build Scripts": "// Build for different environments",
+    "build:test": "npm run env:test && npm run build:clean",
+    "build:prod": "npm run env:prod && npm run build:clean",
+    "// Quick Actions": "// Most commonly used commands",
+    "test": "npm run dev:test:fresh",
+    "prod": "npm run dev:prod:fresh"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.6",
