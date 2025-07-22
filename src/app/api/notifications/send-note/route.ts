@@ -1,4 +1,5 @@
 // src/app/api/notifications/send-note/route.ts
+
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
@@ -10,7 +11,7 @@ const supabase = createClient(
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
-  'mailto:dineshddawo@gmail.com', // Replace with your email
+  'mailto:dineshddawo@gmail.com',
   process.env.VAPID_PUBLIC_KEY!,
   process.env.VAPID_PRIVATE_KEY!,
 );
@@ -29,21 +30,28 @@ export async function POST(req: NextRequest) {
     // Get all push subscriptions for the target user
     const { data: subscriptions, error } = await supabase
       .from('push_subscriptions')
-      .select('subscription')
+      .select('id, subscription')
       .eq('user_id', to_user_id);
 
     if (error) {
       console.error('Error fetching subscriptions:', error);
-      // Don't fail the whole request if notifications fail
       return NextResponse.json({
         success: true,
         message: 'Note sent, but notification failed',
       });
     }
 
-    // Send notifications to all user's devices
-    const notifications =
-      subscriptions?.map(async (sub) => {
+    if (!subscriptions || subscriptions.length === 0) {
+      console.log(`📱 No push subscriptions found for user: ${to_user_id}`);
+      return NextResponse.json({
+        success: true,
+        message: 'Note sent, but user has no push subscriptions',
+      });
+    }
+
+    // Send notifications and track results
+    const results = await Promise.allSettled(
+      subscriptions.map(async (sub) => {
         try {
           const payload = JSON.stringify({
             title: '💌 New Encouragement Note',
@@ -66,27 +74,62 @@ export async function POST(req: NextRequest) {
           });
 
           await webpush.sendNotification(sub.subscription, payload);
-          return { success: true };
-        } catch (err) {
-          console.error('Failed to send notification:', err);
-          return { success: false, error: err };
-        }
-      }) || [];
+          console.log(
+            `✅ Notification sent successfully to subscription ${sub.id}`,
+          );
+          return { success: true, subscriptionId: sub.id };
+        } catch (err: any) {
+          console.error(
+            `❌ Failed to send notification to subscription ${sub.id}:`,
+            err.message,
+          );
 
-    const results = await Promise.allSettled(notifications);
-    const successful = results.filter((r) => r.status === 'fulfilled').length;
+          // Handle expired/invalid subscriptions
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            console.log(`🗑️ Removing expired subscription ${sub.id}`);
+            // Remove expired subscription from database
+            await supabase.from('push_subscriptions').delete().eq('id', sub.id);
+
+            return {
+              success: false,
+              subscriptionId: sub.id,
+              error: 'Subscription expired and removed',
+              removed: true,
+            };
+          }
+
+          return {
+            success: false,
+            subscriptionId: sub.id,
+            error: err.message,
+          };
+        }
+      }),
+    );
+
+    // Calculate statistics
+    const successful = results.filter(
+      (r) => r.status === 'fulfilled' && r.value.success,
+    ).length;
+
+    const removed = results.filter(
+      (r) => r.status === 'fulfilled' && r.value.removed,
+    ).length;
+
+    const failed = results.length - successful - removed;
 
     console.log(
-      `📱 Sent ${successful}/${notifications.length} notifications to ${to_user_id}`,
+      `📱 Notification results for ${to_user_id}: ${successful} sent, ${removed} expired (cleaned), ${failed} failed`,
     );
 
     return NextResponse.json({
       success: true,
-      message: 'Notifications sent',
+      message: 'Notifications processed',
       stats: {
-        total: notifications.length,
+        total: results.length,
         successful,
-        failed: notifications.length - successful,
+        expired_removed: removed,
+        failed,
       },
     });
   } catch (error: any) {

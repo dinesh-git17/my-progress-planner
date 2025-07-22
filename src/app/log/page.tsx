@@ -1,7 +1,7 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 type Message = {
@@ -31,7 +31,7 @@ export default function MealLogPage() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // Always scroll to bottom on new message or keyboard
   useEffect(() => {
@@ -106,17 +106,51 @@ export default function MealLogPage() {
 
   return (
     <main className="w-full h-[100dvh] min-h-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#f6d365] to-[#fda085] overflow-hidden">
-      <section className="w-full max-w-sm flex flex-col h-full min-h-0 overflow-hidden relative shadow-xl rounded-3xl bg-white/90 my-2">
+      {/* Back navigation button */}
+      <motion.div
+        className="fixed left-4 z-40 notch-safe"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <button
+          onClick={() => navigate('/')}
+          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
+          aria-label="Go Back to Home"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-5 h-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 12H5"></path>
+            <path d="M12 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+      </motion.div>
+
+      <section
+        className="w-full max-w-sm flex flex-col h-full min-h-0 overflow-hidden relative shadow-xl rounded-3xl bg-white/90 safe-x"
+        style={{
+          marginTop: 'max(1rem, env(safe-area-inset-top))',
+          marginBottom: 'max(1rem, env(safe-area-inset-bottom))',
+        }}
+      >
         {/* Chat area */}
         <div
-          className="flex-1 flex flex-col overflow-y-auto px-3 pt-5 pb-6 min-h-0"
+          className="flex-1 flex flex-col overflow-y-auto px-3 min-h-0"
           onClick={focusInput}
           style={{
             WebkitOverflowScrolling: 'touch',
             overscrollBehavior: 'contain',
             transition: 'background 0.3s',
-            // Add a little padding so last message never hidden under keyboard
-            paddingBottom: '8vh',
+            paddingTop: 'calc(1.25rem + env(safe-area-inset-top))',
+            paddingBottom: 'calc(8vh + env(safe-area-inset-bottom))',
           }}
         >
           <AnimatePresence initial={false}>
@@ -133,11 +167,11 @@ export default function MealLogPage() {
               >
                 <div
                   className={`px-3 py-1.5 mb-1 rounded-xl shadow-sm leading-snug break-words text-[1rem] font-medium
-                ${
-                  msg.sender === 'user'
-                    ? 'bg-gradient-to-r from-pink-400 to-yellow-400 text-white self-end'
-                    : 'bg-white/95 border border-orange-50 text-gray-800 self-start'
-                }`}
+               ${
+                 msg.sender === 'user'
+                   ? 'bg-gradient-to-r from-pink-400 to-yellow-400 text-white self-end'
+                   : 'bg-white/95 border border-orange-50 text-gray-800 self-start'
+               }`}
                   style={{
                     maxWidth: '78%',
                     fontSize: '1rem',
@@ -170,6 +204,7 @@ export default function MealLogPage() {
             position: 'sticky',
             bottom: 0,
             zIndex: 10,
+            paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))',
           }}
           onSubmit={(e) => {
             e.preventDefault();
@@ -216,9 +251,14 @@ export default function MealLogPage() {
           </button>
         </form>
         {chatEnded && (
-          <div className="flex justify-center pb-3">
+          <div
+            className="flex justify-center"
+            style={{
+              paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
+            }}
+          >
             <button
-              onClick={() => router.push('/')}
+              onClick={() => navigate('/')}
               className="px-6 py-2 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 text-white font-semibold text-base shadow-md transition hover:scale-105 mt-3"
             >
               Back to Home

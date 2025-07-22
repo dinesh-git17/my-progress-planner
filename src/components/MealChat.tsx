@@ -1,25 +1,46 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { upsertMealLog } from '@/utils/mealLog';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { Dancing_Script } from 'next/font/google';
+import React, { useEffect, useRef, useState } from 'react';
 
-type Props = {
+const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' });
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+interface Props {
   meal: 'breakfast' | 'lunch' | 'dinner';
   userId: string;
   showNextMeal?: boolean;
   nextMealLabel?: string;
   nextMealHref?: string;
   onComplete: () => void;
-};
+}
 
+interface Message {
+  sender: 'user' | 'bot';
+  text: string;
+}
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
 const FIRST_PROMPT: Record<string, string> = {
   breakfast: 'Good morning, love! ☀️ What did you have for breakfast today? ♥️',
   lunch: 'Hey cutie! 🍱 What yummy thing did you eat for lunch? 🤭',
   dinner: 'Hey love! 🍽️ What did you have for dinner tonight? 🥺',
 };
 
+const MAX_TURNS = 3;
+
+const SYSTEM_FONT = `-apple-system, BlinkMacSystemFont, 'SF Pro Rounded', 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif`;
+
+// ============================================================================
+// MAIN COMPONENT (CLEANED)
+// ============================================================================
 export default function MealChat({
   meal,
   userId,
@@ -28,337 +49,905 @@ export default function MealChat({
   nextMealHref = '',
   onComplete,
 }: Props) {
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<
-    Array<{ sender: string; text: string }>
-  >([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [chatEnded, setChatEnded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showClosing, setShowClosing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  // Refs for data persistence during chat
   const answers = useRef<string[]>([]);
   const gptReplies = useRef<string[]>([]);
-  const router = useRouter();
-  const MAX_TURNS = 3;
-
-  // Ref for scroll
   const chatBodyRef = useRef<HTMLDivElement>(null);
+  const realInputRef = useRef<HTMLInputElement>(null);
 
-  // Dynamically track window height for keyboard gap fix
-  const [windowHeight, setWindowHeight] = useState(
-    typeof window !== 'undefined' ? window.innerHeight : 0,
-  );
+  // Add overlay state for smooth transitions
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [initialViewportHeight, setInitialViewportHeight] = useState(0);
 
+  const { navigate } = useNavigation();
+
+  // ============================================================================
+  // INITIALIZATION & EFFECTS
+  // ============================================================================
+
+  /**
+   * Single smooth auto-scroll - no overlay for regular messages
+   */
   useEffect(() => {
-    function handleResize() {
-      setWindowHeight(window.innerHeight);
-    }
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('focus', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('focus', handleResize);
+    if (!chatBodyRef.current) return;
+
+    const scrollToBottom = () => {
+      const el = chatBodyRef.current;
+      if (!el) return;
+
+      // Check if user is near bottom before auto-scrolling
+      const isNearBottom =
+        el.scrollHeight - el.scrollTop <= el.clientHeight + 150;
+
+      if (isNearBottom) {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
     };
-  }, []);
 
-  // Add initial message with animation delay
+    // Only scroll for new messages, with delay for DOM updates
+    const timeoutId = setTimeout(scrollToBottom, 150);
+
+    return () => clearTimeout(timeoutId);
+  }, [messages]);
+
+  /**
+   * Simple viewport-based keyboard detection with scroll prevention
+   */
   useEffect(() => {
+    // Store initial viewport height
+    setInitialViewportHeight(window.innerHeight);
+
+    const handleResize = () => {
+      const currentHeight = window.visualViewport?.height || window.innerHeight;
+      const heightDifference = initialViewportHeight - currentHeight;
+
+      // Keyboard is likely open if viewport shrunk by more than 150px
+      const keyboardOpen = heightDifference > 150;
+
+      setIsKeyboardOpen(keyboardOpen);
+
+      if (keyboardOpen) {
+        // AGGRESSIVE viewport locking - prevent iOS from moving the page
+        document.body.style.position = 'fixed';
+        document.body.style.top = '0px';
+        document.body.style.left = '0px';
+        document.body.style.width = '100%';
+        document.body.style.height = '100vh';
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+
+        // SUPER AGGRESSIVE FIX: Lock header position with !important
+        const headerElement = document.querySelector('header');
+        if (headerElement) {
+          headerElement.style.setProperty('position', 'fixed', 'important');
+          headerElement.style.setProperty('top', '0px', 'important');
+          headerElement.style.setProperty('left', '0px', 'important');
+          headerElement.style.setProperty('right', '0px', 'important');
+          headerElement.style.setProperty('width', '100%', 'important');
+          headerElement.style.setProperty('z-index', '9999', 'important');
+          headerElement.style.setProperty(
+            'transform',
+            'translateZ(0)',
+            'important',
+          );
+          headerElement.style.setProperty(
+            'will-change',
+            'transform',
+            'important',
+          );
+          // Prevent any viewport changes from affecting it
+          headerElement.style.setProperty('margin', '0', 'important');
+          headerElement.style.setProperty(
+            'padding-top',
+            'env(safe-area-inset-top)',
+            'important',
+          );
+        }
+
+        // Force scroll position to top
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+
+        // Auto-scroll chat to bottom
+        setTimeout(() => {
+          if (chatBodyRef.current) {
+            chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+          }
+        }, 100);
+      } else {
+        // Restore normal page behavior when keyboard closes
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+
+        // RESTORE header position
+        const headerElement = document.querySelector('header');
+        if (headerElement) {
+          headerElement.style.position = '';
+          headerElement.style.top = '';
+          headerElement.style.left = '';
+          headerElement.style.right = '';
+          headerElement.style.transform = '';
+        }
+
+        // Reset scroll position
+        window.scrollTo(0, 0);
+      }
+    };
+
+    // Listen for viewport changes
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    } else {
+      // Fallback for older browsers
+      window.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+
+      // Cleanup: restore normal styles
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+
+      // RESTORE header position on cleanup
+      const headerElement = document.querySelector('header');
+      if (headerElement) {
+        headerElement.style.position = '';
+        headerElement.style.top = '';
+        headerElement.style.left = '';
+        headerElement.style.right = '';
+        headerElement.style.transform = '';
+      }
+    };
+  }, [initialViewportHeight]);
+
+  useEffect(() => {
+    // Minimum loading time for smooth animation
     const timer = setTimeout(() => {
-      setMessages([{ sender: 'bot', text: FIRST_PROMPT[meal] }]);
-    }, 300); // Small delay for smooth entry
+      setInitialLoading(false);
+      // Then start the chat after loading completes
+      setTimeout(() => {
+        setMessages([{ sender: 'bot', text: FIRST_PROMPT[meal] }]);
+      }, 300);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [meal]);
 
-  // Scroll to bottom when new message - smooth
-  useEffect(() => {
-    if (!chatBodyRef.current) return;
-    const el = chatBodyRef.current;
-    el.scrollTop = el.scrollHeight;
-  }, [messages, loading]);
+  // ============================================================================
+  // CHAT HANDLERS
+  // ============================================================================
 
-  async function finishChat() {
+  /**
+   * Completes the chat session and saves meal log
+   */
+  const finishChat = async () => {
     setLoading(true);
-    const today = new Date()
-      .toLocaleString('en-US', { timeZone: 'America/New_York' })
-      .slice(0, 10);
-    const user_id = userId;
-    await upsertMealLog({
-      user_id,
-      date: today,
-      meal,
-      answers: answers.current,
-      gpt_response: gptReplies.current,
-    });
-    setTimeout(() => {
-      setChatEnded(true);
-      setLoading(false);
-    }, 500);
-  }
 
-  async function handleSend() {
-    if (!input) return;
-    setMessages((msgs) => [...msgs, { sender: 'user', text: input }]);
+    try {
+      const today = new Date()
+        .toLocaleString('en-US', { timeZone: 'America/New_York' })
+        .slice(0, 10);
+
+      await upsertMealLog({
+        user_id: userId,
+        date: today,
+        meal,
+        answers: answers.current,
+        gpt_response: gptReplies.current,
+      });
+
+      setTimeout(() => {
+        setChatEnded(true);
+        setLoading(false);
+      }, 500);
+    } catch (error) {
+      console.error('Error saving meal log:', error);
+      setLoading(false);
+      // Still show chat ended state even if save fails
+      setChatEnded(true);
+    }
+  };
+
+  /**
+   * Handles sending user message and getting AI response
+   */
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    // Add user message
+    const userMessage: Message = { sender: 'user', text: input };
+    setMessages((msgs) => [...msgs, userMessage]);
     answers.current.push(input);
     setInput('');
     setLoading(true);
-    const msgHistory = [...messages, { sender: 'user', text: input }];
-    const userMsgs = msgHistory.filter((m) => m.sender === 'user').length;
-    if (userMsgs >= MAX_TURNS) {
-      setShowClosing(true);
-      const res = await fetch('/api/gpt/meal-chat', {
+
+    try {
+      const msgHistory = [...messages, userMessage];
+      const userMsgs = msgHistory.filter((m) => m.sender === 'user').length;
+
+      // Check if this is the final turn
+      const isLastTurn = userMsgs >= MAX_TURNS;
+      if (isLastTurn) {
+        setShowClosing(true);
+      }
+
+      // Get AI response
+      const response = await fetch('/api/gpt/meal-chat', {
         method: 'POST',
-        body: JSON.stringify({ meal, messages: msgHistory, closing: true }),
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          meal,
+          messages: msgHistory,
+          closing: isLastTurn,
+        }),
       });
-      const data = await res.json();
-      setMessages((msgs) => [...msgs, { sender: 'bot', text: data.reply }]);
-      gptReplies.current.push(data.reply);
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+      const botMessage: Message = { sender: 'bot', text: data.reply };
+
       setLoading(false);
-      setTimeout(() => finishChat(), 1400);
-      return;
+
+      // Small delay, then add the message smoothly
+      setTimeout(() => {
+        setMessages((msgs) => [...msgs, botMessage]);
+        gptReplies.current.push(data.reply);
+      }, 250);
+
+      // Finish chat if this was the last turn
+      if (isLastTurn) {
+        setTimeout(() => finishChat(), 1400);
+      }
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      setLoading(false);
+
+      // Add fallback message
+      const fallbackMessage: Message = {
+        sender: 'bot',
+        text: "I'm having trouble right now, but I'm sure your meal was wonderful! 💕",
+      };
+      setMessages((msgs) => [...msgs, fallbackMessage]);
+
+      // Regular fallback scroll - no overlay
+      setTimeout(() => {
+        if (chatBodyRef.current) {
+          const el = chatBodyRef.current;
+          const isNearBottom =
+            el.scrollHeight - el.scrollTop <= el.clientHeight + 150;
+
+          if (isNearBottom) {
+            el.scrollTo({
+              top: el.scrollHeight,
+              behavior: 'smooth',
+            });
+          }
+        }
+      }, 200);
     }
-    const res = await fetch('/api/gpt/meal-chat', {
-      method: 'POST',
-      body: JSON.stringify({ meal, messages: msgHistory }),
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const data = await res.json();
-    setMessages((msgs) => [...msgs, { sender: 'bot', text: data.reply }]);
-    gptReplies.current.push(data.reply);
-    setLoading(false);
+  };
+
+  /**
+   * Handles form submission
+   */
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loading && !chatEnded && !showClosing && input.trim()) {
+      handleSend();
+    }
+  };
+
+  // ============================================================================
+  // RENDER HELPERS
+  // ============================================================================
+
+  /**
+   * Renders individual message bubble
+   */
+  const renderMessage = (msg: Message, index: number) => (
+    <div
+      key={`${msg.sender}-${index}`}
+      className={`flex w-full ${
+        msg.sender === 'user' ? 'justify-end' : 'justify-start'
+      }`}
+      style={{
+        marginBottom: msg.sender === 'user' ? '25px' : '12px',
+      }}
+      data-message={`${msg.sender}-${index}`}
+    >
+      {/* Bot Avatar */}
+      {msg.sender === 'bot' && (
+        <div className="flex-shrink-0 mr-2">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-md text-lg">
+            🤖
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`${msg.sender === 'user' ? 'max-w-[75%]' : 'max-w-[75%]'}`}
+        style={{ position: 'relative' }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 5 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: -5 }}
+          transition={{
+            duration: 0.4,
+            ease: [0.25, 0.46, 0.45, 0.94],
+            delay: 0,
+          }}
+          className={`
+          relative px-4 py-2.5 break-words select-text
+          ${
+            msg.sender === 'user'
+              ? 'rounded-[20px] rounded-tr-[4px] text-white'
+              : 'rounded-[20px] rounded-tl-[4px] text-black'
+          }
+        `}
+          style={{
+            fontFamily: SYSTEM_FONT,
+            fontSize: '16px',
+            lineHeight: '21px',
+            letterSpacing: '-0.32px',
+            fontWeight: '400',
+            background:
+              msg.sender === 'user'
+                ? 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)'
+                : 'rgba(255, 255, 255, 0.35)',
+            boxShadow:
+              msg.sender === 'user'
+                ? `
+                0 4px 20px rgba(236, 72, 153, 0.35),
+                0 2px 8px rgba(236, 72, 153, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2)
+                `
+                : `
+                0 8px 32px rgba(0, 0, 0, 0.06),
+                0 4px 16px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4)
+              `,
+            backdropFilter:
+              msg.sender === 'bot' ? 'saturate(180%) blur(25px)' : 'none',
+            WebkitBackdropFilter:
+              msg.sender === 'bot' ? 'saturate(180%) blur(25px)' : 'none',
+            border:
+              msg.sender === 'bot' ? '1px solid rgba(0, 0, 0, 0.06)' : 'none',
+          }}
+        >
+          {msg.text}
+        </motion.div>
+
+        {/* Read Status - Absolutely positioned to not affect bubble layout */}
+        {msg.sender === 'user' && (
+          <div
+            className="text-xs text-right"
+            style={{
+              position: 'absolute',
+              bottom: '-22px',
+              right: '0px',
+              width: '100%',
+              height: '20px',
+              opacity: index < messages.length - 1 ? 1 : 0,
+              transition: 'opacity 0.3s ease',
+              overflow: 'hidden',
+              pointerEvents: 'none',
+            }}
+          >
+            {index < messages.length - 1 && (
+              <span className="flex items-center justify-end gap-1 text-gray-400 whitespace-nowrap">
+                <span>
+                  Read{' '}
+                  {new Date().toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </span>
+                <svg
+                  className="w-3.5 h-3.5 text-blue-500"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <svg
+                  className="w-3.5 h-3.5 text-blue-500 -ml-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  /**
+   * Renders typing indicator
+   */
+  const renderTypingIndicator = () => (
+    <div className="flex justify-start mb-3">
+      {/* Bot Avatar */}
+      <div className="flex-shrink-0 mr-2">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-md text-lg">
+          🤖
+        </div>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 5 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: -5 }}
+        transition={{
+          duration: 0.2,
+          ease: [0.25, 0.46, 0.45, 0.94],
+        }}
+        className="px-4 py-2.5 rounded-[20px] rounded-tl-[4px] max-w-[75%]"
+        style={{
+          background: 'rgba(255, 255, 255, 0.15)', // ✅ Same 35% opacity as header
+          backdropFilter: 'saturate(180%) blur(25px)', // ✅ Same blur as header
+          WebkitBackdropFilter: 'saturate(180%) blur(25px)',
+          boxShadow: `
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4)
+  `,
+          border: '1px solid rgba(255, 255, 255, 0.4)',
+        }}
+      >
+        <div className="flex items-center gap-1">
+          <div className="flex gap-1">
+            {[0, 150, 300].map((delay, i) => (
+              <div
+                key={i}
+                className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
+                style={{ animationDelay: `${delay}ms` }}
+              />
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+
+  /**
+   * Renders completion overlay
+   */
+  const renderCompletionOverlay = () => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{
+          duration: 0.4,
+          type: 'spring',
+          stiffness: 300,
+          damping: 25,
+        }}
+        className="mx-4 max-w-sm w-full px-8 py-10 flex flex-col items-center text-center"
+        style={{
+          background: 'rgba(255, 255, 255, 0.18)',
+          backdropFilter: 'saturate(180%) blur(40px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(40px)',
+          borderRadius: '20px',
+          boxShadow: `
+           0 32px 64px rgba(0, 0, 0, 0.08),
+           0 16px 32px rgba(0, 0, 0, 0.04),
+           inset 0 1px 0 rgba(255, 255, 255, 0.4),
+           inset 0 -1px 0 rgba(0, 0, 0, 0.02)
+         `,
+          border: '0.5px solid rgba(255, 255, 255, 0.25)',
+          fontFamily: SYSTEM_FONT,
+        }}
+      >
+        <div
+          className="mb-8 text-gray-700"
+          style={{
+            fontSize: '18px',
+            lineHeight: '23px',
+            letterSpacing: '-0.24px',
+            fontWeight: '500',
+            textShadow: '0 0.5px 1px rgba(255, 255, 255, 0.9)',
+          }}
+        >
+          {meal === 'dinner'
+            ? 'All done for today! You did amazing 💖'
+            : `Yay! Ready for ${meal === 'breakfast' ? 'lunch' : 'dinner'}?`}
+        </div>
+
+        <div className="flex flex-col gap-4 w-full">
+          {showNextMeal && nextMealHref && (
+            <button
+              onClick={() => onComplete()}
+              className="w-full py-3.5 text-white font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)',
+                borderRadius: '14px',
+                fontSize: '16px',
+                fontWeight: '500',
+                letterSpacing: '-0.24px',
+                boxShadow: `
+                 0 4px 20px rgba(232, 164, 201, 0.25),
+                 0 2px 8px rgba(232, 164, 201, 0.15),
+                 inset 0 1px 0 rgba(255, 255, 255, 0.2)
+               `,
+                border: '0.5px solid rgba(255, 255, 255, 0.1)',
+              }}
+              aria-label={`Continue to ${nextMealLabel}`}
+            >
+              <span className="relative z-10">{nextMealLabel}</span>
+              <div
+                className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
+                  borderRadius: '16px',
+                }}
+              />
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              sessionStorage.setItem('isReturningToHome', 'true');
+              navigate('/');
+            }}
+            className="w-full py-3.5 text-gray-600 font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
+            style={{
+              background: 'rgba(120, 120, 128, 0.12)',
+              borderRadius: '14px',
+              fontSize: '16px',
+              fontWeight: '500',
+              letterSpacing: '-0.24px',
+              boxShadow: `
+               0 2px 10px rgba(0, 0, 0, 0.04),
+               0 1px 4px rgba(0, 0, 0, 0.02),
+               inset 0 1px 0 rgba(255, 255, 255, 0.4),
+               inset 0 -0.5px 0 rgba(0, 0, 0, 0.04)
+             `,
+              border: '0.5px solid rgba(255, 255, 255, 0.2)',
+              backdropFilter: 'saturate(180%) blur(20px)',
+              WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+            }}
+            aria-label="Return to home page"
+          >
+            <span className="relative z-10">Home</span>
+            <div
+              className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '16px',
+              }}
+            />
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+
+  // ============================================================================
+  // MAIN RENDER
+  // ============================================================================
+
+  // Loading state - show full screen
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="text-center"
+        >
+          {/* Animated chat bubble icon */}
+          <motion.div
+            className="relative mb-8"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <motion.div
+              className="w-20 h-20 mx-auto bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-2, 2, -2],
+                rotate: [0, 1, -1, 0],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <span className="text-3xl">💬</span>
+            </motion.div>
+          </motion.div>
+
+          {/* Loading text */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mb-6"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Starting {meal.charAt(0).toUpperCase() + meal.slice(1)} Chat
+            </h2>
+            <p className="text-gray-600 max-w-sm mx-auto">
+              Getting ready to hear about your delicious meal...
+            </p>
+          </motion.div>
+
+          {/* Progress dots */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="flex items-center justify-center space-x-1"
+          >
+            {[0, 1, 2].map((index) => (
+              <motion.div
+                key={index}
+                className="w-2 h-2 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"
+                animate={{
+                  scale: [0.8, 1.2, 0.8],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: index * 0.2,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </motion.div>
+        </motion.div>
+      </div>
+    );
   }
-
-  const systemFont = `-apple-system, BlinkMacSystemFont, 'SF Pro Rounded', 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif`;
-
   return (
     <div
       className="flex flex-col w-full max-w-md mx-auto shadow-xl"
       style={{
-        fontFamily: systemFont,
-        height: windowHeight || '100dvh',
-        minHeight: 0,
-        background: '#fdf6e3',
+        fontFamily: SYSTEM_FONT,
+        background:
+          'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f3e8ff 100%)',
+        height: '100vh',
+        position: 'fixed', // Critical for iOS PWA
+        top: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+        maxWidth: '448px',
+        overflow: 'hidden', // Prevent scrolling
+        touchAction: 'none', // Prevent touch scrolling on main container
+        WebkitOverflowScrolling: 'auto', // Disable momentum scrolling
+      }}
+      onTouchMove={(e) => {
+        // Prevent page scrolling, but allow chat to handle its own events
+        e.preventDefault();
       }}
     >
-      {/* Background Gradient */}
-      <div
-        className="fixed inset-0 z-0 pointer-events-none"
+      {/* Fixed Header - iOS Safe */}
+      <header
         style={{
-          background:
-            'linear-gradient(135deg, #fdf6e3 0%, #fff5fa 54%, #e6e6fa 100%)',
-        }}
-      />
-
-      {/* Header */}
-      <div
-        className="flex-shrink-0 h-11 flex items-center justify-center relative z-20 sticky top-0"
-        style={{
-          background: 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'saturate(180%) blur(30px)',
-          WebkitBackdropFilter: 'saturate(180%) blur(30px)',
-          borderBottom: '0.5px solid rgba(232, 164, 201, 0.15)',
-          fontFamily: systemFont,
-          boxShadow:
-            '0 1px 10px rgba(232, 164, 201, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02)',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 30,
+          background: 'rgba(255, 255, 255, 0.35)', // ✅ Much more opaque for contrast
+          backdropFilter: 'saturate(180%) blur(25px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(25px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.4)',
+          boxShadow: '0 2px 20px rgba(0, 0, 0, 0.08)', // ✅ Adds depth
+          paddingTop: 'env(safe-area-inset-top)',
         }}
       >
-        <div className="flex items-center justify-between w-full px-4">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left: Back Button */}
           <button
-            onClick={() => router.push('/')}
-            className="flex items-center justify-center w-8 h-8 transition-all duration-200 hover:scale-110 active:scale-95"
-            aria-label="Go back"
+            onClick={() => {
+              sessionStorage.setItem('isReturningToHome', 'true');
+              navigate('/');
+            }}
+            className="flex items-center justify-center w-8 h-8 text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Go Back to Home"
           >
             <svg
-              width="18"
-              height="18"
-              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5"
               viewBox="0 0 24 24"
-              className="text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 12H5m0 0l7 7m-7-7l7-7"
-              />
+              <path d="M19 12H5"></path>
+              <path d="M12 19l-7-7 7-7"></path>
             </svg>
           </button>
 
-          <div className="flex items-center gap-2.5">
-            <span className="text-lg">
+          {/* Center: Meal Title */}
+          <div className="flex items-center gap-2">
+            <span className="text-xl" role="img" aria-label={`${meal} emoji`}>
               {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🫐' : '🍜'}
             </span>
-            <h1 className="text-[17px] font-semibold text-gray-800 tracking-[-0.41px] leading-[22px]">
+            <div
+              className="text-lg font-semibold text-gray-900"
+              style={{
+                fontFamily: SYSTEM_FONT,
+                letterSpacing: '-0.02em',
+              }}
+            >
               {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
-            </h1>
+            </div>
           </div>
 
-          <div className="w-8 h-8"></div>
+          {/* Right: Menu/Options (placeholder for now) */}
+          <div className="w-8 h-8" />
         </div>
-      </div>
+      </header>
 
-      {/* Chat Messages */}
+      {/* Chat Messages - Adjust Height for Keyboard */}
       <div
         ref={chatBodyRef}
-        className="flex-1 w-full px-4 py-6 flex flex-col justify-start overflow-y-auto"
+        className="w-full px-4 py-4 flex flex-col justify-start overflow-y-auto"
         style={{
-          minHeight: 0,
+          position: 'absolute',
+          top: 'calc(env(safe-area-inset-top) + 56px)',
+          left: 0,
+          right: 0,
+          bottom: isKeyboardOpen ? '350px' : '100px', // CHANGE HEIGHT for available space
           WebkitOverflowScrolling: 'touch',
-          background: 'transparent',
+          background: 'rgba(255, 255, 255, 0.08)', // ✅ Subtle glass effect
+          backdropFilter: 'saturate(180%) blur(20px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+          borderRadius: '20px 20px 0 0',
+          border: '0.5px solid rgba(255, 255, 255, 0.15)',
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-y',
+          scrollBehavior: 'auto',
+          minHeight: 0,
+          WebkitTransform: 'translateZ(0)',
+          transform: 'translateZ(0)',
+          paddingBottom: '100px', // Increased space for input bar
+          transition: 'bottom 0.3s ease', // SMOOTH height transition
+        }}
+        role="log"
+        aria-live="polite"
+        aria-label="Chat conversation"
+        onTouchMove={(e) => {
+          e.stopPropagation();
+        }}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const isAtBottom =
+            el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
+          console.log('Scroll position:', {
+            scrollTop: el.scrollTop,
+            scrollHeight: el.scrollHeight,
+            clientHeight: el.clientHeight,
+            isAtBottom,
+          });
         }}
       >
         <AnimatePresence initial={false}>
-          {messages.map((msg, i) => (
-            <div
-              key={`${msg.sender}-${i}`}
-              className={`
-                flex w-full mb-1.5 relative
-                ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}
-              `}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: -10 }}
-                transition={{
-                  duration: 0.3,
-                  ease: [0.25, 0.46, 0.45, 0.94],
-                  type: 'spring',
-                  stiffness: 300,
-                  damping: 20,
-                  delay: i === 0 ? 0.15 : 0,
-                }}
-                className={`
-                  relative px-4 py-2.5 max-w-[75%] break-words select-text
-                  ${
-                    msg.sender === 'user'
-                      ? 'rounded-[22px] rounded-br-[8px] text-white'
-                      : 'rounded-[22px] rounded-bl-[8px] text-black'
-                  }
-                `}
-                style={{
-                  fontFamily: systemFont,
-                  fontSize: '17px',
-                  lineHeight: '22px',
-                  letterSpacing: '-0.41px',
-                  fontWeight: msg.sender === 'user' ? '400' : '400',
-                  background:
-                    msg.sender === 'user'
-                      ? 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)'
-                      : 'rgba(255, 255, 255, 0.75)',
-                  boxShadow:
-                    msg.sender === 'user'
-                      ? '0 1px 3px rgba(232, 164, 201, 0.15), 0 1px 2px rgba(232, 164, 201, 0.1)'
-                      : '0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
-                  border:
-                    msg.sender === 'bot'
-                      ? '0.5px solid rgba(0, 0, 0, 0.04)'
-                      : 'none',
-                }}
-              >
-                {msg.text}
-              </motion.div>
-            </div>
-          ))}
-
-          {loading && (
-            <div className="flex justify-start mb-1.5">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: -10 }}
-                transition={{
-                  duration: 0.25,
-                  ease: [0.25, 0.46, 0.45, 0.94],
-                  type: 'spring',
-                  stiffness: 350,
-                  damping: 25,
-                }}
-                className="px-4 py-2.5 rounded-[22px] rounded-bl-[8px] max-w-[75%]"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.7)',
-                  border: '0.5px solid rgba(0, 0, 0, 0.04)',
-                  boxShadow:
-                    '0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
-                }}
-              >
-                <div className="flex items-center gap-1">
-                  <div className="flex gap-1">
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
-                      style={{ animationDelay: '0ms' }}
-                    />
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
-                      style={{ animationDelay: '150ms' }}
-                    />
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
-                      style={{ animationDelay: '300ms' }}
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          )}
+          {messages.map(renderMessage)}
+          {loading && renderTypingIndicator()}
         </AnimatePresence>
       </div>
 
-      {/* Input Bar */}
+      {/* Input Bar - Only This Moves Up */}
       {!chatEnded && (
         <div
-          className="flex-shrink-0 w-full px-4 pb-[env(safe-area-inset-bottom)] mb-6 sticky bottom-0"
+          className="w-full px-4 py-4"
           style={{
-            paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+            position: 'absolute',
+            bottom: '0px', // Always at bottom
+            left: 0,
+            right: 0,
+            background: 'transparent',
+            paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
+            transform: isKeyboardOpen
+              ? 'translateY(-350px)'
+              : 'translateY(0px)', // ONLY INPUT BAR MOVES
+            transition: 'transform 0.3s ease', // Smooth animation
+            zIndex: 40,
           }}
         >
-          <form
-            className="flex items-center gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!loading && !chatEnded && !showClosing) handleSend();
-            }}
-          >
+          <form className="flex items-center gap-3" onSubmit={handleSubmit}>
             <div className="relative flex-1">
               <input
+                ref={realInputRef}
                 disabled={loading}
                 className="
-                  w-full px-5 py-3 text-black placeholder-gray-500 outline-none transition-all duration-200
-                  disabled:opacity-60
-                "
+               w-full px-5 py-3 text-black placeholder-gray-500 outline-none transition-all duration-200
+               disabled:opacity-60
+             "
                 style={{
-                  fontFamily: systemFont,
+                  fontFamily: SYSTEM_FONT,
                   fontSize: '17px',
                   lineHeight: '22px',
                   letterSpacing: '-0.41px',
                   borderRadius: '24px',
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  border: '0.5px solid rgba(0, 0, 0, 0.04)',
-                  boxShadow:
-                    '0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
-                  backdropFilter: 'saturate(180%) blur(20px)',
-                  WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-                  paddingRight: '52px', // Make room for send button
+                  background: 'rgba(255, 255, 255, 0.25)', // ✅ Enhanced glass effect
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  boxShadow: `
+                    0 4px 16px rgba(0, 0, 0, 0.08),
+                    0 2px 8px rgba(0, 0, 0, 0.04),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.4)
+                  `,
+                  backdropFilter: 'saturate(180%) blur(30px)',
+                  WebkitBackdropFilter: 'saturate(180%) blur(30px)',
+                  paddingRight: '52px',
                 }}
                 type="text"
                 placeholder={loading ? 'Wait for my reply…' : 'Message'}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                autoFocus
+                autoFocus={
+                  typeof window !== 'undefined' && window.innerWidth > 768
+                } // Only autofocus on desktop
                 autoComplete="off"
                 inputMode="text"
+                aria-label="Type your message"
               />
 
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
                 className="
-                  absolute right-1.5 top-1/2 -translate-y-1/2
-                  flex items-center justify-center w-8 h-8 transition-all duration-200
-                  disabled:opacity-40 disabled:scale-95
-                  hover:scale-105 active:scale-95
-                "
+               absolute right-1.5 top-1/2 -translate-y-1/2
+               flex items-center justify-center w-8 h-8 transition-all duration-200
+               disabled:opacity-40 disabled:scale-95
+               hover:scale-105 active:scale-95
+             "
                 style={{
                   borderRadius: '20px',
                   background:
@@ -378,6 +967,7 @@ export default function MealChat({
                   fill="none"
                   viewBox="0 0 24 24"
                   className="text-white"
+                  aria-hidden="true"
                 >
                   <path
                     d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"
@@ -391,113 +981,9 @@ export default function MealChat({
       )}
 
       {/* Chat Complete Overlay */}
-      {chatEnded && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-md">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{
-              duration: 0.4,
-              type: 'spring',
-              stiffness: 300,
-              damping: 25,
-            }}
-            className="mx-4 max-w-sm w-full px-8 py-10 flex flex-col items-center text-center"
-            style={{
-              background: 'rgba(255, 255, 255, 0.18)',
-              backdropFilter: 'saturate(180%) blur(40px)',
-              WebkitBackdropFilter: 'saturate(180%) blur(40px)',
-              borderRadius: '20px',
-              boxShadow: `
-                0 32px 64px rgba(0, 0, 0, 0.08),
-                0 16px 32px rgba(0, 0, 0, 0.04),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4),
-                inset 0 -1px 0 rgba(0, 0, 0, 0.02)
-              `,
-              border: '0.5px solid rgba(255, 255, 255, 0.25)',
-              fontFamily: systemFont,
-            }}
-          >
-            <div
-              className="mb-8 text-gray-700"
-              style={{
-                fontSize: '18px',
-                lineHeight: '23px',
-                letterSpacing: '-0.24px',
-                fontWeight: '500',
-                textShadow: '0 0.5px 1px rgba(255, 255, 255, 0.9)',
-              }}
-            >
-              {meal === 'dinner'
-                ? 'All done for today! You did amazing 💖'
-                : `Yay! Ready for ${meal === 'breakfast' ? 'lunch' : 'dinner'}?`}
-            </div>
-
-            <div className="flex flex-col gap-4 w-full">
-              {showNextMeal && nextMealHref && (
-                <button
-                  onClick={() => onComplete()}
-                  className="w-full py-3.5 text-white font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)',
-                    borderRadius: '14px',
-                    fontSize: '16px',
-                    fontWeight: '500',
-                    letterSpacing: '-0.24px',
-                    boxShadow: `
-                      0 4px 20px rgba(232, 164, 201, 0.25),
-                      0 2px 8px rgba(232, 164, 201, 0.15),
-                      inset 0 1px 0 rgba(255, 255, 255, 0.2)
-                    `,
-                    border: '0.5px solid rgba(255, 255, 255, 0.1)',
-                  }}
-                >
-                  <span className="relative z-10">{nextMealLabel}</span>
-                  <div
-                    className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
-                      borderRadius: '16px',
-                    }}
-                  />
-                </button>
-              )}
-
-              <button
-                onClick={() => router.push('/')}
-                className="w-full py-3.5 text-gray-600 font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
-                style={{
-                  background: 'rgba(120, 120, 128, 0.12)',
-                  borderRadius: '14px',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  letterSpacing: '-0.24px',
-                  boxShadow: `
-                    0 2px 10px rgba(0, 0, 0, 0.04),
-                    0 1px 4px rgba(0, 0, 0, 0.02),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-                    inset 0 -0.5px 0 rgba(0, 0, 0, 0.04)
-                  `,
-                  border: '0.5px solid rgba(255, 255, 255, 0.2)',
-                  backdropFilter: 'saturate(180%) blur(20px)',
-                  WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-                }}
-              >
-                <span className="relative z-10">Home</span>
-                <div
-                  className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '16px',
-                  }}
-                />
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+      <AnimatePresence>
+        {chatEnded && renderCompletionOverlay()}
+      </AnimatePresence>
     </div>
   );
 }

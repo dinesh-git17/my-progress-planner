@@ -1,7 +1,9 @@
 'use client';
 
 import AuthPrompt from '@/components/AuthPrompt';
+import HomePageSkeleton from '@/components/HomePageSkeleton';
 import LoginModal from '@/components/LoginModal';
+import { useNavigation } from '@/contexts/NavigationContext';
 import {
   generateUserId,
   getUserName as getAuthUserName,
@@ -12,7 +14,7 @@ import {
 } from '@/utils/auth';
 import { getUserName, saveUserName } from '@/utils/user';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { Bell, Sparkles, TrendingUp, Users, Utensils } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useUserInitialization } from '../../hooks/useUserInitialization';
 
@@ -29,6 +31,17 @@ const mealLabels = [
   { meal: 'lunch', emoji: '🫐', label: 'Lunch' },
   { meal: 'dinner', emoji: '🍜', label: 'Dinner' },
 ];
+
+const UI_CONSTANTS = {
+  BANNER_TOP_PADDING: 15, // Increased from 24
+  BANNER_BOTTOM_PADDING: 50, // Increased from 32
+  BANNER_TEXT_HEIGHT: 180, // Increased from 120
+};
+
+const BANNER_TOTAL_HEIGHT =
+  UI_CONSTANTS.BANNER_TOP_PADDING +
+  UI_CONSTANTS.BANNER_BOTTOM_PADDING +
+  UI_CONSTANTS.BANNER_TEXT_HEIGHT;
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -138,16 +151,45 @@ function getMsUntilNextEstMidnight() {
  */
 function highlightQuote(quote: string): string {
   const highlights: HighlightedWord[] = [
-    { regex: /self-care/gi, className: 'text-pink-500 font-semibold' },
-    { regex: /progress/gi, className: 'text-purple-500 font-semibold' },
-    { regex: /small steps/gi, className: 'text-yellow-500 font-semibold' },
-    { regex: /amazing/gi, className: 'text-green-500 font-semibold' },
-    { regex: /love/gi, className: 'text-red-500 font-semibold' },
-    { regex: /motivation/gi, className: 'text-blue-500 font-semibold' },
-    { regex: /healthy/gi, className: 'text-teal-500 font-semibold' },
-    { regex: /victory/gi, className: 'text-teal-500 font-semibold' },
-  ];
+    // PRIORITY 1: Multi-word phrases and hyphenated words (MUST come first)
+    { regex: /self-care/gi, className: 'text-pink-200 font-semibold' },
+    { regex: /small steps/gi, className: 'text-yellow-200 font-semibold' },
+    { regex: /step by step/gi, className: 'text-purple-200 font-semibold' },
+    { regex: /one step/gi, className: 'text-indigo-200 font-semibold' },
 
+    // PRIORITY 2: Single words (processed after multi-word phrases)
+    { regex: /progress/gi, className: 'text-purple-200 font-semibold' },
+    { regex: /amazing/gi, className: 'text-green-200 font-semibold' },
+    { regex: /love/gi, className: 'text-red-200 font-semibold' },
+    { regex: /motivation/gi, className: 'text-blue-200 font-semibold' },
+    { regex: /healthy/gi, className: 'text-teal-200 font-semibold' },
+    { regex: /victory/gi, className: 'text-emerald-200 font-semibold' },
+    { regex: /eating/gi, className: 'text-orange-200 font-semibold' },
+    { regex: /nourish/gi, className: 'text-green-200 font-semibold' },
+    { regex: /caring/gi, className: 'text-pink-200 font-semibold' },
+    { regex: /gentle/gi, className: 'text-purple-200 font-semibold' },
+    { regex: /sweet/gi, className: 'text-pink-200 font-semibold' },
+    { regex: /proud/gi, className: 'text-yellow-200 font-semibold' },
+    { regex: /beautiful/gi, className: 'text-rose-200 font-semibold' },
+    { regex: /strong/gi, className: 'text-blue-200 font-semibold' },
+    { regex: /wonderful/gi, className: 'text-purple-200 font-semibold' },
+    { regex: /special/gi, className: 'text-indigo-200 font-semibold' },
+    { regex: /care/gi, className: 'text-teal-200 font-semibold' },
+    { regex: /nurture/gi, className: 'text-green-200 font-semibold' },
+    { regex: /kindness/gi, className: 'text-pink-200 font-semibold' },
+    { regex: /support/gi, className: 'text-blue-200 font-semibold' },
+    { regex: /encourage/gi, className: 'text-yellow-200 font-semibold' },
+    { regex: /celebrate/gi, className: 'text-orange-200 font-semibold' },
+    { regex: /growth/gi, className: 'text-emerald-200 font-semibold' },
+    { regex: /journey/gi, className: 'text-violet-200 font-semibold' },
+    { regex: /succeed/gi, className: 'text-green-200 font-semibold' },
+    { regex: /overcome/gi, className: 'text-blue-200 font-semibold' },
+    { regex: /believe/gi, className: 'text-indigo-200 font-semibold' },
+    { regex: /trust/gi, className: 'text-cyan-200 font-semibold' },
+    { regex: /positive/gi, className: 'text-lime-200 font-semibold' },
+    { regex: /affection/gi, className: 'text-red-200 font-semibold' },
+    { regex: /embrace/gi, className: 'text-amber-200 font-semibold' },
+  ];
   let highlighted = quote;
   for (const { regex, className } of highlights) {
     highlighted = highlighted.replace(
@@ -179,6 +221,108 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 // ============================================================================
+// TAB TITLE COMPONENT
+// ============================================================================
+
+/**
+ * Context-aware tab title component that adapts based on user progress
+ */
+// ============================================================================
+// TAB TITLE COMPONENT
+// ============================================================================
+
+/**
+ * Ultra compact context-aware tab title component
+ */
+function TabTitle({
+  activeTab,
+  streak,
+  loggedMeals,
+}: {
+  activeTab: 'meals' | 'progress' | 'friends';
+  streak: number;
+  loggedMeals: string[];
+}) {
+  const getTitleConfig = () => {
+    switch (activeTab) {
+      case 'meals': {
+        const mealsToday = loggedMeals.length;
+        const isAllDone = mealsToday === 3;
+
+        return {
+          main: isAllDone ? 'Amazing! All meals logged 🎉' : "Today's Meals",
+          sub: isAllDone
+            ? "You're crushing it today!"
+            : `${mealsToday}/3 meals logged`,
+          icon: Utensils,
+          iconColor: isAllDone ? 'text-green-600' : 'text-gray-600',
+        };
+      }
+
+      case 'progress':
+        return {
+          main: streak > 0 ? `${streak} Day Streak! 🔥` : 'Your Progress',
+          sub:
+            streak > 0
+              ? 'Keep the momentum going!'
+              : 'Track your journey to success',
+          icon: TrendingUp,
+          iconColor: streak > 0 ? 'text-orange-600' : 'text-gray-600',
+        };
+
+      case 'friends':
+        return {
+          main: 'Friends & Support',
+          sub: 'Your caring community',
+          icon: Users,
+          iconColor: 'text-blue-600',
+        };
+
+      default:
+        return {
+          main: '',
+          sub: '',
+          icon: Utensils,
+          iconColor: 'text-gray-600',
+        };
+    }
+  };
+
+  const config = getTitleConfig();
+  const IconComponent = config.icon;
+
+  return (
+    <motion.div
+      key={`${activeTab}-${streak}-${loggedMeals.length}`}
+      initial={{ opacity: 0, y: 3 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      className="text-center mb-4"
+    >
+      {/* Ultra compact title */}
+      <div className="flex items-center justify-center gap-1.5 mb-0">
+        {' '}
+        {/* Removed bottom margin */}
+        <IconComponent className={`w-4 h-4 ${config.iconColor}`} />{' '}
+        {/* Small icon */}
+        <h2 className="text-sm font-bold text-gray-800 tracking-tight">
+          {' '}
+          {/* Reduced from text-base to text-sm */}
+          {config.main}
+        </h2>
+      </div>
+
+      {/* Micro subtitle */}
+      <p className="text-xs text-gray-500 font-medium mt-0.5">
+        {' '}
+        {/* Added tiny top margin */}
+        {config.sub}
+      </p>
+    </motion.div>
+  );
+}
+
+// ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
 
@@ -206,12 +350,348 @@ interface QuoteResponse {
 }
 
 // ============================================================================
+// HEADER COMPONENTS
+// ============================================================================
+
+/**
+ * Get gradient colors based on active tab
+ */
+function getHeaderGradientColors(activeTab: 'meals' | 'progress' | 'friends') {
+  switch (activeTab) {
+    case 'meals':
+      return {
+        start: '#ec4899', // Current pink gradient
+        middle: '#f472b6',
+        end: '#e879f9',
+      };
+    case 'progress':
+      return {
+        start: '#a855f7', // Purple to match tab
+        middle: '#c084fc',
+        end: '#d8b4fe',
+      };
+    case 'friends':
+      return {
+        start: '#3b82f6', // Blue to match tab
+        middle: '#60a5fa',
+        end: '#93c5fd',
+      };
+    default:
+      return {
+        start: '#ec4899',
+        middle: '#f472b6',
+        end: '#e879f9',
+      };
+  }
+}
+
+/**
+ * Beautiful SVG Wave Header Component for Homepage
+ */
+function HomeHeader({
+  name,
+  streak,
+  quote,
+  loading,
+  streakLoading,
+  notificationsEnabled,
+  showNotificationTooltip,
+  onNotificationClick,
+  onProfileClick,
+  profileButtonRef,
+  showProfileDropdown,
+  onProfileClose,
+  isUserAuthenticated,
+  onLogin,
+  onLogout,
+  activeTab,
+}: {
+  name: string;
+  streak: number;
+  quote: string;
+  loading: boolean;
+  streakLoading: boolean;
+  notificationsEnabled: boolean;
+  showNotificationTooltip: boolean;
+  onNotificationClick: () => void;
+  onProfileClick: () => void;
+  profileButtonRef: React.RefObject<HTMLButtonElement>;
+  showProfileDropdown: boolean;
+  onProfileClose: () => void;
+  isUserAuthenticated: boolean;
+  onLogin: () => void;
+  onLogout: () => Promise<void>;
+  activeTab: 'meals' | 'progress' | 'friends';
+}) {
+  return (
+    <header
+      className="fixed top-0 left-0 w-full z-30"
+      style={{
+        background: 'transparent',
+      }}
+    >
+      {/* SVG Wave Header */}
+      <svg
+        className="w-full"
+        viewBox="0 0 500 280"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="none"
+        style={{
+          height: `calc(${BANNER_TOTAL_HEIGHT + 60}px + env(safe-area-inset-top))`,
+        }}
+      >
+        <defs>
+          <linearGradient
+            id="homeHeaderGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <stop
+              offset="0%"
+              stopColor={getHeaderGradientColors(activeTab).start}
+              style={{
+                transition: 'stop-color 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            />
+            <stop
+              offset="50%"
+              stopColor={getHeaderGradientColors(activeTab).middle}
+              style={{
+                transition: 'stop-color 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            />
+            <stop
+              offset="100%"
+              stopColor={getHeaderGradientColors(activeTab).end}
+              style={{
+                transition: 'stop-color 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            />
+          </linearGradient>
+        </defs>
+        <path
+          d="M0 0 L500 0 L500 220 C400 260 350 200 250 240 C150 280 100 220 0 260 L0 0 Z"
+          fill="url(#homeHeaderGradient)"
+        />
+      </svg>
+
+      {/* Header Content */}
+      <div
+        className="absolute top-0 left-0 w-full h-full flex flex-col"
+        style={{
+          paddingTop: `calc(${UI_CONSTANTS.BANNER_TOP_PADDING}px + env(safe-area-inset-top))`,
+          paddingBottom: UI_CONSTANTS.BANNER_BOTTOM_PADDING,
+        }}
+      >
+        {/* Top row: Greeting + Action buttons */}
+        <div className="w-full max-w-lg mx-auto px-6 flex flex-row items-start justify-between mb-4">
+          <div className="flex flex-col">
+            <span className="text-[1.7rem] font-bold text-white leading-snug flex items-center gap-2">
+              {name ? (
+                <>
+                  Hello, {name.split(' ')[0]}{' '}
+                  <span className="text-2xl">👋</span>
+                </>
+              ) : (
+                <>
+                  Hello! <span className="text-2xl">👋</span>
+                </>
+              )}
+            </span>
+            {/* Streak indicator */}
+            {!streakLoading && streak > 0 && (
+              <motion.span
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 320,
+                  damping: 18,
+                }}
+                className="flex items-center mt-1 text-[1rem] font-medium text-white/90 pl-1"
+              >
+                <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-300 mr-2 shadow-sm" />
+                <span>
+                  {streak} day{streak > 1 && 's'} streak!
+                </span>
+              </motion.span>
+            )}
+          </div>
+
+          {/* Action buttons and profile */}
+          <div className="flex items-center gap-3 relative">
+            {/* Notification bell */}
+            {!notificationsEnabled && (
+              <div className="relative">
+                <motion.button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onNotificationClick();
+                  }}
+                  className="
+                    w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm
+                    flex items-center justify-center shadow-lg 
+                    cursor-pointer hover:scale-110 active:scale-95 transition-transform
+                    border border-white/30 outline-none focus:ring-2 focus:ring-white/40
+                  "
+                  animate={{
+                    y: [0, -4, 0],
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    repeat: Infinity,
+                    repeatDelay: 3,
+                    ease: [0.4, 0, 0.6, 1],
+                  }}
+                  whileHover={{
+                    scale: 1.15,
+                    transition: { duration: 0.2 },
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  type="button"
+                  aria-label="Enable notifications"
+                >
+                  <Bell className="w-4 h-4 text-white pointer-events-none" />
+                </motion.button>
+
+                {/* Notification tooltip */}
+                <AnimatePresence>
+                  {showNotificationTooltip && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                      transition={{
+                        duration: 0.5,
+                        ease: [0.4, 0, 0.2, 1],
+                        type: 'spring',
+                        stiffness: 300,
+                        damping: 30,
+                      }}
+                      className="absolute top-12 -left-32 z-50 pointer-events-none"
+                    >
+                      <div className="relative">
+                        <p
+                          className="text-white text-sm whitespace-nowrap font-medium drop-shadow-sm"
+                          style={{
+                            fontFamily: "'Dancing Script', cursive",
+                            fontSize: '16px',
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          click here to allow notifications ✨
+                        </p>
+                        <svg
+                          className="absolute -top-4 left-28"
+                          width="30"
+                          height="20"
+                          viewBox="0 0 30 20"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <motion.path
+                            d="M6 16 C 10 16, 16 12, 24 4 L 20 2 M 24 4 L 22 8"
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                            initial={{ pathLength: 0, opacity: 0 }}
+                            animate={{ pathLength: 1, opacity: 1 }}
+                            transition={{
+                              duration: 1,
+                              delay: 0.3,
+                              ease: 'easeInOut',
+                            }}
+                          />
+                        </svg>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Profile dropdown */}
+            <div className="relative">
+              <motion.button
+                ref={profileButtonRef}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onProfileClick}
+                className="
+                  w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full 
+                  flex items-center justify-center text-lg font-bold text-white shadow-lg 
+                  select-none uppercase cursor-pointer transition-all duration-200
+                  hover:bg-white/30 border border-white/30
+                  focus:outline-none focus:ring-2 focus:ring-white/40
+                "
+                type="button"
+                aria-label="Profile menu"
+              >
+                {getInitials(name) || '🍽️'}
+              </motion.button>
+
+              <ProfileDropdown
+                name={name}
+                isOpen={showProfileDropdown}
+                onClose={onProfileClose}
+                profileButtonRef={profileButtonRef}
+                isAuthenticated={isUserAuthenticated}
+                onLogin={onLogin}
+                onLogout={onLogout}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Quote section */}
+        <div className="w-full max-w-lg mx-auto px-6 mt-0">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="
+              relative flex items-start px-5 py-4 rounded-2xl
+              bg-white/10 backdrop-blur-sm border border-white/20
+              min-h-[60px] shadow-sm
+            "
+          >
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 text-lg mr-4 flex-shrink-0 mt-0.5">
+              <Sparkles className="w-4 h-4 text-white" />
+            </span>
+            {loading || !quote ? (
+              <span className="animate-pulse text-base font-normal italic text-white/70 flex-1">
+                Loading motivation…
+              </span>
+            ) : (
+              <span
+                className="font-semibold text-[1rem] sm:text-lg leading-snug text-white break-words flex-1 drop-shadow-sm"
+                dangerouslySetInnerHTML={{
+                  __html: highlightQuote(quote),
+                }}
+              />
+            )}
+          </motion.div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// ============================================================================
 // CUSTOM HOOKS
 // ============================================================================
 
 /**
  * Custom hook to fetch and calculate user's current meal logging streak
  * Handles data recovery scenarios with retry logic and manual refresh capability
+ * NOW WITH SESSION STORAGE CACHING to prevent multiple API calls
  */
 function useUserStreak(user_id?: string, isAfterRecovery = false) {
   const [streak, setStreak] = useState(0);
@@ -223,8 +703,13 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
    * Useful for triggering updates after data changes
    */
   const refreshStreak = useCallback(() => {
+    // Clear session cache when manually refreshing
+    if (user_id) {
+      sessionStorage.removeItem(`mealapp_streak_${user_id}`);
+      sessionStorage.removeItem(`mealapp_streak_timestamp_${user_id}`);
+    }
     setRefreshTrigger((prev) => prev + 1);
-  }, []);
+  }, [user_id]);
 
   useEffect(() => {
     if (!user_id) {
@@ -236,6 +721,27 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
 
     const fetchStreakWithRetry = async (attempt = 1): Promise<void> => {
       try {
+        // Check session storage first (unless this is a recovery or manual refresh)
+        if (!isAfterRecovery && refreshTrigger === 0) {
+          const cachedStreak = sessionStorage.getItem(
+            `mealapp_streak_${user_id}`,
+          );
+          const cachedTimestamp = sessionStorage.getItem(
+            `mealapp_streak_timestamp_${user_id}`,
+          );
+
+          if (cachedStreak !== null && cachedTimestamp) {
+            const cacheAge = Date.now() - parseInt(cachedTimestamp);
+            // Use cached data if it's less than 5 minutes old
+            if (cacheAge < 5 * 60 * 1000) {
+              const parsedStreak = parseInt(cachedStreak);
+              setStreak(isNaN(parsedStreak) ? 0 : parsedStreak);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
         // For users who just recovered data, add delay to ensure backend sync completion
         if (isAfterRecovery && attempt === 1) {
           await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -270,6 +776,16 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
           return fetchStreakWithRetry(attempt + 1);
         }
 
+        // Cache the result in session storage
+        sessionStorage.setItem(
+          `mealapp_streak_${user_id}`,
+          calculatedStreak.toString(),
+        );
+        sessionStorage.setItem(
+          `mealapp_streak_timestamp_${user_id}`,
+          Date.now().toString(),
+        );
+
         setStreak(calculatedStreak);
       } catch (error) {
         console.error('Failed to fetch user streak:', error);
@@ -291,18 +807,24 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
       }
     };
 
-    setLoading(true);
-    fetchStreakWithRetry();
+    // Add debounce to prevent rapid successive calls - ONLY execution path
+    const debounceDelay = 100;
+    const timeoutId = setTimeout(() => {
+      if (!isCancelled) {
+        setLoading(true);
+        fetchStreakWithRetry(); // ← THIS WAS MISSING!
+      }
+    }, debounceDelay);
 
     // Cleanup function to prevent state updates on unmounted component
     return () => {
       isCancelled = true;
+      clearTimeout(timeoutId);
     };
-  }, [user_id, isAfterRecovery, refreshTrigger]); // Added refreshTrigger to dependencies
+  }, [user_id, isAfterRecovery, refreshTrigger]);
 
   return { streak, loading, refreshStreak };
 }
-
 // ============================================================================
 // DATA HANDLING FUNCTIONS
 // ============================================================================
@@ -399,7 +921,7 @@ function ProfileDropdown({
   onLogout: () => Promise<void>;
 }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // Handle clicks outside dropdown to close it
   useEffect(() => {
@@ -436,12 +958,12 @@ function ProfileDropdown({
   };
 
   const handleEditProfile = () => {
-    router.push('/friends');
+    navigate('/');
     onClose();
   };
 
   const handleSettings = () => {
-    router.push('/recover');
+    navigate('/recover');
     onClose();
   };
 
@@ -467,22 +989,22 @@ function ProfileDropdown({
 
           <div
             className="
-            bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/60
-            overflow-hidden min-w-[200px]
-            shadow-pink-100/40
-          "
+  bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-pink-200/40
+  overflow-hidden min-w-[200px]
+  shadow-pink-200/50
+"
           >
-            {/* User info header */}
-            <div className="px-4 py-4 bg-gradient-to-r from-pink-50 to-yellow-50 border-b border-gray-100/50">
+            {/* User info header - matching header gradient */}
+            <div className="px-4 py-4 bg-gradient-to-r from-pink-400 to-purple-400 border-b border-pink-300/30">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md select-none uppercase">
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md select-none uppercase border border-white/30">
                   {getInitials(name) || '🍽️'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+                  <p className="text-sm font-semibold text-white truncate drop-shadow-sm">
                     {name || 'Guest User'}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-white/80">
                     {isAuthenticated ? 'Logged in' : 'Guest user'}
                   </p>
                 </div>
@@ -492,31 +1014,31 @@ function ProfileDropdown({
             {/* Menu options */}
             <div className="py-2">
               <motion.button
-                whileHover={{ backgroundColor: 'rgba(249, 168, 212, 0.1)' }}
+                whileHover={{ backgroundColor: 'rgba(236, 72, 153, 0.1)' }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleEditProfile}
                 className="
-                  w-full px-4 py-3 text-left flex items-center gap-3 
-                  text-gray-700 hover:text-pink-600 transition-colors
-                  border-none bg-transparent cursor-pointer
-                "
+    w-full px-4 py-3 text-left flex items-center gap-3 
+    text-gray-700 hover:text-pink-500 transition-colors
+    border-none bg-transparent cursor-pointer
+  "
               >
                 <i className="fas fa-user-edit text-sm w-4 text-center text-pink-500"></i>
                 <span className="text-sm font-medium">Edit Profile</span>
               </motion.button>
 
               <motion.button
-                whileHover={{ backgroundColor: 'rgba(168, 162, 250, 0.1)' }}
+                whileHover={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSettings}
                 className="
-                  w-full px-4 py-3 text-left flex items-center gap-3 
-                  text-gray-700 hover:text-purple-600 transition-colors
-                  border-none bg-transparent cursor-pointer
-                "
+    w-full px-4 py-3 text-left flex items-center gap-3 
+    text-gray-700 hover:text-purple-500 transition-colors
+    border-none bg-transparent cursor-pointer
+  "
               >
-                <i className="fas fa-cog text-sm w-4 text-center text-purple-500"></i>
-                <span className="text-sm font-medium">Settings</span>
+                <i className="fas fa-cog text-sm w-4 text-center text-purple-400"></i>
+                <span className="text-sm font-medium">Recover Data</span>
               </motion.button>
 
               <div className="mx-4 my-2 border-t border-gray-100"></div>
@@ -528,10 +1050,10 @@ function ProfileDropdown({
                   whileTap={{ scale: 0.98 }}
                   onClick={handleLogout}
                   className="
-                    w-full px-4 py-3 text-left flex items-center gap-3 
-                    text-gray-700 hover:text-red-600 transition-colors
-                    border-none bg-transparent cursor-pointer
-                  "
+                  w-full px-4 py-3 text-left flex items-center gap-3 
+                  text-gray-700 hover:text-red-500 transition-colors
+                  border-none bg-transparent cursor-pointer
+                "
                 >
                   <i className="fas fa-sign-out-alt text-sm w-4 text-center text-red-500"></i>
                   <span className="text-sm font-medium">Logout</span>
@@ -559,53 +1081,28 @@ function ProfileDropdown({
   );
 }
 
-/**
- * Loading screen component with animated elements
- * Displays during app initialization
- */
-function LoadingScreen({ isVisible }: { isVisible: boolean }) {
-  return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-          className="loading-screen-image flex flex-col items-center justify-center"
-        >
-          <div className="flex-1" />
+const setTabAndNavigate = (
+  tab: 'meals' | 'progress' | 'friends',
+  path: string = '/',
+) => {
+  sessionStorage.setItem('mealapp_internal_nav', 'true');
+  sessionStorage.setItem('mealapp_active_tab', tab);
+  if (path !== '/') {
+    window.location.href = path;
+  }
+};
 
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
-            className="relative z-10 text-center px-6 pb-16"
-          >
-            <h1
-              className="text-lg font-light text-gray-600 mb-3 tracking-wide"
-              style={{
-                fontFamily:
-                  '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Arial, sans-serif',
-                letterSpacing: '0.5px',
-              }}
-            >
-              loading your meals
-            </h1>
-            <motion.div
-              animate={{ opacity: [0.3, 0.7, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              className="flex justify-center space-x-1.5"
-            >
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-            </motion.div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+// Make it available globally for other components
+if (typeof window !== 'undefined') {
+  (window as any).setTabAndNavigate = setTabAndNavigate;
 }
+
+// ============================================================================
+// GLOBAL REQUEST TRACKING
+// ============================================================================
+
+// Add global request tracking outside component to persist across renders
+const activeQuoteRequests = new Map<string, Promise<any>>();
 
 // ============================================================================
 // MAIN COMPONENT
@@ -623,11 +1120,53 @@ export default function Home() {
   // Content and UI state
   const [quote, setQuote] = useState('');
   const [loading, setLoading] = useState(true);
-  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
+  const [showSplashScreen, setShowSplashScreen] = useState(true);
   const [contentReady, setContentReady] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [hasAnimatedStreak, setHasAnimatedStreak] = useState(false);
+  const [isNavigationLoading, setIsNavigationLoading] = useState(false);
+
   const [activeTab, setActiveTab] = useState<'meals' | 'progress' | 'friends'>(
     'meals',
   );
+
+  // Enhanced tab persistence with proper initialization
+  useEffect(() => {
+    if (!isClient) return;
+
+    const savedTab = sessionStorage.getItem('mealapp_active_tab') as
+      | 'meals'
+      | 'progress'
+      | 'friends';
+    if (savedTab && ['meals', 'progress', 'friends'].includes(savedTab)) {
+      setActiveTab(savedTab);
+    }
+  }, [isClient]);
+
+  // Update the persistence effect to use consistent key
+  useEffect(() => {
+    if (isClient) {
+      sessionStorage.setItem('mealapp_active_tab', activeTab);
+    }
+  }, [activeTab, isClient]);
+
+  // Detect navigation back to homepage
+  useEffect(() => {
+    if (!isClient) return;
+
+    const isReturningToHome = sessionStorage.getItem('isReturningToHome');
+    if (isReturningToHome === 'true') {
+      setIsNavigationLoading(true);
+      sessionStorage.removeItem('isReturningToHome');
+
+      // Brief delay to let layout stabilize
+      const timer = setTimeout(() => {
+        setIsNavigationLoading(false);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isClient]);
 
   // User and authentication state
   const [name, setName] = useState('');
@@ -663,6 +1202,7 @@ export default function Home() {
   // Refs and hooks
   const profileButtonRef = useRef<HTMLButtonElement>(null);
   const hasFetchedMeals = useRef(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Use the enhanced streak hook with recovery awareness and refresh capability
   const {
@@ -673,7 +1213,7 @@ export default function Home() {
 
   useUserInitialization(userId);
 
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // ========================================================================
   // DATA FETCHING FUNCTIONS
@@ -696,11 +1236,8 @@ export default function Home() {
 
         const data = await response.json();
 
-        console.log('Friend code API response:', data); // Debug log
-
         if (data.success && data.friendCode) {
           setFriendCode(data.friendCode);
-          console.log('Friend code set:', data.friendCode); // Debug log
         } else {
           console.log('No friend code found for user');
           setFriendCode('');
@@ -732,48 +1269,124 @@ export default function Home() {
   };
 
   /**
-   * Handles push notification setup and subscription
-   * Requests permission and registers service worker
+   * Updated handleNotificationClick function for your homepage
+   * Replace your existing function with this one
    */
   const handleNotificationClick = async () => {
     try {
-      // Register service worker and request permission
-      const reg = await navigator.serviceWorker.ready;
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') throw new Error('Notification permission denied');
+      console.log('🔔 Starting notification setup...');
 
-      // VAPID public key for push subscription (should be in environment variables)
+      // 1. Check if service workers are supported
+      if (!('serviceWorker' in navigator)) {
+        throw new Error('Service workers not supported in this browser');
+      }
+
+      if (!('PushManager' in window)) {
+        throw new Error('Push notifications not supported in this browser');
+      }
+
+      // 2. Register service worker if not already registered
+      let registration;
+      try {
+        registration = await navigator.serviceWorker.getRegistration();
+
+        if (!registration) {
+          console.log('📝 Registering service worker...');
+          registration = await navigator.serviceWorker.register(
+            '/service-worker.js',
+            {
+              scope: '/',
+            },
+          );
+          console.log('✅ Service worker registered successfully');
+        } else {
+          console.log('✅ Service worker already registered');
+        }
+
+        // Wait for service worker to be ready
+        await navigator.serviceWorker.ready;
+      } catch (swError) {
+        console.error('❌ Service worker registration failed:', swError);
+        throw new Error('Failed to register service worker');
+      }
+
+      // 3. Request notification permission
+      console.log('🔐 Requesting notification permission...');
+      const permission = await Notification.requestPermission();
+
+      if (permission !== 'granted') {
+        throw new Error(
+          'Notification permission denied. Please enable notifications in your browser settings.',
+        );
+      }
+
+      console.log('✅ Notification permission granted');
+
+      // 4. Create push subscription
       const vapidPublicKey =
         'BAEWVqKa9ASTlGbc7Oo_BJGAsYBtlYAS1IkI1gKMz5Ot6WnNQuP-WQ2u3sDRDV4Ca5kZQwo8aKOshT3wOrUugxk';
 
-      // Subscribe to push notifications
-      const subscription = await reg.pushManager.subscribe({
+      console.log('📱 Creating push subscription...');
+      const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
-      // Save subscription to backend
+      console.log('✅ Push subscription created');
+
+      // 5. Save subscription to backend WITH user_id
+      console.log('💾 Saving subscription to backend...');
       const response = await fetch('/api/push/save-subscription', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           subscription,
+          user_id: userId, // This is the key fix - include user_id
         }),
-        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        const errorData = await response.json();
+        console.error('❌ Backend save failed:', errorData);
+        throw new Error(
+          `Failed to save subscription: ${errorData.error || 'Unknown error'}`,
+        );
       }
 
+      const result = await response.json();
+      console.log('✅ Subscription saved to backend:', result);
+
+      // 6. Update UI state
       setNotificationsEnabled(true);
-      alert('🎉 Notifications enabled!');
-    } catch (err: any) {
-      console.error('Notification setup failed:', err);
-      alert(`Error: ${err.message}`);
+
+      // Show success message
+      alert(
+        "🎉 Notifications enabled! You'll now receive encouraging reminders.",
+      );
+    } catch (error) {
+      console.error('💥 Notification setup failed:', error);
+
+      // Show user-friendly error message
+      let errorMessage = 'Failed to enable notifications. ';
+
+      if (error instanceof Error) {
+        if (error.message.includes('permission denied')) {
+          errorMessage +=
+            'Please enable notifications in your browser settings and try again.';
+        } else if (error.message.includes('not supported')) {
+          errorMessage += "Your browser doesn't support push notifications.";
+        } else {
+          errorMessage += error.message;
+        }
+      } else {
+        errorMessage += 'Please try again or check your browser settings.';
+      }
+
+      alert(`❌ ${errorMessage}`);
     }
   };
-
   /**
    * Saves user name to backend and updates UI state
    */
@@ -783,10 +1396,10 @@ export default function Home() {
     const success = await saveUserName(userId, tempName.trim());
     if (success) {
       setName(tempName.trim());
+      fetchQuote(tempName.trim());
       setShowNameSaved(true);
       setTimeout(() => {
         setAskName(false);
-        fetchQuote(tempName.trim());
         fetchLoggedMealsAndRefreshStreak(userId);
       }, 1200);
     }
@@ -804,6 +1417,10 @@ export default function Home() {
       setLoggedMeals([]);
       setIsAfterRecovery(false);
       localStorage.removeItem('user_id');
+
+      // Clear session quote so new user gets fresh quote
+      sessionStorage.removeItem('mealapp_daily_quote');
+      sessionStorage.removeItem('mealapp_quote_name');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -813,8 +1430,35 @@ export default function Home() {
    * Navigates to data recovery page
    */
   const handleRecoverData = () => {
-    router.push('/recover');
+    navigate('/recover');
   };
+
+  /**
+   * Handle tab change - simplified for opacity animation
+   */
+  const handleTabChange = (newTab: 'meals' | 'progress' | 'friends') => {
+    if (newTab !== activeTab) {
+      setActiveTab(newTab);
+    }
+  };
+
+  // ========================================================================
+  // UI INTERACTION HANDLERS
+  // ========================================================================
+
+  /**
+   * Handles profile button click to toggle dropdown
+   */
+  const handleProfileClick = useCallback(() => {
+    setShowProfileDropdown((prev) => !prev);
+  }, []);
+
+  /**
+   * Handles closing the profile dropdown
+   */
+  const handleProfileClose = useCallback(() => {
+    setShowProfileDropdown(false);
+  }, []);
 
   // ========================================================================
   // DATA FETCHING FUNCTIONS
@@ -822,20 +1466,46 @@ export default function Home() {
 
   /**
    * Fetches personalized motivational quote from GPT API
+   * Only fetches if no quote exists in session storage
    * @param {string} nameToUse - User's name for personalization
    */
+
   const fetchQuote = (nameToUse: string): void => {
+    // Check if we already have a quote for this session
+    const sessionQuote = sessionStorage.getItem('mealapp_daily_quote');
+    const sessionQuoteName = sessionStorage.getItem('mealapp_quote_name');
+
+    if (sessionQuote && sessionQuoteName === nameToUse) {
+      setQuote(sessionQuote);
+      setLoading(false);
+      return;
+    }
+
+    // Check if request is already in progress
+    const requestKey = `quote_${nameToUse}`;
+    if (activeQuoteRequests.has(requestKey)) {
+      // Wait for existing request
+      activeQuoteRequests.get(requestKey)?.then(() => {
+        const latestQuote = sessionStorage.getItem('mealapp_daily_quote');
+        if (latestQuote) {
+          setQuote(latestQuote);
+          setLoading(false);
+        }
+      });
+      return;
+    }
+
+    // No session quote or name changed - fetch new one
     setLoading(true);
     setQuote('');
 
-    fetch(
+    const requestPromise = fetch(
       `/api/gpt/quote?ts=${Date.now()}&name=${encodeURIComponent(nameToUse)}`,
     )
       .then((res: Response) => res.json())
       .then((data: QuoteResponse) => {
         let safeQuote = typeof data.quote === 'string' ? data.quote : '';
 
-        // Fallback for invalid or empty quotes
         if (
           !safeQuote ||
           safeQuote.toLowerCase().includes('undefined') ||
@@ -843,15 +1513,25 @@ export default function Home() {
         ) {
           safeQuote = "You're doing amazing! One step at a time.";
         }
+
         setQuote(safeQuote);
+        sessionStorage.setItem('mealapp_daily_quote', safeQuote);
+        sessionStorage.setItem('mealapp_quote_name', nameToUse);
       })
       .catch((error) => {
         console.error('Quote fetch failed:', error);
-        setQuote("You're doing amazing! One step at a time.");
+        const fallbackQuote = "You're doing amazing! One step at a time.";
+        setQuote(fallbackQuote);
+        sessionStorage.setItem('mealapp_daily_quote', fallbackQuote);
+        sessionStorage.setItem('mealapp_quote_name', nameToUse);
       })
-      .finally(() => setLoading(false));
-  };
+      .finally(() => {
+        setLoading(false);
+        activeQuoteRequests.delete(requestKey);
+      });
 
+    activeQuoteRequests.set(requestKey, requestPromise);
+  };
   /**
    * Fetches today's logged meals for the current user
    * Uses EST timezone for consistent daily boundaries
@@ -903,6 +1583,7 @@ export default function Home() {
 
   /**
    * Enhanced meal refresh that also updates streak
+   * NOW CLEARS STREAK CACHE when meals are updated
    */
   const fetchLoggedMealsAndRefreshStreak = async (
     user_id: string,
@@ -910,36 +1591,73 @@ export default function Home() {
     // Fetch meals first
     await fetchLoggedMeals(user_id);
 
+    // Clear streak cache since meals changed
+    sessionStorage.removeItem(`mealapp_streak_${user_id}`);
+    sessionStorage.removeItem(`mealapp_streak_timestamp_${user_id}`);
+
     // Then refresh streak to get latest data
     refreshStreak();
   };
-
   // ========================================================================
   // EFFECT HOOKS
   // ========================================================================
+
+  /**
+   * client-side detection AND initial loading
+   */
+  useEffect(() => {
+    setIsClient(true);
+
+    // Add initial loading delay for content to settle
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 800); // loading screen delay
+
+    return () => clearTimeout(timer);
+  }, []);
 
   /**
    * App initialization effect
    * Handles loading screen timing and content readiness
    */
   useEffect(() => {
-    const hasShownLoadingScreen = sessionStorage.getItem('mealapp_has_loaded');
+    if (!isClient) return;
 
-    if (!hasShownLoadingScreen) {
-      // First time loading - show loading screen
-      const timer = setTimeout(() => {
-        setShowLoadingScreen(false);
-        sessionStorage.setItem('mealapp_has_loaded', 'true');
-        setTimeout(() => setContentReady(true), 100);
-      }, 2000);
+    setTimeout(() => {
+      const hasShownSplashScreen = sessionStorage.getItem('mealapp_has_loaded');
+      const isInternalNav = sessionStorage.getItem('mealapp_internal_nav');
 
-      return () => clearTimeout(timer);
-    } else {
-      // Already loaded before - skip loading screen
-      setShowLoadingScreen(false);
-      setContentReady(true);
-    }
-  }, []);
+      // Clear the internal nav flag
+      if (isInternalNav) {
+        sessionStorage.removeItem('mealapp_internal_nav');
+      }
+
+      if (!isInternalNav && !hasShownSplashScreen) {
+        setContentReady(true);
+
+        const minSplashTime = 100;
+
+        const timer = setTimeout(() => {
+          setShowSplashScreen(false);
+          sessionStorage.setItem('mealapp_has_loaded', 'true');
+        }, minSplashTime);
+
+        return () => clearTimeout(timer);
+      } else {
+        setShowSplashScreen(false);
+        setContentReady(true);
+      }
+    }, 100);
+  }, [isClient]);
+
+  /**
+   * Persist the active tab to localStorage whenever it changes
+   * This ensures the user returns to the same tab when navigating back from other pages
+   */
+
+  useEffect(() => {
+    sessionStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
 
   /**
    * Auto-reload at midnight EST effect
@@ -974,14 +1692,47 @@ export default function Home() {
   }, [userId]);
 
   /**
-   * App data initialization effect
-   * Loads user data once userId and content are ready
+   * Enhanced notification state checking
+   * Replace the notification checking section in your useEffect with this:
    */
+
   useEffect(() => {
-    // Check notification permission status
-    if (typeof Notification !== 'undefined') {
-      setNotificationsEnabled(Notification.permission === 'granted');
-    }
+    // Don't just check permission - check for actual subscription
+    const checkNotificationState = async () => {
+      try {
+        // First check if notifications are supported
+        if (typeof Notification === 'undefined') {
+          setNotificationsEnabled(false);
+          return;
+        }
+
+        // Check permission
+        if (Notification.permission !== 'granted') {
+          setNotificationsEnabled(false);
+          return;
+        }
+
+        // Check if we have an active push subscription
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration) {
+            const subscription =
+              await registration.pushManager.getSubscription();
+            if (subscription) {
+              // We have both permission AND an active subscription
+              setNotificationsEnabled(true);
+              return;
+            }
+          }
+        }
+
+        // Permission granted but no active subscription
+        setNotificationsEnabled(false);
+      } catch (error) {
+        console.error('Error checking notification state:', error);
+        setNotificationsEnabled(false);
+      }
+    };
 
     if (!userId || !contentReady) return;
 
@@ -993,39 +1744,25 @@ export default function Home() {
       } else {
         setName(existingName);
         fetchQuote(existingName);
-        fetchLoggedMealsAndRefreshStreak(userId);
-        fetchFriendCode(userId); // Fetch friend code when user data is loaded
+        fetchFriendCode(userId);
       }
 
-      // Check for existing push subscription
-      try {
-        if (
-          'serviceWorker' in navigator &&
-          Notification.permission === 'granted'
-        ) {
-          const registration = await navigator.serviceWorker.getRegistration();
-          if (registration) {
-            const subscription =
-              await registration.pushManager.getSubscription();
-            if (subscription) {
-              setNotificationsEnabled(true);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error checking existing push subscription:', error);
-      }
+      // Check notification state properly
+      await checkNotificationState();
     };
 
     init();
-  }, [userId, contentReady, refreshStreak, fetchFriendCode]);
+  }, [userId, contentReady, fetchFriendCode]); // Remove refreshStreak dependency
 
   /**
-   * Enhanced meal data refresh effect with streak refresh
-   * Handles real-time updates when app regains focus
+   * Single consolidated effect for meal and streak data
+   * Handles initial fetch and real-time updates
    */
   useEffect(() => {
     if (!userId || !contentReady) return;
+
+    // Skip if already fetched for this user session
+    if (hasFetchedMeals.current) return;
 
     const refreshMealsAndStreak = () => {
       fetchLoggedMealsAndRefreshStreak(userId);
@@ -1033,6 +1770,7 @@ export default function Home() {
 
     // Initial fetch
     refreshMealsAndStreak();
+    hasFetchedMeals.current = true;
 
     // Set up event listeners for app state changes
     const handleVisibilityChange = () => {
@@ -1066,24 +1804,14 @@ export default function Home() {
       window.removeEventListener('pageshow', handlePageShow);
       clearInterval(interval);
     };
-  }, [userId, contentReady, refreshStreak]);
+  }, [userId, contentReady]);
 
   /**
-   * Initial meal fetch effect
-   * Ensures meals are loaded exactly once per user session
-   */
-  useEffect(() => {
-    if (userId && !hasFetchedMeals.current && contentReady) {
-      fetchLoggedMealsAndRefreshStreak(userId);
-      hasFetchedMeals.current = true;
-    }
-  });
-
-  /**
-   * Reset meal fetch tracking when user changes
+   * Reset state when user changes
    */
   useEffect(() => {
     hasFetchedMeals.current = false;
+    setHasAnimatedStreak(false);
   }, [userId]);
 
   /**
@@ -1092,7 +1820,7 @@ export default function Home() {
    */
   useEffect(() => {
     const initializeUser = async () => {
-      if (!contentReady) {
+      if (!isClient) {
         return;
       }
 
@@ -1144,8 +1872,8 @@ export default function Home() {
           const existingName = await getAuthUserName(session.user.id);
           if (existingName) {
             setName(existingName);
-            setAskName(false);
             fetchQuote(existingName);
+            setAskName(false);
           } else {
             setAskName(true);
           }
@@ -1161,6 +1889,12 @@ export default function Home() {
           if (localUserId) {
             console.log('📱 Using local user ID:', localUserId);
             setUserId(localUserId);
+
+            const existingName = await getUserName(localUserId);
+            if (existingName) {
+              setName(existingName);
+              fetchQuote(existingName);
+            }
           } else {
             console.log('❌ No user ID found');
             // No user ID at all - will show auth prompt
@@ -1179,7 +1913,7 @@ export default function Home() {
     };
 
     initializeUser();
-  }, [contentReady, refreshStreak, fetchFriendCode]);
+  }, [isClient, refreshStreak, fetchFriendCode]);
 
   /**
    * Enhanced data recovery redirect handler with streak refresh
@@ -1227,7 +1961,6 @@ export default function Home() {
             if (nameData.name) {
               setName(nameData.name);
               setAskName(false);
-              fetchQuote(nameData.name);
             }
           }
 
@@ -1288,32 +2021,24 @@ export default function Home() {
   // RENDER
   // ========================================================================
 
+  // Show skeleton during navigation loading OR initial loading
+  if (isNavigationLoading || isInitialLoading) {
+    return <HomePageSkeleton />;
+  }
+
   return (
     <>
-      {/* External CSS dependencies */}
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-        crossOrigin="anonymous"
-        referrerPolicy="no-referrer"
-      />
-
-      {/* Loading screen overlay */}
-      <LoadingScreen isVisible={showLoadingScreen} />
-
       {/* Login modal */}
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
-
       {/* Data merging progress overlay */}
       {isMergingData && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center safe-all"
         >
           <div className="bg-white/90 backdrop-blur-md rounded-2xl p-8 shadow-2xl max-w-sm mx-4">
             <div className="text-center">
@@ -1363,7 +2088,10 @@ export default function Home() {
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -50 }}
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-100 border border-green-300 rounded-lg p-4 max-w-sm mx-4"
+          className="fixed left-1/2 transform -translate-x-1/2 z-50 bg-green-100 border border-green-300 rounded-lg p-4 max-w-sm"
+          style={{
+            top: `calc(env(safe-area-inset-top) + 1rem)`,
+          }}
         >
           <div className="flex items-center">
             <div className="text-green-600 mr-3">✅</div>
@@ -1381,17 +2109,14 @@ export default function Home() {
 
       {/* Main app content */}
       <AnimatePresence>
-        {contentReady && (
+        {contentReady && isClient && !isInitialLoading && (
           <motion.main
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
             className="
               min-h-[100dvh] w-full h-[100dvh] overflow-hidden
-              relative pt-8 md:pt-12 flex flex-col
+              relative flex flex-col safe-all
             "
             style={{
-              paddingTop: 'max(env(safe-area-inset-top), 2rem)',
+              paddingTop: 'calc(2rem + env(safe-area-inset-top))',
             }}
           >
             {/* 
@@ -1419,7 +2144,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="absolute inset-0 z-50 flex items-center justify-center px-4"
+                className="absolute inset-0 z-50 flex items-center justify-center safe-x"
               >
                 <div className="w-full max-w-md">
                   <div className="flex flex-col items-center mb-8">
@@ -1497,7 +2222,7 @@ export default function Home() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6 }}
-                className="absolute inset-0 z-50 flex items-center justify-center px-4"
+                className="absolute inset-0 z-50 flex items-center justify-center safe-x"
               >
                 <div className="text-center">
                   <div className="mb-6 text-6xl">💖</div>
@@ -1517,233 +2242,66 @@ export default function Home() {
 
             {!askName && userId && (
               <>
-                {/* Header with greeting and profile */}
-                <div className="w-full max-w-lg mx-auto px-4 flex flex-row items-center justify-between mb-8">
-                  <div className="flex flex-col">
-                    <span className="text-[1.5rem] font-bold text-gray-900 leading-snug flex items-center gap-1">
-                      {name ? (
-                        <>
-                          Hello, {name.split(' ')[0]}{' '}
-                          <span className="ml-1">👋</span>
-                        </>
-                      ) : (
-                        'Hello! 👋'
-                      )}
-                    </span>
-                    {/* Streak indicator */}
-                    {!streakLoading && streak > 0 && (
-                      <motion.span
-                        key={streak}
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1.1, opacity: 1 }}
-                        transition={{
-                          type: 'spring',
-                          stiffness: 320,
-                          damping: 18,
-                        }}
-                        className="flex items-center mt-1 text-[1rem] font-medium text-gray-700 pl-1"
-                      >
-                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400 mr-2" />
-                        <span>
-                          {streak} day{streak > 1 && 's'} streak!
-                        </span>
-                      </motion.span>
-                    )}
-                  </div>
+                {/* Beautiful SVG Wave Header */}
+                <HomeHeader
+                  name={name}
+                  streak={streak}
+                  quote={quote}
+                  loading={loading}
+                  streakLoading={streakLoading}
+                  notificationsEnabled={notificationsEnabled}
+                  showNotificationTooltip={showNotificationTooltip}
+                  onNotificationClick={handleNotificationClick}
+                  onProfileClick={handleProfileClick}
+                  profileButtonRef={profileButtonRef}
+                  showProfileDropdown={showProfileDropdown}
+                  onProfileClose={handleProfileClose}
+                  isUserAuthenticated={isUserAuthenticated}
+                  onLogin={handleLogin}
+                  onLogout={handleLogout}
+                  activeTab={activeTab}
+                />
+                {/* Main content area with tabs - positioned below header */}
+                <div
+                  className="pb-24 px-4 w-full max-w-lg mx-auto"
+                  style={{ marginTop: '255px' }} // Reduced from 265px to 245px
+                >
+                  {/* Enhanced title component */}
+                  <TabTitle
+                    activeTab={activeTab}
+                    streak={streak}
+                    loggedMeals={loggedMeals}
+                  />
 
-                  {/* Action buttons and profile */}
-                  <div className="flex items-center gap-3 relative">
-                    {/* Notification bell - only show if not enabled */}
-                    {!notificationsEnabled && userId && (
-                      <div className="relative">
-                        <motion.button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setShowNotificationTooltip(false); // Hide tooltip on click
-                            handleNotificationClick();
-                          }}
-                          className="
-                            w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-yellow-400 
-                            flex items-center justify-center shadow-lg 
-                            cursor-pointer hover:scale-110 active:scale-95 transition-transform
-                            border-none outline-none focus:ring-2 focus:ring-pink-300
-                          "
-                          animate={{
-                            y: [0, -4, 0],
-                            scale: [1, 1.05, 1],
-                          }}
-                          transition={{
-                            duration: 0.8,
-                            repeat: Infinity,
-                            repeatDelay: 3,
-                            ease: [0.4, 0, 0.6, 1],
-                          }}
-                          whileHover={{
-                            scale: 1.15,
-                            transition: { duration: 0.2 },
-                          }}
-                          whileTap={{ scale: 0.95 }}
-                          style={{
-                            zIndex: 10000,
-                            WebkitTapHighlightColor: 'transparent',
-                          }}
-                          type="button"
-                          aria-label="Enable notifications"
-                        >
-                          <i className="fas fa-bell text-white text-xs pointer-events-none"></i>
-                        </motion.button>
-
-                        {/* Cursive tooltip with curvy arrow */}
-                        <AnimatePresence>
-                          {showNotificationTooltip && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                              transition={{
-                                duration: 0.5,
-                                ease: [0.4, 0, 0.2, 1],
-                                type: 'spring',
-                                stiffness: 300,
-                                damping: 30,
-                              }}
-                              className="absolute top-12 -left-32 z-50 pointer-events-none"
-                            >
-                              <div className="relative">
-                                {/* Just the text without background */}
-                                <p
-                                  className="text-pink-700 text-sm whitespace-nowrap font-medium"
-                                  style={{
-                                    fontFamily:
-                                      "'Dancing Script', 'Brush Script MT', cursive",
-                                    fontSize: '16px',
-                                    letterSpacing: '0.5px',
-                                    textShadow:
-                                      '0 1px 3px rgba(255, 255, 255, 0.8)',
-                                  }}
-                                >
-                                  click here to allow notifications ✨
-                                </p>
-
-                                {/* Arrow pointing up to bell - flipped 180 degrees */}
-                                <svg
-                                  className="absolute -top-4 left-28"
-                                  width="30"
-                                  height="20"
-                                  viewBox="0 0 30 20"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  <motion.path
-                                    d="M6 16 C 10 16, 16 12, 24 4 L 20 2 M 24 4 L 22 8"
-                                    stroke="#ec4899"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    fill="none"
-                                    initial={{ pathLength: 0, opacity: 0 }}
-                                    animate={{ pathLength: 1, opacity: 1 }}
-                                    transition={{
-                                      duration: 1,
-                                      delay: 0.3,
-                                      ease: 'easeInOut',
-                                    }}
-                                  />
-                                </svg>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    )}
-
-                    {/* Profile dropdown */}
-                    <div className="relative">
-                      <motion.button
-                        ref={profileButtonRef}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() =>
-                          setShowProfileDropdown(!showProfileDropdown)
-                        }
-                        className="
-                          w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full 
-                          flex items-center justify-center text-lg font-bold text-white shadow-lg 
-                          select-none uppercase cursor-pointer transition-all duration-200
-                          hover:shadow-xl hover:from-pink-300 hover:to-yellow-300
-                          focus:outline-none focus:ring-2 focus:ring-pink-300/40
-                          border-none
-                        "
-                        type="button"
-                        aria-label="Profile menu"
-                        style={{ WebkitTapHighlightColor: 'transparent' }}
-                      >
-                        {getInitials(name) || '🍽️'}
-                      </motion.button>
-
-                      <ProfileDropdown
-                        name={name}
-                        isOpen={showProfileDropdown}
-                        onClose={() => setShowProfileDropdown(false)}
-                        profileButtonRef={profileButtonRef}
-                        isAuthenticated={isUserAuthenticated}
-                        onLogin={() => setShowLoginModal(true)}
-                        onLogout={handleLogout}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Motivational quote section */}
-                <div className="w-full max-w-lg mx-auto px-4 mb-6">
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12, duration: 0.5 }}
-                    className="
-                      relative flex items-start px-6 py-5 rounded-2xl shadow-xl shadow-pink-100/40
-                      bg-gradient-to-tr from-[#fff3fc] via-[#f9f3fd] to-[#e7ffe7] border border-white/60
-                      min-h-[72px] z-10 w-full
-                      before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-2xl
-                      before:bg-gradient-to-tr before:from-pink-200/40 before:via-purple-100/40 before:to-yellow-100/40
-                      before:blur-2xl
-                    "
-                  >
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-pink-50 text-xl mr-4 ml-0 flex-shrink-0 mt-0.5">
-                      💡
-                    </span>
-                    {loading || !quote ? (
-                      <span className="animate-pulse text-base font-normal italic text-gray-400 flex-1">
-                        Loading motivation…
-                      </span>
-                    ) : (
-                      <span
-                        className="font-semibold text-[1.11rem] sm:text-lg leading-snug text-gray-800 break-words flex-1"
-                        dangerouslySetInnerHTML={{
-                          __html: highlightQuote(quote),
-                        }}
-                      />
-                    )}
-                  </motion.div>
-                </div>
-
-                {/* Main content area with tabs */}
-                <div className="w-full max-w-lg mx-auto px-4 flex-1 overflow-y-auto">
                   <AnimatePresence mode="wait">
                     {/* Meals tab content */}
                     {activeTab === 'meals' && (
                       <motion.div
                         key="meals"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
+                        initial={{
+                          opacity: 0,
+                          scale: 0.95,
+                          y: 10,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          scale: 1,
+                          y: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          scale: 0.95,
+                          y: -5,
+                        }}
+                        transition={{
+                          duration: 0.3,
+                          ease: [0.4, 0, 0.2, 1],
+                          type: 'spring',
+                          stiffness: 300,
+                          damping: 30,
+                        }}
                         className="pb-24"
                       >
-                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
-                          Meals Today
-                        </span>
                         <div className="flex flex-col gap-6">
                           {mealLabels.map(({ meal, emoji, label }) => {
                             const isLogged = loggedMeals.includes(meal);
@@ -1752,18 +2310,18 @@ export default function Home() {
                                 key={meal}
                                 whileTap={{ scale: isLogged ? 1 : 0.98 }}
                                 className={`
-                            flex items-center px-6 py-5 rounded-2xl transition
-                            bg-white/95 border border-gray-100 shadow-sm
-                            ${
-                              isLogged
-                                ? 'opacity-60 pointer-events-none'
-                                : 'hover:bg-pink-50 hover:shadow-lg'
-                            }
-                            cursor-pointer
-                          `}
+                flex items-center px-6 py-5 rounded-2xl transition
+                bg-white/95 border border-gray-100 shadow-sm
+                ${
+                  isLogged
+                    ? 'opacity-60 pointer-events-none'
+                    : 'hover:bg-pink-50 hover:shadow-lg'
+                }
+                cursor-pointer
+              `}
                                 onClick={() =>
                                   !isLogged &&
-                                  router.push(`/${meal}?user_id=${userId}`)
+                                  navigate(`/${meal}?user_id=${userId}`)
                                 }
                                 tabIndex={isLogged ? -1 : 0}
                                 aria-disabled={isLogged}
@@ -1773,7 +2331,7 @@ export default function Home() {
                                     !isLogged &&
                                     (e.key === 'Enter' || e.key === ' ')
                                   ) {
-                                    router.push(`/${meal}`);
+                                    navigate(`/${meal}`);
                                   }
                                 }}
                               >
@@ -1812,7 +2370,7 @@ export default function Home() {
                                     >
                                       <path
                                         fillRule="evenodd"
-                                        d="M10.293 15.707a1 1 0 001.414 0l5-5a1 1 0 00-1.414-1.414L11 12.586V3a1 1 0 10-2 0v9.586l-4.293-4.293a1 1 0 10-1.414 1.414l5 5z"
+                                        d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
                                         clipRule="evenodd"
                                       />
                                     </svg>
@@ -1829,33 +2387,37 @@ export default function Home() {
                     {activeTab === 'progress' && (
                       <motion.div
                         key="progress"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.3 }}
+                        initial={{
+                          opacity: 0,
+                          scale: 0.95,
+                          y: 10,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          scale: 1,
+                          y: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          scale: 0.95,
+                          y: -5,
+                        }}
+                        transition={{
+                          duration: 0.3,
+                          ease: [0.4, 0, 0.2, 1],
+                          type: 'spring',
+                          stiffness: 300,
+                          damping: 30,
+                        }}
                         className="pb-24"
                       >
-                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
-                          Progress
-                        </span>
-                        <div className="flex flex-col gap-6">
-                          {/* View My Summaries - Original */}
+                        <div className="flex flex-col gap-4">
                           <motion.div
                             whileTap={{ scale: 0.98 }}
-                            className={`
-                            flex items-center px-6 py-5 rounded-2xl transition
-                            bg-white/95 border border-gray-100 shadow-sm
-                            hover:bg-pink-50 hover:shadow-lg
-                            cursor-pointer
-                          `}
-                            onClick={() => router.push('/summaries')}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-pink-50 hover:shadow-lg cursor-pointer"
+                            onClick={() => navigate('/summaries')}
                             tabIndex={0}
                             role="button"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                router.push('/summaries');
-                              }
-                            }}
                           >
                             <span className="text-2xl">📋</span>
                             <div className="flex-1 flex flex-col ml-4">
@@ -1881,23 +2443,12 @@ export default function Home() {
                             </span>
                           </motion.div>
 
-                          {/* NEW: Nutritional Analysis */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
-                            className={`
-                              flex items-center px-6 py-5 rounded-2xl transition
-                              bg-white/95 border border-gray-100 shadow-sm
-                              hover:bg-green-50 hover:shadow-lg
-                              cursor-pointer
-                            `}
-                            onClick={() => router.push('/meals')}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-green-50 hover:shadow-lg cursor-pointer"
+                            onClick={() => navigate('/meals')}
                             tabIndex={0}
                             role="button"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                router.push('/nutrition');
-                              }
-                            }}
                           >
                             <span className="text-2xl">🥗</span>
                             <div className="flex-1 flex flex-col ml-4">
@@ -1923,23 +2474,12 @@ export default function Home() {
                             </span>
                           </motion.div>
 
-                          {/* View My Streaks - Existing */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
-                            className={`
-                              flex items-center px-6 py-5 rounded-2xl transition
-                              bg-white/95 border border-gray-100 shadow-sm
-                              hover:bg-orange-50 hover:shadow-lg
-                              cursor-pointer
-                            `}
-                            onClick={() => router.push('/streaks')}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-orange-50 hover:shadow-lg cursor-pointer"
+                            onClick={() => navigate('/streaks')}
                             tabIndex={0}
                             role="button"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                router.push('/streaks');
-                              }
-                            }}
                           >
                             <span className="text-2xl">🏆</span>
                             <div className="flex-1 flex flex-col ml-4">
@@ -1970,46 +2510,49 @@ export default function Home() {
                       </motion.div>
                     )}
 
-                    {/* NEW: Friends tab content */}
+                    {/* Friends tab content */}
                     {activeTab === 'friends' && (
                       <motion.div
                         key="friends"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.3 }}
+                        initial={{
+                          opacity: 0,
+                          scale: 0.95,
+                          y: 10,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          scale: 1,
+                          y: 0,
+                        }}
+                        exit={{
+                          opacity: 0,
+                          scale: 0.95,
+                          y: -5,
+                        }}
+                        transition={{
+                          duration: 0.3,
+                          ease: [0.4, 0, 0.2, 1],
+                          type: 'spring',
+                          stiffness: 300,
+                          damping: 30,
+                        }}
                         className="pb-24"
                       >
-                        <span className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-5">
-                          Friends & Support
-                        </span>
-                        <div className="flex flex-col gap-6">
-                          {/* Manage Friends */}
+                        <div className="flex flex-col gap-4">
                           <motion.div
                             whileTap={{ scale: 0.98 }}
-                            className={`
-                              flex items-center px-6 py-5 rounded-2xl transition
-                              bg-white/95 border border-gray-100 shadow-sm
-                              hover:bg-blue-50 hover:shadow-lg
-                              cursor-pointer
-                            `}
-                            onClick={() => router.push('/friends')}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-purple-50 hover:shadow-lg cursor-pointer"
+                            onClick={() => navigate('/friends-list')}
                             tabIndex={0}
                             role="button"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                router.push('/friends');
-                              }
-                            }}
                           >
                             <span className="text-2xl">👥</span>
                             <div className="flex-1 flex flex-col ml-4">
                               <span className="text-base font-semibold text-gray-900">
-                                Manage Friends
+                                My Friends
                               </span>
                               <span className="text-xs text-gray-400 mt-1">
-                                Add friends, share your code, and view
-                                connections
+                                View your friends and their progress
                               </span>
                             </div>
                             <span className="text-gray-300">
@@ -2027,23 +2570,43 @@ export default function Home() {
                             </span>
                           </motion.div>
 
-                          {/* Encouragement Notes */}
                           <motion.div
                             whileTap={{ scale: 0.98 }}
-                            className={`
-                              flex items-center px-6 py-5 rounded-2xl transition
-                              bg-white/95 border border-gray-100 shadow-sm
-                              hover:bg-pink-50 hover:shadow-lg
-                              cursor-pointer
-                            `}
-                            onClick={() => router.push('/notes')}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-blue-50 hover:shadow-lg cursor-pointer"
+                            onClick={() => navigate('/friends')}
                             tabIndex={0}
                             role="button"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                router.push('/notes');
-                              }
-                            }}
+                          >
+                            <span className="text-2xl">⚙️</span>
+                            <div className="flex-1 flex flex-col ml-4">
+                              <span className="text-base font-semibold text-gray-900">
+                                Manage Friends
+                              </span>
+                              <span className="text-xs text-gray-400 mt-1">
+                                Add & manage connections
+                              </span>
+                            </div>
+                            <span className="text-gray-300">
+                              <svg
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </span>
+                          </motion.div>
+
+                          <motion.div
+                            whileTap={{ scale: 0.98 }}
+                            className="flex items-center px-6 py-5 rounded-2xl transition bg-white/95 border border-gray-100 shadow-sm hover:bg-pink-50 hover:shadow-lg cursor-pointer"
+                            onClick={() => navigate('/notes')}
+                            tabIndex={0}
+                            role="button"
                           >
                             <span className="text-2xl">💌</span>
                             <div className="flex-1 flex flex-col ml-4">
@@ -2068,27 +2631,6 @@ export default function Home() {
                               </svg>
                             </span>
                           </motion.div>
-
-                          {/* Friend Code Preview */}
-                          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
-                            <div className="text-center">
-                              <p className="text-sm text-gray-600 mb-2">
-                                Your Friend Code
-                              </p>
-                              <div className="bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg p-3 border-2 border-dashed border-indigo-300 mb-3">
-                                <div className="text-lg font-bold tracking-wider text-gray-800">
-                                  {friendCode
-                                    ? formatFriendCode(friendCode)
-                                    : '--:--:--'}
-                                </div>
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                {friendCode
-                                  ? 'Share this code with friends to connect!'
-                                  : 'Tap "Manage Friends" to generate your code'}
-                              </p>
-                            </div>
-                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -2098,25 +2640,29 @@ export default function Home() {
                 {/* ============================================================ */}
                 {/* BOTTOM NAVIGATION TABS */}
                 {/* ============================================================ */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-2 safe-area-pb">
-                  <div className="w-full max-w-lg mx-auto">
+                <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 pb-safe-bottom">
+                  <div className="w-full max-w-lg mx-auto safe-x py-2">
                     <div className="flex items-center justify-around">
                       {/* Meals tab */}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => setActiveTab('meals')}
+                        onClick={() => handleTabChange('meals')}
                         className={`
-                          flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
-                          ${
-                            activeTab === 'meals'
-                              ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg'
-                              : 'text-gray-400 hover:text-gray-600'
-                          }
-                        `}
+                        flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
+                        ${
+                          activeTab === 'meals'
+                            ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }
+                      `}
                       >
-                        <i
-                          className={`fas fa-utensils text-xl mb-1 ${activeTab === 'meals' ? 'text-white' : 'text-gray-400'}`}
-                        ></i>
+                        <svg
+                          className={`w-5 h-5 mb-1 ${activeTab === 'meals' ? 'text-white' : 'text-gray-400'}`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                        </svg>
                         <span
                           className={`text-xs font-medium ${activeTab === 'meals' ? 'text-white' : 'text-gray-400'}`}
                         >
@@ -2127,19 +2673,23 @@ export default function Home() {
                       {/* Progress tab */}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => setActiveTab('progress')}
+                        onClick={() => handleTabChange('progress')}
                         className={`
-                          flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
-                          ${
-                            activeTab === 'progress'
-                              ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg'
-                              : 'text-gray-400 hover:text-gray-600'
-                          }
-                        `}
+                        flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
+                        ${
+                          activeTab === 'progress'
+                            ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }
+                      `}
                       >
-                        <i
-                          className={`fas fa-chart-line text-xl mb-1 ${activeTab === 'progress' ? 'text-white' : 'text-gray-400'}`}
-                        ></i>
+                        <svg
+                          className={`w-5 h-5 mb-1 ${activeTab === 'progress' ? 'text-white' : 'text-gray-400'}`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                        </svg>
                         <span
                           className={`text-xs font-medium ${activeTab === 'progress' ? 'text-white' : 'text-gray-400'}`}
                         >
@@ -2147,22 +2697,26 @@ export default function Home() {
                         </span>
                       </motion.button>
 
-                      {/* NEW: Friends tab */}
+                      {/* Friends tab */}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => setActiveTab('friends')}
+                        onClick={() => handleTabChange('friends')}
                         className={`
-                          flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
-                          ${
-                            activeTab === 'friends'
-                              ? 'bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-lg'
-                              : 'text-gray-400 hover:text-gray-600'
-                          }
-                        `}
+                        flex flex-col items-center justify-center py-3 px-4 rounded-2xl transition-all duration-300
+                        ${
+                          activeTab === 'friends'
+                            ? 'bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-lg'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }
+                      `}
                       >
-                        <i
-                          className={`fas fa-users text-xl mb-1 ${activeTab === 'friends' ? 'text-white' : 'text-gray-400'}`}
-                        ></i>
+                        <svg
+                          className={`w-5 h-5 mb-1 ${activeTab === 'friends' ? 'text-white' : 'text-gray-400'}`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                        </svg>
                         <span
                           className={`text-xs font-medium ${activeTab === 'friends' ? 'text-white' : 'text-gray-400'}`}
                         >

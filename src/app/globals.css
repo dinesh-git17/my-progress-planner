@@ -2,117 +2,199 @@
 @tailwind components;
 @tailwind utilities;
 
-/* PWA Full Screen Support - Aggressive approach */
-html,
-body {
-  padding: 0;
-  margin: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow-x: hidden;
-  /* Updated to better darker pink */
-  background-color: #f3e4f0;
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  /* 🔥 Safe area support for notch devices */
+  --safe-area-inset-top: env(safe-area-inset-top);
+  --safe-area-inset-right: env(safe-area-inset-right);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --safe-area-inset-left: env(safe-area-inset-left);
 }
 
-/* Force full screen coverage including status bar area */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #fdf2f8;
+    --foreground: #1f2937;
+  }
+}
+
 html {
-  background-color: #f3e4f0;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 35%, #f1f5f9 70%, #e2e8f0 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
+/* 🔥 TRANSPARENT BODY: Lets HTML background show through */
 body {
-  background-color: #f3e4f0;
+  color: var(--foreground);
+  /* CRITICAL: Transparent background so HTML gradient shows */
+  background: transparent;
+  font-family:
+    "DM Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  min-height: 100vh;
+  font-feature-settings:
+    "liga" 1,
+    "kern" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  overflow-x: hidden;
+  /* 🔥 INDUSTRY STANDARD: No padding on body - let containers handle safe areas */
 }
 
-/* Ensure PWA fills entire screen with safe area support */
-@supports (padding: max(0px)) {
-  body {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  /* Extend background into status bar area */
-  html {
-    padding-top: env(safe-area-inset-top);
-    margin-top: calc(-1 * env(safe-area-inset-top));
-    background-color: #f3e4f0;
-  }
-}
-
-/* Mobile viewport meta tag support */
-@media screen and (max-width: 768px) {
-  html,
-  body {
-    height: 100vh;
-    height: 100dvh;
-    position: fixed;
-    width: 100%;
-    background-color: #f3e4f0;
-  }
-
-  body {
-    position: relative;
-  }
-}
-
-/* Loading screen with image - enhanced approach */
-.loading-screen-image {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-  z-index: 99999 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-
-  /* Multi-layer approach for seamless coverage */
-  background: 
-    /* Primary image */
-    url(/loading-image.png) center/cover no-repeat,
-    /* Fallback gradient that matches updated theme */
-      linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%),
-    /* Final fallback color - matches new darker pink background */ #f3e4f0 !important;
-}
-
-/* Enhanced version with image scaling */
-.loading-screen-image-scaled {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-  z-index: 99999 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-
-  /* Scale image slightly larger to ensure edge coverage */
-  background-image: url(/loading-image.png) !important;
-  background-size: 105% 105% !important; /* Slightly oversized */
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-color: #f3e4f0 !important;
-
-  /* Fallback gradient */
-  background:
-    url(/loading-image.png) center/105% no-repeat,
-    linear-gradient(135deg, #f5ede6 0%, #f7edf5 54%, #d8d8f0 100%) !important;
-}
-
-/* Remove any default margins/padding and ensure proper box-sizing */
+/* Reset and base styles */
 * {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-/* Optional: smooth transitions for specific elements */
-button,
-a {
-  transition:
-    background-color 0.2s,
-    color 0.2s;
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "DM Sans", system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  p,
+  div,
+  span {
+    font-family: "DM Sans", system-ui, sans-serif;
+    line-height: 1.6;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #ec4899, #f43f5e, #e11d48);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .floating-animation {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+
+/* Remove the ::after pseudo-element entirely since we don't want a background image */
+
+
+  /* 🔥 NOTCH-SAFE UTILITIES: Safe area spacing utilities */
+  .pt-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pt-safe-top-plus-header {
+    padding-top: calc(env(safe-area-inset-top) + 80px);
+  }
+
+  .pb-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pl-safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Combined safe area utilities */
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .safe-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .safe-x {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .safe-y {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-all {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  /* 🔥 NOTCH-AWARE: Positioning for floating elements */
+  .notch-safe {
+    top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .notch-safe-left {
+    left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .notch-safe-right {
+    right: max(1rem, env(safe-area-inset-right));
+  }
+
+  /* Fixed header positioning that respects notch */
+  .fixed-header-top {
+    top: 0;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Content spacing to account for fixed header */
+  .content-below-header {
+    padding-top: calc(env(safe-area-inset-top) + 5rem);
+  }
+}
+
+html,
+body {
+  overscroll-behavior: none;
 }

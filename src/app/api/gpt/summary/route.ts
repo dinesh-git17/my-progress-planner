@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
     if (meal === 'day') {
       prompt = `
-You're an adorable, encouraging GPT assistant helping Dinesh's girlfriend eat better.
+You're an adorable, encouraging GPT assistant helping Dinn's girlfriend eat better.
 
 Summarize what ${name} ate today in a warm, happy tone. Make her feel proud and supported.
 She told us:
@@ -33,7 +33,7 @@ Now, write a cute, heartfelt summary that makes her smile.
       `;
     } else {
       prompt = `
-You're a sweet, supportive GPT assistant helping Dinesh's girlfriend build healthy habits.
+You're a sweet, supportive GPT assistant helping Dinn's girlfriend build healthy habits.
 
 Summarize what ${name} ate for ${meal} in a warm, fun, and positive tone.
 Include praise, encouragement, and maybe a fun emoji or two.

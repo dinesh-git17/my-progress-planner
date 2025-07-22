@@ -1,5 +1,5 @@
 /**
- * User Initialization Hook for My Progress Planner
+ * User Initialization Hook for Sweethearty
  *
  * This hook handles automatic user setup when they first interact with the app:
  * - Ensures user record exists in database
@@ -12,7 +12,7 @@
  * const { isInitialized, isLoading, error } = useUserInitialization(userId);
  * ```
  *
- * @author My Progress Planner Team
+ * @author Sweethearty Team
  * @version 1.0.0
  * @since 2025-07-07
  */

@@ -1,17 +1,16 @@
 'use client';
 
+import { useNavigation } from '@/contexts/NavigationContext';
 import { getOrCreateUserId } from '@/utils/mealLog';
 import { AnimatePresence, motion } from 'framer-motion';
-import { DM_Sans, Dancing_Script, Inter } from 'next/font/google';
-import { useRouter } from 'next/navigation';
+import { Sparkles } from 'lucide-react';
+import { DM_Sans, Dancing_Script } from 'next/font/google';
 import { useEffect, useRef, useState } from 'react';
-
 // ============================================================================
 // FONT CONFIGURATION
 // ============================================================================
 const dmSans = DM_Sans({ subsets: ['latin'], weight: ['500', '700'] });
 const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' });
-const inter = Inter({ subsets: ['latin'], weight: '400', style: 'normal' });
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -41,19 +40,17 @@ const STORY_TABS = [
 
 /**
  * UI timing and layout constants
- * These values control the story modal behavior and header dimensions
  */
 const UI_CONSTANTS = {
-  STORY_DURATION: 20000, // ms - Auto-advance time for story slides
-  BANNER_CURVE_HEIGHT: 44,
-  BANNER_TOP_PADDING: 32,
-  BANNER_BOTTOM_PADDING: 22,
-  BANNER_TEXT_HEIGHT: 74,
+  STORY_DURATION: 20000,
+  BANNER_CURVE_HEIGHT: 100, // ← INCREASED from 80 to 120
+  BANNER_TOP_PADDING: 35, // ← INCREASED from 32 to 40
+  BANNER_BOTTOM_PADDING: 28, // ← INCREASED from 22 to 30
+  BANNER_TEXT_HEIGHT: 80, // ← INCREASED from 74 to 90
 } as const;
 
 /**
  * Calculated total header height for layout positioning
- * Used to position calendar content below the curved header
  */
 const BANNER_TOTAL_HEIGHT =
   UI_CONSTANTS.BANNER_CURVE_HEIGHT +
@@ -61,25 +58,18 @@ const BANNER_TOTAL_HEIGHT =
   UI_CONSTANTS.BANNER_BOTTOM_PADDING +
   UI_CONSTANTS.BANNER_TEXT_HEIGHT;
 
-// ADD THIS NEW LINE:
-const BANNER_TOTAL_HEIGHT_WITH_NOTCH = `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`;
-
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
 /**
  * Formats date string into stacked display format (Month Day / Year)
- * Handles YYYY-MM-DD format with proper timezone handling
- *
- * @param dateString - Date string in YYYY-MM-DD format
- * @returns Object with formatted month/day and year strings
  */
 function formatPrettyDateStacked(dateString: string) {
   const parts = dateString.split('-');
   if (parts.length === 3) {
     const year = parseInt(parts[0]);
-    const month = parseInt(parts[1]) - 1; // Month is 0-indexed in Date constructor
+    const month = parseInt(parts[1]) - 1;
     const day = parseInt(parts[2]);
     const date = new Date(year, month, day);
 
@@ -91,7 +81,6 @@ function formatPrettyDateStacked(dateString: string) {
     return { monthDay, year: year.toString() };
   }
 
-  // Fallback for malformed date strings
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return { monthDay: dateString, year: '' };
 
@@ -105,10 +94,6 @@ function formatPrettyDateStacked(dateString: string) {
 
 /**
  * Sanitizes and formats text content for display
- * Ensures proper capitalization and punctuation
- *
- * @param str - Raw text string (potentially null)
- * @returns Cleaned and formatted text string
  */
 function prettifyText(str: string | null): string {
   if (!str) return '';
@@ -119,14 +104,16 @@ function prettifyText(str: string | null): string {
 }
 
 // ============================================================================
-// HEADER COMPONENT
+// HEADER COMPONENT (CLEANED)
 // ============================================================================
 
 /**
- * Fixed header component with curved bottom design
- * Uses gradient background matching the global theme
- *
- * @param dancingScriptClass - CSS class for custom font styling
+ * Proper header with waves extending downward from solid background
+ * Matches the reference design with clean header and flowing bottom waves
+ */
+/**
+ * Complete header using SVG with built-in wavy bottom
+ * Much cleaner approach - single SVG element creates entire header shape
  */
 function SummariesHeader({
   dancingScriptClass,
@@ -137,113 +124,78 @@ function SummariesHeader({
     <header
       className="fixed top-0 left-0 w-full z-30"
       style={{
-        height: BANNER_TOTAL_HEIGHT,
-        pointerEvents: 'none',
-        background: 'transparent',
-        border: 'none',
-        boxShadow: 'none',
-        margin: 0,
-        padding: 0,
-        // CRITICAL: Extend into notch area
-        paddingTop: 'env(safe-area-inset-top)',
-        marginTop: 'calc(-1 * env(safe-area-inset-top))',
-        minHeight: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Keep only this one
+        background: 'transparent', // No background needed - SVG handles it
+        // REMOVED pt-safe-top - SVG will extend into notch
       }}
     >
-      {/* Header content container */}
-      <div
-        className="relative w-full flex flex-col items-center justify-center overflow-hidden"
+      {/* SVG that creates the entire header shape with wavy bottom - EXTENDS INTO NOTCH */}
+      <svg
+        className="w-full"
+        viewBox="0 0 500 220" // Increased height to account for notch area
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="none"
         style={{
-          background: '#f0e1f0', // Your solid color
-          height: '100%',
-          margin: 0,
-          padding: 0,
+          height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Add safe area to height
         }}
       >
-        {/* Text content - account for notch */}
-        <div
-          className="flex flex-col items-center w-full px-4 z-10"
-          style={{
-            pointerEvents: 'auto',
-            // Add extra padding for notch area
-            paddingTop: `calc(${UI_CONSTANTS.BANNER_TOP_PADDING}px + env(safe-area-inset-top))`,
-            paddingBottom: UI_CONSTANTS.BANNER_BOTTOM_PADDING,
-            background: 'transparent',
-          }}
-        >
+        {/* Gradient definition - matches homepage progress tab */}
+        <defs>
+          <linearGradient
+            id="headerGradient1"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <stop offset="0%" stopColor="#a855f7" />
+            <stop offset="50%" stopColor="#c084fc" />
+            <stop offset="100%" stopColor="#d8b4fe" />
+          </linearGradient>
+        </defs>
+
+        {/* Single path with just 2-3 large wave peaks */}
+        <path
+          d="M0 0 L500 0 L500 160 C400 200 350 140 250 180 C150 220 100 160 0 200 L0 0 Z"
+          fill="url(#headerGradient1)"
+        />
+      </svg>
+
+      {/* Text content positioned absolutely over the SVG - RESPECTS SAFE AREA */}
+      <div
+        className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-start"
+        style={{
+          paddingTop: `calc(${UI_CONSTANTS.BANNER_TOP_PADDING}px + env(safe-area-inset-top))`, // Safe area for text only
+          paddingBottom: UI_CONSTANTS.BANNER_BOTTOM_PADDING,
+        }}
+      >
+        <div className="flex flex-col items-center w-full px-4">
           <div
-            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-gray-900 text-center drop-shadow-sm ${dancingScriptClass}`}
+            className={`text-[2.15rem] sm:text-[2.6rem] font-bold text-white text-center drop-shadow-sm ${dancingScriptClass}`}
             style={{
               lineHeight: 1.15,
               letterSpacing: '-0.02em',
               fontWeight: 700,
-              background: 'transparent',
             }}
           >
             Summaries
           </div>
-          <div
-            className="text-lg sm:text-xl text-gray-600 font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight"
-            style={{ background: 'transparent' }}
-          >
+          <div className="text-lg sm:text-xl text-white font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight">
             A gentle way to track your meal journey and celebrate your daily
-            wins ✨
+            wins <Sparkles className="inline w-5 h-5 text-white ml-1" />
           </div>
         </div>
-
-        {/* Curved bottom border using SVG with matching solid color */}
-        <svg
-          className="absolute left-0 bottom-0 w-full"
-          viewBox="0 0 500 44"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="none"
-          style={{
-            display: 'block',
-            zIndex: 11,
-            pointerEvents: 'none',
-            height: UI_CONSTANTS.BANNER_CURVE_HEIGHT,
-            background: 'transparent',
-            margin: 0,
-            padding: 0,
-          }}
-        >
-          <defs>
-            {/* Solid color gradient (same color for seamless look) */}
-            <linearGradient
-              id="curveGradient"
-              x1="0"
-              y1="0"
-              x2="500"
-              y2="44"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="#f0e1f0" />
-              <stop offset="0.54" stopColor="#f0e1f0" />
-              <stop offset="1" stopColor="#f0e1f0" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M0 0C82 40 418 40 500 0V44H0V0Z"
-            fill="url(#curveGradient)"
-          />
-        </svg>
       </div>
     </header>
   );
 }
 
 // ============================================================================
-// CALENDAR COMPONENT
+// CALENDAR COMPONENT (CLEANED)
 // ============================================================================
 
 /**
  * Interactive calendar component for summary navigation
- * Displays month view with clickable dates that have summary data
- * All backgrounds are transparent to show global gradient theme
- *
- * @param summaries - Array of summary data objects
- * @param onDateClick - Callback function when date is selected
  */
 function Calendar({
   summaries,
@@ -255,7 +207,7 @@ function Calendar({
   const [currentDate, setCurrentDate] = useState(new Date());
   const today = new Date();
 
-  // Create optimized lookup set for summary dates (O(1) lookup performance)
+  // Create optimized lookup set for summary dates
   const summaryDates = new Set(summaries.map((s) => s.date));
 
   // Calculate calendar grid boundaries
@@ -275,10 +227,10 @@ function Calendar({
   const endOfCalendar = new Date(endOfMonth);
   endOfCalendar.setDate(endOfCalendar.getDate() + (6 - endOfCalendar.getDay()));
 
-  // Generate calendar day array for rendering
+  // Generate calendar day array - ALWAYS 42 days (6 weeks)
   const calendarDays = [];
   const current = new Date(startOfCalendar);
-  while (current <= endOfCalendar) {
+  for (let i = 0; i < 42; i++) {
     calendarDays.push(new Date(current));
     current.setDate(current.getDate() + 1);
   }
@@ -286,10 +238,7 @@ function Calendar({
   const monthName = currentDate.toLocaleDateString('en-US', { month: 'long' });
   const year = currentDate.getFullYear();
 
-  // ============================================================================
-  // CALENDAR UTILITY FUNCTIONS
-  // ============================================================================
-
+  // Calendar utility functions
   const isToday = (date: Date): boolean =>
     date.toDateString() === today.toDateString();
   const isCurrentMonth = (date: Date): boolean =>
@@ -301,7 +250,6 @@ function Calendar({
 
   /**
    * Handles date selection and triggers summary modal
-   * Only processes clicks on dates with summary data
    */
   const handleDateClick = (date: Date): void => {
     const dateKey = formatDateKey(date);
@@ -313,7 +261,6 @@ function Calendar({
 
   /**
    * Navigation handler for month switching
-   * Updates calendar view while maintaining date selection state
    */
   const navigateMonth = (direction: 'prev' | 'next'): void => {
     setCurrentDate((prev) => {
@@ -325,17 +272,14 @@ function Calendar({
 
   return (
     <div
-      className="w-full max-w-lg mx-auto h-full flex flex-col justify-center calendar-container"
-      style={{ background: 'transparent' }}
+      className="w-full max-w-lg mx-auto flex flex-col justify-center"
+      style={{ height: 'calc(100vh - 300px)' }}
     >
       {/* Month navigation header */}
-      <div
-        className="flex items-center justify-between mb-6 px-4"
-        style={{ background: 'transparent' }}
-      >
+      <div className="flex items-center justify-between mb-6 px-4">
         <button
           onClick={() => navigateMonth('prev')}
-          className="p-2 rounded-full hover:bg-transparent transition-colors"
+          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
           aria-label="Previous month"
         >
           <svg
@@ -361,7 +305,7 @@ function Calendar({
 
         <button
           onClick={() => navigateMonth('next')}
-          className="p-2 rounded-full hover:bg-transparent transition-colors"
+          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
           aria-label="Next month"
         >
           <svg
@@ -381,15 +325,11 @@ function Calendar({
       </div>
 
       {/* Day of week headers */}
-      <div
-        className="grid grid-cols-7 gap-1 mb-6"
-        style={{ background: 'transparent' }}
-      >
+      <div className="grid grid-cols-7 gap-1 mb-6">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
           <div
             key={index}
             className="text-center text-sm font-medium text-gray-500 py-2"
-            style={{ background: 'transparent' }}
           >
             {day}
           </div>
@@ -397,10 +337,7 @@ function Calendar({
       </div>
 
       {/* Calendar grid with date buttons */}
-      <div
-        className="grid grid-cols-7 gap-1"
-        style={{ background: 'transparent' }}
-      >
+      <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((date, index) => {
           const isCurrentMonthDay = isCurrentMonth(date);
           const isTodayDate = isToday(date);
@@ -431,7 +368,7 @@ function Calendar({
 
               {/* Today indicator overlay */}
               {isTodayDate && (
-                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <span className="text-[10px] font-medium text-purple-700 bg-purple-100/40 px-1.5 py-0.5 rounded-full whitespace-nowrap">
                     TODAY
                   </span>
@@ -446,13 +383,12 @@ function Calendar({
 }
 
 // ============================================================================
-// MAIN PAGE COMPONENT
+// MAIN PAGE COMPONENT (CLEANED)
 // ============================================================================
 
 /**
  * Main summaries page component
- * Manages data fetching, modal state, and story progression
- * Implements Instagram-style story modal for summary viewing
+ * Simplified without notch extensions and background transparency issues
  */
 export default function SummariesPage() {
   // ============================================================================
@@ -462,11 +398,10 @@ export default function SummariesPage() {
   const [loading, setLoading] = useState(true);
   const [activeSummary, setActiveSummary] = useState<Summary | null>(null);
   const [activeStoryIdx, setActiveStoryIdx] = useState(0);
-  const [storyAutoKey, setStoryAutoKey] = useState(0); // Forces re-render of progress animations
+  const [storyAutoKey, setStoryAutoKey] = useState(0);
 
-  // Timer reference for story auto-progression
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const router = useRouter();
+  const { navigate } = useNavigation();
 
   // ============================================================================
   // DATA FETCHING & INITIALIZATION
@@ -474,23 +409,35 @@ export default function SummariesPage() {
 
   /**
    * Fetch summaries data on component mount
-   * Uses optimized async/await pattern with error handling
    */
   useEffect(() => {
     const fetchSummaries = async (): Promise<void> => {
       try {
         const user_id = getOrCreateUserId();
-        const res = await fetch(`/api/summaries?user_id=${user_id}`);
 
-        if (!res.ok) {
-          throw new Error(`Failed to fetch summaries: ${res.status}`);
-        }
+        // Create minimum loading delay promise
+        const minLoadingDelay = new Promise((resolve) =>
+          setTimeout(resolve, 2000),
+        );
 
-        const data = await res.json();
-        setSummaries(data.summaries || []);
+        // Create data fetch promise
+        const dataFetch = fetch(`/api/summaries?user_id=${user_id}`).then(
+          async (res) => {
+            if (!res.ok) {
+              throw new Error(`Failed to fetch summaries: ${res.status}`);
+            }
+            const data = await res.json();
+            return data.summaries || [];
+          },
+        );
+
+        // Wait for both the data and minimum loading time
+        const [summaries] = await Promise.all([dataFetch, minLoadingDelay]);
+
+        setSummaries(summaries);
       } catch (error) {
         console.error('Error fetching summaries:', error);
-        setSummaries([]); // Graceful fallback
+        setSummaries([]);
       } finally {
         setLoading(false);
       }
@@ -501,7 +448,6 @@ export default function SummariesPage() {
 
   /**
    * Reset story index when active summary changes
-   * Ensures story modal starts from beginning for each summary
    */
   useEffect(() => {
     if (activeSummary) setActiveStoryIdx(0);
@@ -509,66 +455,43 @@ export default function SummariesPage() {
 
   /**
    * Story auto-progression timer management
-   * Handles automatic advancement through story slides
    */
   useEffect(() => {
     if (!activeSummary) return;
 
     const availableStories = getAvailableStories(activeSummary);
-    setStoryAutoKey((prev) => prev + 1); // Trigger animation restart
+    setStoryAutoKey((prev) => prev + 1);
 
-    // Clear existing timer to prevent overlapping timers
     if (timerRef.current) clearTimeout(timerRef.current);
 
-    timerRef.current = setTimeout(() => {
-      if (activeStoryIdx >= availableStories.length - 1) {
-        setActiveSummary(null); // Close modal at end
-      } else {
-        setActiveStoryIdx((idx) =>
-          Math.min(idx + 1, availableStories.length - 1),
-        );
-      }
-    }, UI_CONSTANTS.STORY_DURATION);
+    // Only set timer if there are stories AND we're not at the last one
+    if (availableStories.length > 0) {
+      timerRef.current = setTimeout(() => {
+        if (activeStoryIdx >= availableStories.length - 1) {
+          setActiveSummary(null);
+        } else {
+          setActiveStoryIdx((idx) =>
+            Math.min(idx + 1, availableStories.length - 1),
+          );
+        }
+      }, UI_CONSTANTS.STORY_DURATION);
+    }
 
-    // Cleanup timer on unmount or dependency change
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [activeSummary, activeStoryIdx]);
 
-  /**
-   * CRITICAL: Background transparency enforcement
-   * Ensures all calendar elements are transparent to show global gradient
-   * This effect runs after DOM rendering to override any default backgrounds
-   */
-  useEffect(() => {
-    // Primary container transparency
-    const calendarContainer = document.querySelector('.calendar-container');
-    if (calendarContainer) {
-      (calendarContainer as HTMLElement).style.background = 'transparent';
-    }
-
-    // Force transparency on all child elements
-    const calendarElements = document.querySelectorAll('.calendar-container *');
-    calendarElements.forEach((element) => {
-      const htmlElement = element as HTMLElement;
-      // Skip elements that intentionally have gradients (summary indicator buttons)
-      if (
-        !htmlElement.style.background &&
-        !htmlElement.classList.contains('bg-gradient-to-br')
-      ) {
-        htmlElement.style.background = 'transparent';
-      }
-    });
-  }, [loading]); // Re-run when loading state changes
-
   // ============================================================================
   // EVENT HANDLERS
   // ============================================================================
 
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
+
   /**
    * Filters summary data to return only available story slides
-   * Used to determine story progression and modal behavior
    */
   const getAvailableStories = (summary: Summary) => {
     return STORY_TABS.filter((tab) => summary[tab.key as keyof Summary]);
@@ -576,7 +499,6 @@ export default function SummariesPage() {
 
   /**
    * Handles story area clicks for manual progression
-   * Advances to next story or closes modal at end
    */
   const handleStoryAreaClick = (): void => {
     const availableStories = getAvailableStories(activeSummary!);
@@ -592,7 +514,6 @@ export default function SummariesPage() {
 
   /**
    * Handles direct story navigation via progress dots
-   * Allows user to jump to specific story slide
    */
   const handleDotClick = (index: number): void => {
     setActiveStoryIdx(index);
@@ -602,29 +523,152 @@ export default function SummariesPage() {
   // ============================================================================
   // RENDER
   // ============================================================================
+  // Loading state - show full screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-purple-100 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="text-center"
+        >
+          {/* Animated calendar icon */}
+          <motion.div
+            className="relative mb-8"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            {/* Floating background */}
+            <motion.div
+              className="absolute inset-0 w-24 h-24 mx-auto"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.1, 0.3],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <div className="w-full h-full bg-gradient-to-r from-purple-400 to-indigo-400 rounded-full blur-xl" />
+            </motion.div>
+
+            {/* Main calendar icon */}
+            <motion.div
+              className="relative w-20 h-20 mx-auto bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-2, 2, -2],
+                rotate: [0, 1, -1, 0],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <span className="text-3xl">📅</span>
+            </motion.div>
+          </motion.div>
+
+          {/* Loading text */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mb-6"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Loading Summaries
+            </h2>
+            <p className="text-gray-600 max-w-sm mx-auto">
+              Gathering your meal journey and daily progress...
+            </p>
+          </motion.div>
+
+          {/* Progress dots */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="flex items-center justify-center space-x-1"
+          >
+            {[0, 1, 2].map((index) => (
+              <motion.div
+                key={index}
+                className="w-2 h-2 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full"
+                animate={{
+                  scale: [0.8, 1.2, 0.8],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: index * 0.2,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </motion.div>
+
+          {/* Progress bar */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
+            className="mt-8"
+          >
+            <motion.div
+              className="w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1, duration: 0.5 }}
+            >
+              <motion.div
+                className="h-full bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+            </motion.div>
+            <motion.p
+              className="text-xs text-gray-500 mt-2"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              Loading your daily meal summaries...
+            </motion.p>
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={`h-screen w-full flex flex-col overflow-hidden fixed inset-0 ${dmSans.className}`}
-      style={{ background: 'transparent' }} // Critical: Allow global gradient to show
-    >
+    <div className={`h-screen w-full overflow-hidden ${dmSans.className}`}>
       {/* Back navigation button */}
       <motion.div
-        className="absolute left-4 top-4 z-40"
+        className="fixed left-4 z-40 notch-safe"
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -10 }}
         transition={{ duration: 0.3 }}
-        style={{
-          position: 'fixed',
-          zIndex: 40,
-          top: '16px',
-          left: '16px',
-          willChange: 'opacity', // Optimization for smooth animations
-        }}
       >
         <button
-          onClick={() => router.push('/')}
+          onClick={() => {
+            localStorage.setItem('activeTab', 'progress');
+            sessionStorage.setItem('isReturningToHome', 'true');
+            navigate('/');
+          }}
           className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
           aria-label="Go Back to Home"
         >
@@ -649,24 +693,33 @@ export default function SummariesPage() {
 
       {/* Main calendar content area */}
       <div
-        className="flex-1 w-full max-w-2xl mx-auto flex flex-col relative z-10"
+        className="w-full max-w-2xl mx-auto safe-x overflow-hidden"
         style={{
-          marginTop: `calc(${BANNER_TOTAL_HEIGHT_WITH_NOTCH} - 100px)`,
-          height: `calc(100vh - ${BANNER_TOTAL_HEIGHT_WITH_NOTCH} + 100px)`,
-          overflow: 'hidden',
-          background: 'transparent',
+          marginTop: BANNER_TOTAL_HEIGHT,
+          height: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
+          paddingTop: '0.5rem', // ← REDUCED from 2rem to 0.5rem
+          paddingBottom: '2rem',
         }}
       >
-        <div
-          className="h-full px-3 flex items-start justify-center"
-          style={{
-            overflow: 'hidden',
-            background: 'transparent', // Critical: Show global gradient
-          }}
-        >
+        <div className="px-4">
           {loading ? (
-            <div className="text-center text-gray-400/80 text-base font-medium animate-pulse">
-              Loading summaries…
+            <div
+              className="flex items-center justify-center"
+              style={{
+                height: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px - 4rem)`,
+              }}
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-8 h-8 border-3 border-purple-200 border-t-purple-500 rounded-full animate-spin"></div>
+                <div className="text-center">
+                  <p className="text-lg font-medium text-gray-700 mb-1">
+                    Loading summaries
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Gathering your meal journey ✨
+                  </p>
+                </div>
+              </div>
             </div>
           ) : (
             <AnimatePresence mode="wait">
@@ -674,8 +727,6 @@ export default function SummariesPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                className="h-full"
-                style={{ background: 'transparent' }} // Critical: Show global gradient
               >
                 <Calendar
                   summaries={summaries}
@@ -699,17 +750,15 @@ export default function SummariesPage() {
           >
             <motion.div
               className={`
-                w-full h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden
+                w-full h-screen max-h-screen flex flex-col overflow-hidden
                 bg-gradient-to-br from-white/85 via-[#f6e7fc]/80 to-[#fdf6fa]/90
-                select-none
+                select-none safe-all
                 ${dmSans.className}
               `}
               onClick={handleStoryAreaClick}
               style={{
                 borderRadius: 0,
                 boxShadow: '0 12px 48px 0 rgba(120,80,140,0.08)',
-                minHeight: '100dvh',
-                maxHeight: '100dvh',
               }}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -734,7 +783,7 @@ export default function SummariesPage() {
                       {/* Active story progress bar */}
                       {i === activeStoryIdx && (
                         <div
-                          key={storyAutoKey} // Force re-render for animation restart
+                          key={storyAutoKey}
                           className="absolute inset-0 bg-gradient-to-r from-purple-300 via-pink-200 to-purple-400"
                           style={{
                             width: '0%',
@@ -752,15 +801,8 @@ export default function SummariesPage() {
                     e.stopPropagation();
                     setActiveSummary(null);
                   }}
-                  className="absolute right-2 top-3 text-gray-400 hover:text-gray-600 bg-transparent rounded-none p-2 z-20"
+                  className="absolute right-2 top-3 text-gray-400 hover:text-gray-600 p-2 z-20 text-xl"
                   aria-label="Close summary modal"
-                  style={{
-                    fontSize: '1.1rem',
-                    fontWeight: '600',
-                    color: '#888',
-                    transition: 'all 0.3s ease',
-                    cursor: 'pointer',
-                  }}
                 >
                   ×
                 </button>
@@ -802,6 +844,7 @@ export default function SummariesPage() {
                   {(() => {
                     const availableStories = getAvailableStories(activeSummary);
                     const tab = availableStories[activeStoryIdx];
+                    if (!tab) return 'No Story Available'; // Add this safety check
                     return `${tab.emoji} ${tab.label}`;
                   })()}
                 </div>
@@ -828,6 +871,7 @@ export default function SummariesPage() {
                   {(() => {
                     const availableStories = getAvailableStories(activeSummary);
                     const tab = availableStories[activeStoryIdx];
+                    if (!tab) return 'No content available for this story.'; // Add this safety check
                     const storyContent = prettifyText(
                       activeSummary[tab.key as keyof Summary] as string,
                     );
