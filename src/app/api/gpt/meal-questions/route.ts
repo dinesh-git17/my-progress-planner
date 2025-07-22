@@ -1,34 +1,47 @@
-// src/app/api/gpt/meal-questions/route.ts
-import gptService from '@/utils/gptService';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  const prompt = `
+You are a loving boyfriend helping your girlfriend log her meals in a supportive, chatty, non-medical way.
+Generate 3 short, warm, conversational questions to help her log what she ate, how much, and how she felt about it.
+Respond in strict JSON as an array of strings, no commentary.
+Example: ["What did you eat today, my love?", "How much did you have?", "How did it make you feel?"]
+`;
   try {
-    console.log(`❓ Generating meal questions...`);
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.9,
+        max_tokens: 120,
+      }),
+    });
 
-    // Use the new GPT service (automatically switches between mock/real)
-    const response = await gptService.generateMealQuestions();
-
-    const questions = JSON.parse(response.content);
-
-    console.log(
-      `✨ Questions generated (${response.isMock ? 'MOCK' : 'REAL'}):`,
-      questions,
-    );
-
-    // Log usage info for real GPT calls
-    if (response.usage) {
-      console.log(`📊 Token usage:`, response.usage);
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('OpenAI API Error:', errorText);
+      throw new Error('Failed to fetch GPT questions');
     }
 
-    return NextResponse.json({
-      questions,
-      isMock: response.isMock,
-      // Include usage info for debugging (remove in production)
-      ...(process.env.NODE_ENV === 'development' && { usage: response.usage }),
-    });
+    const data = await res.json();
+    const message = data.choices?.[0]?.message?.content ?? '';
+    const arrMatch = message.match(/\[[^\]]*\]/);
+    const questions = arrMatch
+      ? JSON.parse(arrMatch[0])
+      : [
+          'What did you eat today, my love?',
+          'How much did you have?',
+          'How did it make you feel?',
+        ];
+
+    return NextResponse.json({ questions });
   } catch (err) {
-    console.error('Meal questions API error:', err);
+    console.error('API Route Error:', err);
     return NextResponse.json(
       {
         questions: [
@@ -36,8 +49,6 @@ export async function GET() {
           'How much did you have?',
           'How did it make you feel?',
         ],
-        isMock: true,
-        error: true,
       },
       { status: 200 },
     );

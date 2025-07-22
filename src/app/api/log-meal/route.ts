@@ -1,7 +1,10 @@
-// src/app/api/log-meal/route.ts
-import gptService from '@/utils/gptService';
 import supabase from '@/utils/supabaseAdmin';
 import { NextRequest, NextResponse } from 'next/server';
+import { OpenAI } from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -15,8 +18,6 @@ export async function POST(req: NextRequest) {
   }
 
   const today = new Date().toISOString().split('T')[0];
-
-  console.log(`🍽️ Logging ${meal} for ${name} (${entries.length} items)`);
 
   // 1. Save meal log
   const { error: mealLogError } = await supabase
@@ -37,24 +38,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 2. Generate GPT summary for current meal using our service
-  const response = await gptService.generateSimpleMealSummary({
-    name,
-    mealType: meal,
-    foodItems: entries,
+  // 2. Generate GPT summary for current meal
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    temperature: 0.9,
+    messages: [
+      {
+        role: 'system',
+        content: `You are a kind and supportive boyfriend. 
+Your job is to cheer up your partner who just logged their meal. 
+Respond with a short, sweet, heartfelt message (max 3 lines) in the tone of a loving boyfriend. 
+Avoid em-dashes. Use their name (“${name}”) directly in the message.`,
+      },
+      {
+        role: 'user',
+        content: `Here is what ${name} ate for ${meal} today:\n${entries.join('\n')}`,
+      },
+    ],
   });
 
-  const mealSummary = response.content;
-
-  console.log(
-    `✨ Meal summary generated (${response.isMock ? 'MOCK' : 'REAL'}):`,
-    mealSummary,
-  );
-
-  // Log usage info for real GPT calls
-  if (response.usage) {
-    console.log(`📊 Token usage:`, response.usage);
-  }
+  const mealSummary = completion.choices[0].message.content?.trim();
 
   // 3. Update daily_summaries table with this meal summary
   const mealCol = `${meal}_summary` as
@@ -91,61 +94,38 @@ export async function POST(req: NextRequest) {
     breakfast_summary &&
     lunch_summary &&
     dinner_summary &&
-    !summaryRow?.full_day_summary
+    !summaryRow.full_day_summary
   ) {
-    console.log('🌟 All meals complete - generating full day summary');
-
-    // Generate full day summary using our service
-    const fullDayPrompt = `You are a sweet, loving boyfriend summarizing your partner's eating progress today.
-You will now write a warm, proud summary (3-5 sentences) of her day based on what she ate.
-
-Today ${name} had:
-- Breakfast: ${breakfast_summary}
-- Lunch: ${lunch_summary}  
-- Dinner: ${dinner_summary}
-
-Write an encouraging summary celebrating her commitment to nourishing herself today.`;
-
-    const fullDayResponse = await gptService.generateCustomResponse({
-      name,
-      prompt: fullDayPrompt,
-      temperature: 1,
-      maxTokens: 150,
+    const fullDayCompletion = await openai.chat.completions.create({
       model: 'gpt-4o',
+      temperature: 1,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a sweet, loving boyfriend summarizing your partner's eating progress today.
+You will now write a warm, proud summary (3-5 sentences) of her day based on what she ate. 
+Be affectionate and uplifting, avoid em-dashes, and use her name (${name}).`,
+        },
+        {
+          role: 'user',
+          content: `
+Here is what ${name} ate today:
+Breakfast Summary: ${breakfast_summary}
+Lunch Summary: ${lunch_summary}
+Dinner Summary: ${dinner_summary}
+          `.trim(),
+        },
+      ],
     });
 
-    console.log(
-      `✨ Full day summary generated (${fullDayResponse.isMock ? 'MOCK' : 'REAL'})`,
-    );
+    const fullDaySummary = fullDayCompletion.choices[0].message.content?.trim();
 
-    // Log usage for full day summary
-    if (fullDayResponse.usage) {
-      console.log(`📊 Full day token usage:`, fullDayResponse.usage);
-    }
-
-    // Update with full day summary
     await supabase
       .from('daily_summaries')
-      .update({ full_day_summary: fullDayResponse.content })
+      .update({ full_day_summary: fullDaySummary })
       .eq('user_id', user_id)
       .eq('date', today);
-
-    console.log('🎉 Full day summary saved to database');
   }
 
-  return NextResponse.json({
-    success: true,
-    message: 'Meal logged successfully',
-    mealSummary,
-    isMock: response.isMock,
-    // Include usage info for debugging
-    ...(process.env.NODE_ENV === 'development' && {
-      usage: response.usage,
-      hasFullDaySummary: !!(
-        breakfast_summary &&
-        lunch_summary &&
-        dinner_summary
-      ),
-    }),
-  });
+  return NextResponse.json({ success: true });
 }

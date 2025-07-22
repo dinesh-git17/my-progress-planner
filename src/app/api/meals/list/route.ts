@@ -1,5 +1,4 @@
 // src/app/api/meals/list/route.ts
-import gptService from '@/utils/gptService';
 import supabase from '@/utils/supabaseAdmin';
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
@@ -202,54 +201,61 @@ export async function GET(req: Request) {
 }
 
 /**
- * Generate GPT summary for a meal using the new GPT service
+ * Generate GPT summary for a meal
  */
-
 async function generateMealSummary(
   mealType: string,
   mealData: any,
 ): Promise<string | null> {
   try {
-    console.log(
-      `📝 generateMealSummary called for ${mealType} with data:`,
-      mealData,
-    );
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      temperature: 0.3,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a loving boyfriend creating detailed but readable meal summaries for your girlfriend.
 
-    // Extract food items from the meal data
-    const foodItems = Array.isArray(mealData)
-      ? mealData
-      : typeof mealData === 'object' && mealData
-        ? Object.values(mealData).filter(Boolean)
-        : [mealData?.toString() || 'meal'];
+Give helpful nutritional insights while being encouraging. Break content into clear sections for easy reading.
 
-    console.log(`📋 Extracted food items for ${mealType}:`, foodItems);
+Format EXACTLY like this:
+"🍽️ What you ate:
+[Food items with emojis]
 
-    // Validate mealType to match our interface
-    const validMealType = ['breakfast', 'lunch', 'dinner'].includes(mealType)
-      ? (mealType as 'breakfast' | 'lunch' | 'dinner')
-      : undefined;
+💕 How it made you feel:
+[Emotion/feeling response]
 
-    console.log(`🔍 Valid meal type: ${validMealType}`);
+⭐ Overall Rating: [Excellent/Great/Good/Okay] ⭐⭐⭐
 
-    // Use the new GPT service
-    const response = await gptService.generateMealSummary({
-      mealType: validMealType,
-      foodItems: foodItems as string[],
+🔍 Nutrition Breakdown:
+✅ What's working: [1-2 positive things]
+⚠️ Could use more: [Specific nutrients/food groups missing]
+💡 Easy upgrade: [Simple, practical suggestion]
+
+💖 Love Note:
+[Sweet, encouraging message that ties it together]"
+
+Guidelines:
+- Be specific about what nutrients are missing (protein, fiber, vitamins, etc.)
+- Give practical suggestions (add nuts, include veggies, pair with...)
+- Celebrate what they did well first
+- Use clear sections with emojis for visual breaks
+- Keep loving boyfriend tone throughout
+- Make suggestions feel achievable, not overwhelming
+- Consider meal timing (breakfast needs energy, dinner lighter)
+- Keep it around 100-120 words`,
+        },
+        {
+          role: 'user',
+          content: `Here's the conversation about ${mealType}:\n\n${formatMealData(mealData)}`,
+        },
+      ],
     });
 
-    console.log(
-      `✨ Summary generated (${response.isMock ? 'MOCK' : 'REAL'}) for ${mealType}`,
-    );
-
-    // Log usage info for real GPT calls
-    if (response.usage) {
-      console.log(`📊 Token usage for ${mealType}:`, response.usage);
-    }
-
-    return response.content;
+    return completion.choices[0].message.content?.trim() || null;
   } catch (error) {
-    console.error(`❌ Error in generateMealSummary for ${mealType}:`, error);
-    return null;
+    console.error(`GPT error for ${mealType}:`, error);
+    throw error;
   }
 }
 
