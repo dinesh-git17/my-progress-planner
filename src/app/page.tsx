@@ -1611,7 +1611,7 @@ export default function Home() {
     // Add initial loading delay for content to settle
     const timer = setTimeout(() => {
       setIsInitialLoading(false);
-    }, 500); // 1.5 seconds for content to load and settle
+    }, 800); // loading screen delay
 
     return () => clearTimeout(timer);
   }, []);
