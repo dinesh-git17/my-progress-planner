@@ -113,7 +113,7 @@ function FriendsListHeader({
           height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`,
         }}
       >
-        {/* Gradient definition */}
+        {/* Gradient definition - matches homepage friends tab */}
         <defs>
           <linearGradient
             id="friendsListHeaderGradient"
@@ -122,9 +122,9 @@ function FriendsListHeader({
             x2="100%"
             y2="100%"
           >
-            <stop offset="0%" stopColor="#ec4899" />
-            <stop offset="50%" stopColor="#f472b6" />
-            <stop offset="100%" stopColor="#e879f9" />
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="50%" stopColor="#60a5fa" />
+            <stop offset="100%" stopColor="#93c5fd" />
           </linearGradient>
         </defs>
 
@@ -202,17 +202,30 @@ export default function FriendsListPage() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/friends/list?user_id=${userId}`);
+        // Create minimum loading delay promise
+        const minLoadingDelay = new Promise((resolve) =>
+          setTimeout(resolve, 2000),
+        );
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        // Create data fetch promise
+        const dataFetch = fetch(`/api/friends/list?user_id=${userId}`).then(
+          async (response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-        const data: FriendsResponse = await response.json();
+            const data: FriendsResponse = await response.json();
 
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to fetch friends');
-        }
+            if (!data.success) {
+              throw new Error(data.error || 'Failed to fetch friends');
+            }
+
+            return data;
+          },
+        );
+
+        // Wait for both the data and minimum loading time
+        const [data] = await Promise.all([dataFetch, minLoadingDelay]);
 
         // The API already provides enhanced friends data with friendshipAge calculated
         // We just need to add displayName fallback for any missing names
@@ -257,11 +270,188 @@ export default function FriendsListPage() {
   // ============================================================================
 
   /**
-   * Render loading state
+   * Render loading state with modern animation
    */
   const renderLoading = () => (
-    <div className="flex items-center justify-center py-12">
-      <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 flex items-center justify-center p-4">
+      {/* Main loading container */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+        className="text-center"
+      >
+        {/* Animated friends icons */}
+        <motion.div
+          className="relative mb-8"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          {/* Floating background circles */}
+          <motion.div
+            className="absolute inset-0 w-32 h-20 mx-auto"
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.2, 0.05, 0.2],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
+            <div className="w-full h-full bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full blur-xl" />
+          </motion.div>
+
+          {/* Friend avatars container */}
+          <div className="relative flex items-center justify-center space-x-2">
+            {/* Friend 1 */}
+            <motion.div
+              className="w-12 h-12 bg-gradient-to-r from-blue-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-3, 3, -3],
+                rotate: [0, 2, -2, 0],
+              }}
+              transition={{
+                duration: 2.8,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: 0,
+              }}
+            >
+              <span className="text-white text-lg font-bold">A</span>
+            </motion.div>
+
+            {/* Friend 2 - Center (larger) */}
+            <motion.div
+              className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl z-10"
+              animate={{
+                y: [-2, 4, -2],
+                scale: [1, 1.05, 1],
+              }}
+              transition={{
+                duration: 3.2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: 0.5,
+              }}
+            >
+              <span className="text-white text-xl font-bold">👥</span>
+            </motion.div>
+
+            {/* Friend 3 */}
+            <motion.div
+              className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-3, 3, -3],
+                rotate: [0, -2, 2, 0],
+              }}
+              transition={{
+                duration: 2.6,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: 1,
+              }}
+            >
+              <span className="text-white text-lg font-bold">B</span>
+            </motion.div>
+          </div>
+
+          {/* Connection lines */}
+          <motion.div
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-0.5"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: [0, 1, 0] }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: 1.5,
+            }}
+          >
+            <div className="w-full h-full bg-gradient-to-r from-blue-300 via-indigo-400 to-blue-300 rounded-full opacity-60" />
+          </motion.div>
+        </motion.div>
+
+        {/* Loading text */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="mb-6"
+        >
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Loading Your Friends
+          </h2>
+          <p className="text-gray-600 max-w-sm mx-auto">
+            Gathering your connections and friendship details...
+          </p>
+        </motion.div>
+
+        {/* Animated progress dots */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="flex items-center justify-center space-x-1.5"
+        >
+          {[0, 1, 2, 3].map((index) => (
+            <motion.div
+              key={index}
+              className="w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"
+              animate={{
+                scale: [0.7, 1.3, 0.7],
+                opacity: [0.4, 1, 0.4],
+              }}
+              transition={{
+                duration: 1.8,
+                repeat: Infinity,
+                delay: index * 0.15,
+                ease: 'easeInOut',
+              }}
+            />
+          ))}
+        </motion.div>
+
+        {/* Loading steps indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.5 }}
+          className="mt-8"
+        >
+          <motion.div
+            className="w-56 h-1.5 bg-gray-200 rounded-full mx-auto overflow-hidden"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 1, duration: 0.5 }}
+          >
+            <motion.div
+              className="h-full bg-gradient-to-r from-blue-400 via-indigo-500 to-blue-600 rounded-full"
+              initial={{ width: '0%' }}
+              animate={{ width: '100%' }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            />
+          </motion.div>
+
+          <motion.p
+            className="text-xs text-gray-500 mt-3"
+            animate={{ opacity: [0.6, 1, 0.6] }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
+            Fetching friend codes and profiles...
+          </motion.p>
+        </motion.div>
+      </motion.div>
     </div>
   );
 
@@ -279,7 +469,7 @@ export default function FriendsListPage() {
       <p className="text-gray-600 mb-4">{error}</p>
       <button
         onClick={() => window.location.reload()}
-        className="px-6 py-2 bg-pink-500 text-white rounded-xl font-medium hover:bg-pink-600 transition-colors"
+        className="px-6 py-2 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors"
       >
         Try Again
       </button>
@@ -303,7 +493,7 @@ export default function FriendsListPage() {
       </p>
       <button
         onClick={() => navigate('/friends')}
-        className="px-6 py-3 bg-gradient-to-r from-pink-400 to-pink-500 text-white rounded-xl font-medium hover:shadow-lg transition-all"
+        className="px-6 py-3 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:shadow-lg transition-all"
       >
         Add Your First Friend
       </button>
@@ -337,13 +527,13 @@ export default function FriendsListPage() {
         >
           <div className="flex items-center gap-3">
             {/* Avatar */}
-            <div className="w-11 h-11 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-sm font-bold text-white uppercase shadow-md">
+            <div className="w-11 h-11 bg-gradient-to-br from-blue-200 to-indigo-200 rounded-full flex items-center justify-center text-sm font-bold text-white uppercase shadow-md">
               {getInitials(friend.displayName) || '👤'}
             </div>
 
             {/* Friend Info */}
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 text-base truncate group-hover:text-pink-600 transition-colors">
+              <h3 className="font-semibold text-gray-900 text-base truncate group-hover:text-blue-600 transition-colors">
                 {friend.displayName}
               </h3>
               <div className="flex items-center gap-3 mt-0.5">
@@ -361,7 +551,7 @@ export default function FriendsListPage() {
             </div>
 
             {/* Arrow */}
-            <div className="text-gray-300 group-hover:text-pink-500 transition-colors">
+            <div className="text-gray-300 group-hover:text-blue-500 transition-colors">
               <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                 <path
                   fillRule="evenodd"
@@ -380,6 +570,11 @@ export default function FriendsListPage() {
   // RENDER
   // ============================================================================
 
+  // Loading state - show full screen
+  if (loading) {
+    return renderLoading();
+  }
+
   return (
     <div className={`h-screen w-full overflow-hidden ${dmSans.className}`}>
       {/* Header */}
@@ -394,7 +589,7 @@ export default function FriendsListPage() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2, duration: 0.3 }}
         onClick={handleBackClick}
-        className="fixed left-4 z-40 p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm notch-safe"
+        className="fixed left-4 z-40 p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-blue-200/50 transition-all shadow-sm notch-safe"
         aria-label="Go back"
       >
         <ArrowLeft className="w-5 h-5" />
@@ -417,7 +612,6 @@ export default function FriendsListPage() {
             transition={{ duration: 0.3 }}
             className="max-w-md mx-auto"
           >
-            {loading && renderLoading()}
             {error && renderError()}
             {!loading && !error && friends.length === 0 && renderEmptyState()}
             {!loading && !error && friends.length > 0 && renderFriendsList()}

@@ -313,7 +313,7 @@ function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
           height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Add safe area to height
         }}
       >
-        {/* Gradient definition - EXACT SAME COLORS as summaries page */}
+        {/* Gradient definition - matches homepage progress tab */}
         <defs>
           <linearGradient
             id="streaksHeaderGradient"
@@ -322,9 +322,9 @@ function StreaksHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
             x2="100%"
             y2="100%"
           >
-            <stop offset="0%" stopColor="#ec4899" /> {/* Same as summaries */}
-            <stop offset="50%" stopColor="#f472b6" /> {/* Same as summaries */}
-            <stop offset="100%" stopColor="#e879f9" /> {/* Same as summaries */}
+            <stop offset="0%" stopColor="#a855f7" />
+            <stop offset="50%" stopColor="#c084fc" />
+            <stop offset="100%" stopColor="#d8b4fe" />
           </linearGradient>
         </defs>
 

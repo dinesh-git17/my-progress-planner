@@ -139,7 +139,7 @@ function SummariesHeader({
           height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Add safe area to height
         }}
       >
-        {/* Gradient definition */}
+        {/* Gradient definition - matches homepage progress tab */}
         <defs>
           <linearGradient
             id="headerGradient1"
@@ -148,9 +148,9 @@ function SummariesHeader({
             x2="100%"
             y2="100%"
           >
-            <stop offset="0%" stopColor="#ec4899" />
-            <stop offset="50%" stopColor="#f472b6" />
-            <stop offset="100%" stopColor="#e879f9" />
+            <stop offset="0%" stopColor="#a855f7" />
+            <stop offset="50%" stopColor="#c084fc" />
+            <stop offset="100%" stopColor="#d8b4fe" />
           </linearGradient>
         </defs>
 

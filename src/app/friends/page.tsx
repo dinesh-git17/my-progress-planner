@@ -1,6 +1,7 @@
 'use client';
 
 import { useNavigation } from '@/contexts/NavigationContext';
+import { motion } from 'framer-motion';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
 import { useEffect, useState } from 'react';
 
@@ -73,7 +74,7 @@ function FriendsHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
           height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Add safe area to height
         }}
       >
-        {/* Gradient definition */}
+        {/* Gradient definition - matches homepage friends tab */}
         <defs>
           <linearGradient
             id="friendsHeaderGradient"
@@ -82,9 +83,9 @@ function FriendsHeader({ dancingScriptClass }: { dancingScriptClass: string }) {
             x2="100%"
             y2="100%"
           >
-            <stop offset="0%" stopColor="#ec4899" />
-            <stop offset="50%" stopColor="#f472b6" />
-            <stop offset="100%" stopColor="#e879f9" />
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="50%" stopColor="#60a5fa" />
+            <stop offset="100%" stopColor="#93c5fd" />
           </linearGradient>
         </defs>
 
@@ -215,23 +216,34 @@ export default function FriendsPage() {
 
     const fetchData = async () => {
       try {
-        // Get my friend code
-        const codeResponse = await fetch(
-          `/api/user/friend-code?user_id=${userId}`,
+        // Create minimum loading delay promise
+        const minLoadingDelay = new Promise((resolve) =>
+          setTimeout(resolve, 2000),
         );
-        if (codeResponse.ok) {
-          const codeData = await codeResponse.json();
-          setMyFriendCode(codeData.friendCode || '');
-        }
 
-        // Get friends list
-        const friendsResponse = await fetch(
-          `/api/friends/list?user_id=${userId}`,
-        );
-        if (friendsResponse.ok) {
-          const friendsData = await friendsResponse.json();
-          setFriends(friendsData.friends || []);
-        }
+        // Create data fetch promises
+        const fetchPromises = async () => {
+          // Get my friend code
+          const codeResponse = await fetch(
+            `/api/user/friend-code?user_id=${userId}`,
+          );
+          if (codeResponse.ok) {
+            const codeData = await codeResponse.json();
+            setMyFriendCode(codeData.friendCode || '');
+          }
+
+          // Get friends list
+          const friendsResponse = await fetch(
+            `/api/friends/list?user_id=${userId}`,
+          );
+          if (friendsResponse.ok) {
+            const friendsData = await friendsResponse.json();
+            setFriends(friendsData.friends || []);
+          }
+        };
+
+        // Wait for both the data and minimum loading time
+        await Promise.all([fetchPromises(), minLoadingDelay]);
       } catch (error) {
         console.error('Error fetching data:', error);
         setMessage({
@@ -341,6 +353,213 @@ export default function FriendsPage() {
   // ============================================================================
 
   /**
+   * Render loading state with modern animation
+   */
+  const renderLoading = () => (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 flex items-center justify-center p-4">
+      {/* Main loading container */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+        className="text-center"
+      >
+        {/* Animated management icons */}
+        <motion.div
+          className="relative mb-8"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          {/* Floating background circles */}
+          <motion.div
+            className="absolute inset-0 w-36 h-28 mx-auto"
+            animate={{
+              scale: [1, 1.15, 1],
+              opacity: [0.25, 0.08, 0.25],
+            }}
+            transition={{
+              duration: 2.8,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
+            <div className="w-full h-full bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full blur-2xl" />
+          </motion.div>
+
+          {/* Management tools container */}
+          <div className="relative flex items-center justify-center space-x-4">
+            {/* Friend Code Card */}
+            <motion.div
+              className="w-14 h-10 bg-gradient-to-r from-blue-400 to-blue-500 rounded-lg flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-4, 4, -4],
+                rotate: [0, 3, -3, 0],
+              }}
+              transition={{
+                duration: 3.2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: 0,
+              }}
+            >
+              <span className="text-white text-xs font-bold">🏷️</span>
+            </motion.div>
+
+            {/* Central Management Hub */}
+            <motion.div
+              className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl z-10 relative"
+              animate={{
+                y: [-3, 5, -3],
+                scale: [1, 1.08, 1],
+              }}
+              transition={{
+                duration: 3.6,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: 0.6,
+              }}
+            >
+              <span className="text-white text-2xl font-bold">⚙️</span>
+
+              {/* Orbiting dots */}
+              <motion.div
+                className="absolute w-2 h-2 bg-white rounded-full"
+                animate={{
+                  rotate: 360,
+                  x: [12, 0, -12, 0, 12],
+                  y: [0, 12, 0, -12, 0],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+              />
+              <motion.div
+                className="absolute w-1.5 h-1.5 bg-blue-200 rounded-full"
+                animate={{
+                  rotate: -360,
+                  x: [-8, 0, 8, 0, -8],
+                  y: [0, -8, 0, 8, 0],
+                }}
+                transition={{
+                  duration: 3.5,
+                  repeat: Infinity,
+                  ease: 'linear',
+                  delay: 2,
+                }}
+              />
+            </motion.div>
+
+            {/* Add Friend Plus */}
+            <motion.div
+              className="w-14 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-4, 4, -4],
+                rotate: [0, -3, 3, 0],
+              }}
+              transition={{
+                duration: 2.9,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: 1.2,
+              }}
+            >
+              <span className="text-white text-lg font-bold">➕</span>
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* Loading text */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="mb-6"
+        >
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Setting Up Friends
+          </h2>
+          <p className="text-gray-600 max-w-sm mx-auto">
+            Loading your friend code and managing connections...
+          </p>
+        </motion.div>
+
+        {/* Management steps indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="flex items-center justify-center space-x-2 mb-8"
+        >
+          {['Code', 'Add', 'Manage'].map((step, index) => (
+            <motion.div
+              key={step}
+              className="flex items-center space-x-1"
+              animate={{
+                scale: [0.9, 1.1, 0.9],
+                opacity: [0.5, 1, 0.5],
+              }}
+              transition={{
+                duration: 2.4,
+                repeat: Infinity,
+                delay: index * 0.4,
+                ease: 'easeInOut',
+              }}
+            >
+              <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full" />
+              <span className="text-xs text-gray-600 font-medium">{step}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Progress bar */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.5 }}
+          className="mt-6"
+        >
+          <motion.div
+            className="w-64 h-2 bg-gray-200 rounded-full mx-auto overflow-hidden"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 1, duration: 0.5 }}
+          >
+            <motion.div
+              className="h-full bg-gradient-to-r from-blue-400 via-indigo-500 to-blue-600 rounded-full"
+              initial={{ width: '0%' }}
+              animate={{ width: '100%' }}
+              transition={{
+                duration: 3.5,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            />
+          </motion.div>
+
+          <motion.p
+            className="text-xs text-gray-500 mt-4"
+            animate={{ opacity: [0.6, 1, 0.6] }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
+            Generating your unique friend code...
+          </motion.p>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+
+  // Update the loading check to use full screen
+  if (loading) {
+    return renderLoading();
+  }
+  /**
    * Renders the message banner
    */
   const renderMessage = () => {
@@ -379,7 +598,7 @@ export default function FriendsPage() {
             onClick={() => handleTabSwitch(tab.id)}
             className={`flex-1 py-3 px-2 rounded-xl text-sm font-medium transition-all ${
               activeTab === tab.id
-                ? 'bg-gradient-to-r from-pink-400 to-pink-500 text-white shadow-lg'
+                ? 'bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-lg'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
             }`}
             aria-pressed={activeTab === tab.id}
@@ -412,7 +631,7 @@ export default function FriendsPage() {
 
         {myFriendCode ? (
           <div className="space-y-4">
-            <div className="bg-gradient-to-r from-pink-100 to-yellow-100 rounded-xl p-4 border-2 border-dashed border-pink-300">
+            <div className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-xl p-4 border-2 border-dashed border-blue-300">
               <div
                 className="text-3xl font-bold tracking-wider text-gray-800"
                 aria-label={`Friend code: ${formatFriendCode(myFriendCode)}`}
@@ -423,7 +642,7 @@ export default function FriendsPage() {
 
             <button
               onClick={handleCopyFriendCode}
-              className="w-full py-3 bg-gradient-to-r from-pink-400 to-pink-500 text-white rounded-xl font-medium hover:shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-pink-300/40"
+              className="w-full py-3 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-blue-300/40"
               aria-label="Copy friend code to clipboard"
             >
               📋 Copy Code
@@ -466,7 +685,7 @@ export default function FriendsPage() {
             onChange={(e) => setFriendCodeInput(e.target.value.toUpperCase())}
             placeholder="ABC123"
             maxLength={6}
-            className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 text-center text-xl font-bold tracking-wider focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+            className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 text-center text-xl font-bold tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
             aria-describedby="friend-code-help"
           />
           <p id="friend-code-help" className="sr-only">
@@ -477,7 +696,7 @@ export default function FriendsPage() {
         <button
           onClick={handleAddFriend}
           disabled={!friendCodeInput.trim() || addFriendLoading}
-          className="w-full py-3 bg-gradient-to-r from-pink-400 to-pink-500 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-pink-300/40"
+          className="w-full py-3 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-blue-300/40"
           aria-label="Add friend using the entered code"
         >
           {addFriendLoading ? (
@@ -514,7 +733,7 @@ export default function FriendsPage() {
           </p>
           <button
             onClick={() => handleTabSwitch('add-friend')}
-            className="px-6 py-2 bg-gradient-to-r from-pink-400 to-pink-500 text-white rounded-xl font-medium hover:shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-pink-300/40"
+            className="px-6 py-2 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-blue-300/40"
           >
             Add Your First Friend
           </button>
@@ -535,12 +754,12 @@ export default function FriendsPage() {
             <button
               key={friend.user_id}
               onClick={() => handleFriendClick(friend.user_id)}
-              className="w-full bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/40 hover:shadow-xl transition-all text-left focus:outline-none focus:ring-4 focus:ring-pink-300/40"
+              className="w-full bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/40 hover:shadow-xl transition-all text-left focus:outline-none focus:ring-4 focus:ring-blue-300/40"
               aria-label={`View ${friend.name || 'Friend'}'s progress`}
             >
               <div className="flex items-center gap-4">
                 <div
-                  className="w-12 h-12 bg-gradient-to-br from-pink-200 to-yellow-200 rounded-full flex items-center justify-center text-lg font-bold text-white"
+                  className="w-12 h-12 bg-gradient-to-br from-blue-200 to-indigo-200 rounded-full flex items-center justify-center text-lg font-bold text-white"
                   aria-hidden="true"
                 >
                   {(friend.name || 'F')[0].toUpperCase()}
@@ -572,6 +791,12 @@ export default function FriendsPage() {
   // ============================================================================
   // MAIN RENDER
   // ============================================================================
+
+  // Loading state - show full screen
+  if (loading) {
+    return renderLoading();
+  }
+
   return (
     <div className={`h-screen w-full overflow-hidden ${dmSans.className}`}>
       {/* Back Button */}
@@ -581,7 +806,7 @@ export default function FriendsPage() {
             sessionStorage.setItem('isReturningToHome', 'true');
             navigate('/');
           }}
-          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
+          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-blue-200/50 transition-all shadow-sm"
           aria-label="Go back to home"
         >
           <svg

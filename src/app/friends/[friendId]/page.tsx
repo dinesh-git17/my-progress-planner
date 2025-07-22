@@ -146,7 +146,7 @@ function FriendDetailHeader({
           height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Add safe area to height
         }}
       >
-        {/* Gradient definition */}
+        {/* Gradient definition - matches homepage friends tab */}
         <defs>
           <linearGradient
             id="friendDetailHeaderGradient"
@@ -155,9 +155,9 @@ function FriendDetailHeader({
             x2="100%"
             y2="100%"
           >
-            <stop offset="0%" stopColor="#ec4899" />
-            <stop offset="50%" stopColor="#f472b6" />
-            <stop offset="100%" stopColor="#e879f9" />
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="50%" stopColor="#60a5fa" />
+            <stop offset="100%" stopColor="#93c5fd" />
           </linearGradient>
         </defs>
 
@@ -189,7 +189,7 @@ function FriendDetailHeader({
           </div>
           <div className="text-lg sm:text-xl text-white font-normal text-center max-w-lg mx-auto mt-2 px-2 leading-tight flex items-center gap-2">
             <Flame className="w-5 h-5 text-orange-300" />
-            {streak} day{streak !== 1 ? 's' : ''} streak! 🔥
+            {streak} day{streak !== 1 ? 's' : ''} streak!
           </div>
         </div>
       </div>
@@ -230,13 +230,13 @@ function MealCard({
         ease: [0.4, 0, 0.2, 1],
       }}
       className={`
-        relative px-4 py-4 rounded-xl border-2 transition-all duration-300
-        ${
-          isLogged
-            ? 'bg-gradient-to-r from-pink-50 to-purple-50 border-pink-200 shadow-lg shadow-pink-100/50'
-            : 'bg-gray-50 border-gray-200'
-        }
-      `}
+  relative px-4 py-4 rounded-xl border-2 transition-all duration-300
+  ${
+    isLogged
+      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-lg shadow-blue-100/50'
+      : 'bg-gray-50 border-gray-200'
+  }
+`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -259,7 +259,7 @@ function MealCard({
             initial={false}
             animate={{ scale: 1 }}
             transition={{ delay: index * 0.05 + 0.2 }}
-            className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center"
+            className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center"
           >
             <span className="text-white text-xs">✓</span>
           </motion.div>
@@ -285,6 +285,7 @@ export default function FriendDetailPage() {
   const [noteText, setNoteText] = useState('');
   const [sendingNote, setSendingNote] = useState(false);
   const [showNoteSuccess, setShowNoteSuccess] = useState(false);
+  const [minLoadingComplete, setMinLoadingComplete] = useState(false);
 
   // Get current user ID from localStorage
   const getCurrentUserId = () => {
@@ -337,7 +338,7 @@ export default function FriendDetailPage() {
       console.error('Error fetching friend data:', err);
       setError(err.message || 'Failed to load friend data');
     } finally {
-      setLoading(false);
+      // when both data fetch and minimum time are complete
     }
   };
 
@@ -391,17 +392,147 @@ export default function FriendDetailPage() {
     }
   }, [friendId]);
 
+  useEffect(() => {
+    const minLoadingTimer = setTimeout(() => {
+      setMinLoadingComplete(true);
+    }, 2000); // Show loading for at least 2 seconds
+
+    return () => clearTimeout(minLoadingTimer);
+  }, []);
+
+  useEffect(() => {
+    if (minLoadingComplete && (friendData || error)) {
+      setLoading(false);
+    }
+  }, [minLoadingComplete, friendData, error]);
+
   // Loading state
-  if (loading) {
+  if (loading || !minLoadingComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 flex items-center justify-center p-4">
+        {/* Main loading container */}
         <motion.div
-          initial={false}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
           className="text-center"
         >
-          <Loader2 className="w-8 h-8 text-pink-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading friend data...</p>
+          {/* Animated friend icon */}
+          <motion.div
+            className="relative mb-8"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            {/* Floating background circles */}
+            <motion.div
+              className="absolute inset-0 w-24 h-24 mx-auto"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.1, 0.3],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <div className="w-full h-full bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full blur-xl" />
+            </motion.div>
+
+            {/* Main icon container */}
+            <motion.div
+              className="relative w-20 h-20 mx-auto bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-2, 2, -2],
+                rotate: [0, 1, -1, 0],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <span className="text-3xl">👥</span>
+            </motion.div>
+          </motion.div>
+
+          {/* Loading text */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mb-6"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Loading Friend Data
+            </h2>
+            <p className="text-gray-600 max-w-sm mx-auto">
+              Getting the latest updates on your friend's progress...
+            </p>
+          </motion.div>
+
+          {/* Modern progress indicator */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="flex items-center justify-center space-x-1"
+          >
+            {[0, 1, 2].map((index) => (
+              <motion.div
+                key={index}
+                className="w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"
+                animate={{
+                  scale: [0.8, 1.2, 0.8],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: index * 0.2,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </motion.div>
+
+          {/* Subtle percentage or step indicator */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
+            className="mt-8"
+          >
+            <motion.div
+              className="w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1, duration: 0.5 }}
+            >
+              <motion.div
+                className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+            </motion.div>
+            <motion.p
+              className="text-xs text-gray-500 mt-2"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              Fetching meal logs and summaries...
+            </motion.p>
+          </motion.div>
         </motion.div>
       </div>
     );
@@ -424,7 +555,7 @@ export default function FriendDetailPage() {
               sessionStorage.setItem('isReturningToHome', 'true');
               navigate('/');
             }}
-            className="w-full bg-pink-500 text-white py-3 rounded-xl font-medium hover:bg-pink-600 transition-colors"
+            className="w-full bg-blue-500 text-white py-3 rounded-xl font-medium hover:bg-blue-600 transition-colors"
           >
             Back to Friends
           </button>
@@ -448,7 +579,7 @@ export default function FriendDetailPage() {
       >
         <button
           onClick={() => navigate('/friends-list')}
-          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
+          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-blue-200/50 transition-all shadow-sm"
           aria-label="Go back to friends"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -487,7 +618,7 @@ export default function FriendDetailPage() {
               className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
             >
               <div className="flex items-center space-x-2 mb-4">
-                <Calendar className="w-5 h-5 text-pink-500" />
+                <Calendar className="w-5 h-5 text-blue-500" />
                 <h2 className="text-lg font-semibold text-gray-800">
                   Today's Meals
                 </h2>
@@ -518,10 +649,10 @@ export default function FriendDetailPage() {
                 initial={false}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="mt-4 p-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl"
+                className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl"
               >
                 <p className="text-center text-sm text-gray-600">
-                  <span className="font-medium text-pink-600">
+                  <span className="font-medium text-blue-600">
                     {friendData.progress?.meals_completed_today || 0} of 3
                   </span>{' '}
                   meals logged today
@@ -629,7 +760,7 @@ export default function FriendDetailPage() {
               className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
             >
               <div className="flex items-center space-x-2 mb-4">
-                <Heart className="w-5 h-5 text-pink-500" />
+                <Heart className="w-5 h-5 text-blue-500" />
                 <h2 className="text-lg font-semibold text-gray-800">
                   Send Encouragement
                 </h2>
@@ -653,7 +784,7 @@ export default function FriendDetailPage() {
                   <button
                     onClick={sendNote}
                     disabled={!noteText.trim() || sendingNote}
-                    className="px-6 py-2 bg-pink-500 text-white rounded-xl font-medium hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    className="px-6 py-2 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
                     {sendingNote ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

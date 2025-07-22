@@ -160,7 +160,7 @@ function NotesHeader({
           height: `calc(${BANNER_TOTAL_HEIGHT}px + env(safe-area-inset-top))`, // Add safe area to height
         }}
       >
-        {/* Gradient definition */}
+        {/* Gradient definition - matches homepage friends tab */}
         <defs>
           <linearGradient
             id="notesHeaderGradient"
@@ -169,9 +169,9 @@ function NotesHeader({
             x2="100%"
             y2="100%"
           >
-            <stop offset="0%" stopColor="#ec4899" />
-            <stop offset="50%" stopColor="#f472b6" />
-            <stop offset="100%" stopColor="#e879f9" />
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="50%" stopColor="#60a5fa" />
+            <stop offset="100%" stopColor="#93c5fd" />
           </linearGradient>
         </defs>
 
@@ -224,7 +224,7 @@ function NoteCard({ note }: { note: Note }) {
     >
       <div className="flex items-start space-x-3">
         {/* Friend Avatar */}
-        <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
           {getInitials(note.from_name)}
         </div>
 
@@ -254,8 +254,8 @@ function EmptyState() {
       animate={{ opacity: 1, y: 0 }}
       className="text-center py-12"
     >
-      <div className="w-20 h-20 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <Heart className="w-8 h-8 text-pink-400" />
+      <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <Heart className="w-8 h-8 text-blue-400" />
       </div>
       <h3 className="text-lg font-medium text-gray-800 mb-2">No notes yet</h3>
       <p className="text-sm text-gray-600 max-w-sm mx-auto">
@@ -298,37 +298,43 @@ export default function NotesPage() {
         throw new Error('User not authenticated');
       }
 
-      const limit = selectedFilter === 'today' ? 50 : 100;
-      const url = `/api/friends/notes?user_id=${currentUserId}&limit=${limit}`;
+      // Create minimum loading delay promise
+      const minLoadingDelay = new Promise((resolve) =>
+        setTimeout(resolve, 2000),
+      );
 
-      const response = await fetch(url);
+      // Create data fetch promise
+      const dataFetch = (async () => {
+        const limit = selectedFilter === 'today' ? 50 : 100;
+        const url = `/api/friends/notes?user_id=${currentUserId}&limit=${limit}`;
 
-      if (!response.ok) {
-        throw new Error('Failed to load notes');
-      }
+        const response = await fetch(url);
 
-      const data: NotesResponse = await response.json();
+        if (!response.ok) {
+          throw new Error('Failed to load notes');
+        }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to load notes');
-      }
+        const data: NotesResponse = await response.json();
 
-      // Filter by today if selected
-      let filteredNotes = data.notes;
-      if (selectedFilter === 'today') {
-        // Use EST timezone for consistency
-        const todayEst = new Intl.DateTimeFormat('en-CA', {
-          timeZone: 'America/New_York',
-        }).format(new Date());
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load notes');
+        }
 
-        console.log(`🔍 Filtering notes for today (EST): ${todayEst}`);
-        filteredNotes = data.notes.filter((note) => {
-          console.log(
-            `📝 Note date: ${note.date}, Today: ${todayEst}, Match: ${note.date === todayEst}`,
-          );
-          return note.date === todayEst;
-        });
-      }
+        // Filter by today if selected
+        let filteredNotes = data.notes;
+        if (selectedFilter === 'today') {
+          const todayEst = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/New_York',
+          }).format(new Date());
+
+          filteredNotes = data.notes.filter((note) => note.date === todayEst);
+        }
+
+        return filteredNotes;
+      })();
+
+      // Wait for both the data and minimum loading time
+      const [filteredNotes] = await Promise.all([dataFetch, minLoadingDelay]);
 
       setNotes(filteredNotes);
     } catch (err: any) {
@@ -348,6 +354,81 @@ export default function NotesPage() {
   const groupedNotes = groupNotesByDate(notes);
   const dateKeys = Object.keys(groupedNotes).sort((a, b) => b.localeCompare(a)); // Most recent first
 
+  // Loading state - show full screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 flex items-center justify-center p-4">
+        {/* Modern notes loading animation - similar to friends but with mail/message theme */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="text-center"
+        >
+          {/* Animated mail icon */}
+          <motion.div
+            className="relative mb-8"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <motion.div
+              className="w-20 h-20 mx-auto bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg"
+              animate={{
+                y: [-2, 2, -2],
+                rotate: [0, 1, -1, 0],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <Mail className="w-8 h-8 text-white" />
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mb-6"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Loading Notes
+            </h2>
+            <p className="text-gray-600 max-w-sm mx-auto">
+              Gathering encouraging messages from your friends...
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="flex items-center justify-center space-x-1"
+          >
+            {[0, 1, 2].map((index) => (
+              <motion.div
+                key={index}
+                className="w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"
+                animate={{
+                  scale: [0.8, 1.2, 0.8],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: index * 0.2,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
   return (
     <div className={`h-screen w-full overflow-hidden ${dmSans.className}`}>
       {/* Back navigation button */}
@@ -362,7 +443,7 @@ export default function NotesPage() {
             sessionStorage.setItem('isReturningToHome', 'true');
             navigate('/');
           }}
-          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-pink-200/50 transition-all shadow-sm"
+          className="p-2.5 bg-white/60 backdrop-blur-sm text-gray-700 rounded-full border border-white/40 hover:bg-white/80 focus:ring-2 focus:ring-blue-200/50 transition-all shadow-sm"
           aria-label="Go back to home"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -394,7 +475,7 @@ export default function NotesPage() {
                   onClick={() => setSelectedFilter('all')}
                   className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                     selectedFilter === 'all'
-                      ? 'bg-pink-500 text-white shadow-sm'
+                      ? 'bg-blue-500 text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-800'
                   }`}
                 >
@@ -404,7 +485,7 @@ export default function NotesPage() {
                   onClick={() => setSelectedFilter('today')}
                   className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                     selectedFilter === 'today'
-                      ? 'bg-pink-500 text-white shadow-sm'
+                      ? 'bg-blue-500 text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-800'
                   }`}
                 >
@@ -429,9 +510,9 @@ export default function NotesPage() {
                     }}
                     className="flex justify-center space-x-1.5 mb-3"
                   >
-                    <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
-                    <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
-                    <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
                   </motion.div>
                   <p className="text-sm text-gray-500">Loading your notes...</p>
                 </motion.div>
@@ -448,7 +529,7 @@ export default function NotesPage() {
                   <p className="text-gray-600 mb-4">{error}</p>
                   <button
                     onClick={fetchNotes}
-                    className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                   >
                     Try Again
                   </button>
