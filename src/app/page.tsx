@@ -2096,7 +2096,7 @@ export default function Home() {
   // ========================================================================
 
   // Show skeleton during navigation loading OR initial loading
-  if (isNavigationLoading || isInitialLoading) {
+  if (isNavigationLoading || (isInitialLoading && userId)) {
     return <HomePageSkeleton />;
   }
 

@@ -16,19 +16,6 @@ interface LoginModalProps {
   onAuthSuccess?: () => void; // Callback for successful authentication
 }
 
-/**
- * Production-ready authentication modal component
- *
- * Handles both email/password and OAuth authentication flows with proper
- * state management, error handling, and session establishment timing.
- *
- * Key features:
- * - Unified auth state management for email and OAuth flows
- * - Proper session establishment timing with retries
- * - Comprehensive error handling with user-friendly messages
- * - Accessibility compliance and keyboard navigation
- * - Loading states and optimistic UI updates
- */
 export default function LoginModal({
   isOpen,
   onClose,
