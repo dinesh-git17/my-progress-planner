@@ -4,8 +4,9 @@
 
 import { motion } from 'framer-motion';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
+import Image from 'next/image';
 import React, { useState } from 'react';
-import { FaArrowRight, FaHeartbeat, FaLock, FaUser } from 'react-icons/fa';
+import { FaArrowRight, FaLock, FaUser } from 'react-icons/fa';
 
 // ============================================================================
 // FONT CONFIGURATION - Matching project patterns
@@ -59,9 +60,9 @@ function WaveHeader() {
             x2="100%"
             y2="100%"
           >
-            <stop offset="0%" stopColor="#000000" />
-            <stop offset="50%" stopColor="#111111" />
-            <stop offset="100%" stopColor="#1f1f1f" />
+            <stop offset="0%" stopColor="#be185d" />
+            <stop offset="50%" stopColor="#a21caf" />
+            <stop offset="100%" stopColor="#7c3aed" />
           </linearGradient>
         </defs>
 
@@ -72,7 +73,7 @@ function WaveHeader() {
         />
       </svg>
 
-      {/* App title overlay - centered in taller header */}
+      {/* App title overlay - perfectly centered vertically */}
       <div
         className="absolute inset-0 flex items-center justify-center"
         style={{
@@ -83,21 +84,17 @@ function WaveHeader() {
         }}
       >
         <div className="flex flex-col items-center justify-center text-center">
-          <div className="flex items-center justify-center gap-3 mb-1">
+          <div className="mb-1">
             <h1
               className={`text-white font-bold tracking-wide ${dancingScript.className}`}
-              style={{ fontSize: 'clamp(2rem, 6vw, 3rem)' }}
+              style={{ fontSize: 'clamp(3rem, 10vw, 5rem)' }}
             >
               Sweethearty
             </h1>
-            <FaHeartbeat
-              className="text-white animate-pulse"
-              style={{ fontSize: 'clamp(1.5rem, 4vw, 2.25rem)' }}
-            />
           </div>
           <p
             className={`text-white/90 font-medium tracking-wide ${dmSans.className}`}
-            style={{ fontSize: 'clamp(0.875rem, 2.5vw, 1rem)' }}
+            style={{ fontSize: 'clamp(0.875rem, 2.5vw, 1.125rem)' }}
           >
             Your loving meal companion
           </p>
@@ -120,6 +117,7 @@ export default function AuthPrompt({
   onLogin,
 }: AuthPromptProps) {
   const [isLoading, setIsLoading] = useState<'login' | 'guest' | null>(null);
+  const [iconError, setIconError] = useState(false);
 
   const handleLogin = async () => {
     setIsLoading('login');
@@ -188,9 +186,23 @@ export default function AuthPrompt({
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
-                    className="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg"
+                    className="w-20 h-20 sm:w-24 sm:h-24 mx-auto"
                   >
-                    <FaLock className="text-white text-xl sm:text-2xl" />
+                    {!iconError ? (
+                      <Image
+                        src="/icons/auth-icon.png"
+                        alt="Sweethearty app icon"
+                        width={96}
+                        height={96}
+                        className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-2xl shadow-lg"
+                        onError={() => setIconError(true)}
+                        priority
+                      />
+                    ) : (
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                        <FaLock className="text-white text-xl sm:text-2xl" />
+                      </div>
+                    )}
                   </motion.div>
 
                   <div className="space-y-2 sm:space-y-3">
