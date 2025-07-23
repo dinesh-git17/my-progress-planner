@@ -1,7 +1,7 @@
 // public/service-worker.js
 // Industry-standard service worker for meal tracking PWA
 
-const CACHE_VERSION = 'v2.0.0';
+const CACHE_VERSION = 'v2.1.0';
 const IS_DEVELOPMENT =
   self.location.hostname === 'localhost' ||
   self.location.hostname === '127.0.0.1' ||
@@ -32,12 +32,16 @@ const API_CACHE_PATTERNS = {
     /\/api\/streak/,
     /\/api\/summaries/,
   ],
-  NETWORK_FIRST: [/\/api\/log-meal/, /\/api\/gpt\/meal-chat/, /\/api\/admin\//],
+  NETWORK_FIRST: [
+    /\/api\/gpt\/meal-chat/,
+    /\/api\/gpt\/summary/,
+    /\/api\/admin\//,
+  ],
 };
 
 // Background sync tag names
 const SYNC_TAGS = {
-  MEAL_LOG: 'meal-log-sync',
+  MEAL_DATA: 'meal-data-sync',
   USER_DATA: 'user-data-sync',
 };
 
@@ -75,49 +79,30 @@ function getApiCacheStrategy(url) {
   return 'NETWORK_ONLY';
 }
 
-// Cache management
+async function precacheAppShell() {
+  const cache = await caches.open(CACHE_NAMES.APP_SHELL);
+
+  // Only cache in production
+  if (!IS_DEVELOPMENT) {
+    await cache.addAll(APP_SHELL_URLS);
+    log('App shell precached');
+  }
+}
+
 async function cleanupOldCaches() {
   const cacheNames = await caches.keys();
   const currentCaches = Object.values(CACHE_NAMES);
 
-  const deletions = cacheNames
-    .filter((cacheName) => !currentCaches.includes(cacheName))
-    .map((cacheName) => {
-      log(`Deleting old cache: ${cacheName}`);
-      return caches.delete(cacheName);
-    });
-
-  return Promise.all(deletions);
-}
-
-async function precacheAppShell() {
-  // Skip precaching in development to avoid conflicts with Next.js dev server
-  if (IS_DEVELOPMENT) {
-    log('Development mode: Skipping app shell precaching');
-    return;
-  }
-
-  const cache = await caches.open(CACHE_NAMES.APP_SHELL);
-
-  try {
-    // Cache app shell resources
-    await cache.addAll(APP_SHELL_URLS);
-    log('App shell precached successfully');
-  } catch (error) {
-    log('Failed to precache some app shell resources:', error);
-    // Try to cache individually to identify problematic URLs
-    for (const url of APP_SHELL_URLS) {
-      try {
-        await cache.add(url);
-        log(`Cached: ${url}`);
-      } catch (err) {
-        log(`Failed to cache: ${url}`, err);
+  await Promise.all(
+    cacheNames.map(async (cacheName) => {
+      if (!currentCaches.includes(cacheName)) {
+        log(`Deleting old cache: ${cacheName}`);
+        await caches.delete(cacheName);
       }
-    }
-  }
+    }),
+  );
 }
 
-// Caching strategies
 async function cacheFirstStrategy(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cachedResponse = await cache.match(request);
@@ -131,11 +116,11 @@ async function cacheFirstStrategy(request, cacheName) {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
       cache.put(request, networkResponse.clone());
-      log(`Cached from network: ${request.url}`);
+      log(`Network response cached: ${request.url}`);
     }
     return networkResponse;
   } catch (error) {
-    log(`Network failed for: ${request.url}`, error);
+    log(`Network failed: ${request.url}`, error);
     throw error;
   }
 }
@@ -247,7 +232,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle API requests - even in development for offline functionality
+  // Handle API requests
   if (request.url.includes('/api/')) {
     const strategy = getApiCacheStrategy(request.url);
 
@@ -272,7 +257,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle static assets (images, etc.) - lighter caching in development
+  // Handle static assets (images, etc.)
   if (request.destination === 'image') {
     event.respondWith(
       IS_DEVELOPMENT
@@ -282,7 +267,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle other static resources - lighter caching in development
+  // Handle other static resources
   if (request.method === 'GET') {
     event.respondWith(
       IS_DEVELOPMENT
@@ -293,13 +278,13 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// Background sync
+// Background sync - UPDATED for  actual architecture
 self.addEventListener('sync', (event) => {
   log(`Background sync triggered: ${event.tag}`);
 
   switch (event.tag) {
-    case SYNC_TAGS.MEAL_LOG:
-      event.waitUntil(handleMealLogSync());
+    case SYNC_TAGS.MEAL_DATA:
+      event.waitUntil(handleMealDataSync());
       break;
 
     default:
@@ -307,52 +292,115 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// Handle meal log synchronization
-async function handleMealLogSync() {
+// UPDATED: Handle meal data synchronization using  actual flow
+async function handleMealDataSync() {
   try {
-    log('Starting meal log sync...');
+    log('Starting meal data sync...');
 
-    // Get pending meal logs from IndexedDB
-    const pendingLogs = await getPendingMealLogs();
+    // Get pending meal data from IndexedDB
+    const pendingMealData = await getPendingMealData();
 
-    for (const logEntry of pendingLogs) {
+    for (const mealEntry of pendingMealData) {
       try {
-        const response = await fetch('/api/log-meal', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(logEntry.data),
-        });
+        // Sync using  actual meal logging flow
+        const success = await syncMealEntry(mealEntry);
 
-        if (response.ok) {
-          await removePendingMealLog(logEntry.id);
-          log(`Successfully synced meal log: ${logEntry.id}`);
+        if (success) {
+          await removePendingMealData(mealEntry.id);
+          log(`Successfully synced meal data: ${mealEntry.id}`);
         } else {
-          log(`Failed to sync meal log: ${logEntry.id}`, response.status);
+          log(`Failed to sync meal data: ${mealEntry.id}`);
         }
       } catch (error) {
-        log(`Error syncing meal log: ${logEntry.id}`, error);
+        log(`Error syncing meal data: ${mealEntry.id}`, error);
       }
     }
 
-    log('Meal log sync completed');
+    log('Meal data sync completed');
   } catch (error) {
-    log('Meal log sync failed:', error);
+    log('Meal data sync failed:', error);
   }
 }
 
-// IndexedDB helpers for offline functionality
-async function getPendingMealLogs() {
-  // Implementation would go here
+// UPDATED: Sync using  actual architecture
+async function syncMealEntry(mealEntry) {
+  try {
+    const { userId, userName, meal, chatMessages, generateSummary } = mealEntry;
+
+    // Extract user answers and bot responses from chat
+    const userAnswers = chatMessages
+      .filter((m) => m.sender === 'user')
+      .map((m) => m.text);
+
+    const gptResponses = chatMessages
+      .filter((m) => m.sender === 'bot')
+      .map((m) => m.text);
+
+    // Step 1: Save meal data using new upsert API
+    const mealLogResponse = await fetch('/api/meals/upsert', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        name: userName,
+        meal: meal,
+        answers: userAnswers,
+        gpt_responses: gptResponses,
+      }),
+    });
+
+    if (!mealLogResponse.ok) {
+      const errorText = await mealLogResponse.text();
+      log(`Meal upsert failed: ${errorText}`);
+      return false;
+    }
+
+    log(`Successfully saved meal data for ${meal}`);
+
+    // Step 2: Generate summary if requested
+    if (generateSummary && userAnswers.length > 0) {
+      const summaryResponse = await fetch('/api/gpt/summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: userName,
+          meal: meal,
+          answers: userAnswers,
+        }),
+      });
+
+      if (!summaryResponse.ok) {
+        log('Summary generation failed, but meal data saved successfully');
+        // Don't fail the whole sync if summary fails
+      } else {
+        log(`Successfully generated summary for ${meal}`);
+      }
+    }
+
+    return true;
+  } catch (error) {
+    log('Error in syncMealEntry:', error);
+    return false;
+  }
+}
+
+// IndexedDB helpers for offline functionality - UPDATED interface
+async function getPendingMealData() {
+  // This would interface with  updated IndexedDB structure
+  // For now, return empty array (implement in sw-utils.ts)
   return [];
 }
 
-async function removePendingMealLog(id) {
-  // Implementation would go here
+async function removePendingMealData(id) {
+  // This would remove the synced meal data from IndexedDB
+  // Implementation in sw-utils.ts
 }
 
-// Push notifications (keeping your existing functionality)
+// Push notifications (keeping  existing functionality)
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};
   const title = data.title || 'Progress Planner';
@@ -379,8 +427,6 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(self.registration.showNotification(title, options));
 });
-
-// Replace the notificationclick event listener in public/service-worker.js
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
@@ -409,7 +455,6 @@ self.addEventListener('notificationclick', (event) => {
         // Check if we already have a window open with the target URL
         for (const client of clientList) {
           if (client.url.includes(self.location.origin)) {
-            // Navigate the existing client to the target URL
             console.log(
               '📱 Focusing existing window and navigating to:',
               urlToOpen,

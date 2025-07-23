@@ -2,6 +2,7 @@
 
 import { useNavigation } from '@/contexts/NavigationContext';
 import { upsertMealLog } from '@/utils/mealLog';
+import { getPendingSyncCount, logMealWithFallback } from '@/utils/sw-utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Dancing_Script } from 'next/font/google';
 import React, { useEffect, useRef, useState } from 'react';
@@ -58,6 +59,9 @@ export default function MealChat({
   const [loading, setLoading] = useState(false);
   const [showClosing, setShowClosing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
 
   // Refs for data persistence during chat
   const answers = useRef<string[]>([]);
@@ -68,6 +72,10 @@ export default function MealChat({
   // Add overlay state for smooth transitions
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [initialViewportHeight, setInitialViewportHeight] = useState(0);
+
+  const getUserName = async (): Promise<string> => {
+    return localStorage.getItem('mealapp_quote_name') || 'unknown_user';
+  };
 
   const { navigate } = useNavigation();
 
@@ -242,6 +250,43 @@ export default function MealChat({
     return () => clearTimeout(timer);
   }, [meal]);
 
+  useEffect(() => {
+    const updateOnlineStatus = () => {
+      const isOffline = !navigator.onLine;
+      setOfflineMode(isOffline);
+      console.log(isOffline ? '📴 App went offline' : '🌐 App back online');
+    };
+
+    const updatePendingCount = async () => {
+      try {
+        const count = await getPendingSyncCount();
+        setPendingSyncCount(count);
+        setShowOfflineIndicator(count > 0 || offlineMode);
+      } catch (error) {
+        console.error('Error getting pending sync count:', error);
+      }
+    };
+
+    // Set initial state
+    updateOnlineStatus();
+    updatePendingCount();
+
+    // Listen for online/offline events
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    window.addEventListener('online', updatePendingCount); // Also update count when back online
+
+    // Update pending count periodically
+    const interval = setInterval(updatePendingCount, 10000); // Every 10 seconds
+
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+      window.removeEventListener('online', updatePendingCount);
+      clearInterval(interval);
+    };
+  }, [offlineMode]);
+
   // ============================================================================
   // CHAT HANDLERS
   // ============================================================================
@@ -257,23 +302,75 @@ export default function MealChat({
         .toLocaleString('en-US', { timeZone: 'America/New_York' })
         .slice(0, 10);
 
-      await upsertMealLog({
-        user_id: userId,
-        date: today,
-        meal,
-        answers: answers.current,
-        gpt_response: gptReplies.current,
-      });
+      // Prepare chat messages in the format expected by offline storage
+      const chatMessages = messages.map((msg, index) => ({
+        sender: msg.sender,
+        text: msg.text,
+        timestamp: Date.now() - (messages.length - index) * 1000, // Approximate timestamps
+      }));
+
+      if (navigator.onLine) {
+        // Try your existing online flow first
+        try {
+          await upsertMealLog({
+            user_id: userId,
+            date: today,
+            meal,
+            answers: answers.current,
+            gpt_response: gptReplies.current,
+          });
+
+          console.log('✅ Meal logged successfully online');
+        } catch (error) {
+          console.warn(
+            'Online meal logging failed, falling back to offline:',
+            error,
+          );
+
+          // Fallback to offline storage
+          const userName = await getUserName();
+          const result = await logMealWithFallback({
+            userId,
+            userName,
+            meal,
+            chatMessages,
+            generateSummary: true,
+          });
+
+          if (result.success) {
+            console.log('📱 Meal saved offline, will sync when online');
+            setPendingSyncCount(await getPendingSyncCount());
+          } else {
+            throw new Error('Failed to save meal offline');
+          }
+        }
+      } else {
+        // We're offline, store for later sync
+        const userName = await getUserName();
+        const result = await logMealWithFallback({
+          userId,
+          userName,
+          meal,
+          chatMessages,
+          generateSummary: true,
+        });
+
+        if (result.success) {
+          console.log('📱 Meal logged offline, will sync when online');
+          setPendingSyncCount(await getPendingSyncCount());
+        } else {
+          throw new Error('Failed to save meal offline');
+        }
+      }
 
       setTimeout(() => {
         setChatEnded(true);
         setLoading(false);
-      }, 500);
+      }, 1500);
     } catch (error) {
-      console.error('Error saving meal log:', error);
+      console.error('Error in finishChat:', error);
       setLoading(false);
-      // Still show chat ended state even if save fails
-      setChatEnded(true);
+      // You might want to show an error message to the user here
     }
   };
 
@@ -669,6 +766,49 @@ export default function MealChat({
     </div>
   );
 
+  const renderOfflineIndicator = () => {
+    if (!showOfflineIndicator) return null;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="fixed top-0 left-0 right-0 z-50 bg-amber-50 border-b border-amber-200 p-3 shadow-sm"
+        style={{
+          fontFamily: SYSTEM_FONT,
+        }}
+      >
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          <div className="flex items-center">
+            {offlineMode ? (
+              <>
+                <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                <span className="text-sm text-amber-800 font-medium">
+                  You're offline
+                </span>
+              </>
+            ) : pendingSyncCount > 0 ? (
+              <>
+                <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
+                <span className="text-sm text-amber-800 font-medium">
+                  {pendingSyncCount} meal{pendingSyncCount > 1 ? 's' : ''}{' '}
+                  pending sync
+                </span>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        {offlineMode && (
+          <p className="text-xs text-amber-700 mt-1 max-w-md mx-auto">
+            Your meals will be saved and synced when connection returns.
+          </p>
+        )}
+      </motion.div>
+    );
+  };
+
   // ============================================================================
   // MAIN RENDER
   // ============================================================================
@@ -750,240 +890,243 @@ export default function MealChat({
     );
   }
   return (
-    <div
-      className="flex flex-col w-full max-w-md mx-auto shadow-xl"
-      style={{
-        fontFamily: SYSTEM_FONT,
-        background:
-          'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f3e8ff 100%)',
-        height: '100vh',
-        position: 'fixed', // Critical for iOS PWA
-        top: 0,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '100%',
-        maxWidth: '448px',
-        overflow: 'hidden', // Prevent scrolling
-        touchAction: 'none', // Prevent touch scrolling on main container
-        WebkitOverflowScrolling: 'auto', // Disable momentum scrolling
-      }}
-      onTouchMove={(e) => {
-        // Prevent page scrolling, but allow chat to handle its own events
-        e.preventDefault();
-      }}
-    >
-      {/* Fixed Header - iOS Safe */}
-      <header
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 30,
-          background: 'rgba(255, 255, 255, 0.35)', // ✅ Much more opaque for contrast
-          backdropFilter: 'saturate(180%) blur(25px)',
-          WebkitBackdropFilter: 'saturate(180%) blur(25px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.4)',
-          boxShadow: '0 2px 20px rgba(0, 0, 0, 0.08)', // ✅ Adds depth
-          paddingTop: 'env(safe-area-inset-top)',
-        }}
-      >
-        <div className="flex items-center justify-between px-4 py-3">
-          {/* Left: Back Button */}
-          <button
-            onClick={() => {
-              sessionStorage.setItem('isReturningToHome', 'true');
-              navigate('/');
-            }}
-            className="flex items-center justify-center w-8 h-8 text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="Go Back to Home"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M19 12H5"></path>
-              <path d="M12 19l-7-7 7-7"></path>
-            </svg>
-          </button>
-
-          {/* Center: Meal Title */}
-          <div className="flex items-center gap-2">
-            <span className="text-xl" role="img" aria-label={`${meal} emoji`}>
-              {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🫐' : '🍜'}
-            </span>
-            <div
-              className="text-lg font-semibold text-gray-900"
-              style={{
-                fontFamily: SYSTEM_FONT,
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
-            </div>
-          </div>
-
-          {/* Right: Menu/Options (placeholder for now) */}
-          <div className="w-8 h-8" />
-        </div>
-      </header>
-
-      {/* Chat Messages - Adjust Height for Keyboard */}
+    <>
+      {renderOfflineIndicator()}
       <div
-        ref={chatBodyRef}
-        className="w-full px-4 py-4 flex flex-col justify-start overflow-y-auto"
+        className="flex flex-col w-full max-w-md mx-auto shadow-xl"
         style={{
-          position: 'absolute',
-          top: 'calc(env(safe-area-inset-top) + 56px)',
-          left: 0,
-          right: 0,
-          bottom: isKeyboardOpen ? '350px' : '100px', // CHANGE HEIGHT for available space
-          WebkitOverflowScrolling: 'touch',
-          background: 'rgba(255, 255, 255, 0.08)', // ✅ Subtle glass effect
-          backdropFilter: 'saturate(180%) blur(20px)',
-          WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-          borderRadius: '20px 20px 0 0',
-          border: '0.5px solid rgba(255, 255, 255, 0.15)',
-          overscrollBehavior: 'contain',
-          touchAction: 'pan-y',
-          scrollBehavior: 'auto',
-          minHeight: 0,
-          WebkitTransform: 'translateZ(0)',
-          transform: 'translateZ(0)',
-          paddingBottom: '100px', // Increased space for input bar
-          transition: 'bottom 0.3s ease', // SMOOTH height transition
+          fontFamily: SYSTEM_FONT,
+          background:
+            'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f3e8ff 100%)',
+          height: '100vh',
+          position: 'fixed', // Critical for iOS PWA
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: '448px',
+          overflow: 'hidden', // Prevent scrolling
+          touchAction: 'none', // Prevent touch scrolling on main container
+          WebkitOverflowScrolling: 'auto', // Disable momentum scrolling
         }}
-        role="log"
-        aria-live="polite"
-        aria-label="Chat conversation"
         onTouchMove={(e) => {
-          e.stopPropagation();
-        }}
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          const isAtBottom =
-            el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
-          console.log('Scroll position:', {
-            scrollTop: el.scrollTop,
-            scrollHeight: el.scrollHeight,
-            clientHeight: el.clientHeight,
-            isAtBottom,
-          });
+          // Prevent page scrolling, but allow chat to handle its own events
+          e.preventDefault();
         }}
       >
-        <AnimatePresence initial={false}>
-          {messages.map(renderMessage)}
-          {loading && renderTypingIndicator()}
-        </AnimatePresence>
-      </div>
-
-      {/* Input Bar - Only This Moves Up */}
-      {!chatEnded && (
-        <div
-          className="w-full px-4 py-4"
+        {/* Fixed Header - iOS Safe */}
+        <header
           style={{
             position: 'absolute',
-            bottom: '0px', // Always at bottom
+            top: 0,
             left: 0,
             right: 0,
-            background: 'transparent',
-            paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
-            transform: isKeyboardOpen
-              ? 'translateY(-350px)'
-              : 'translateY(0px)', // ONLY INPUT BAR MOVES
-            transition: 'transform 0.3s ease', // Smooth animation
-            zIndex: 40,
+            zIndex: 30,
+            background: 'rgba(255, 255, 255, 0.35)', // ✅ Much more opaque for contrast
+            backdropFilter: 'saturate(180%) blur(25px)',
+            WebkitBackdropFilter: 'saturate(180%) blur(25px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.4)',
+            boxShadow: '0 2px 20px rgba(0, 0, 0, 0.08)', // ✅ Adds depth
+            paddingTop: 'env(safe-area-inset-top)',
           }}
         >
-          <form className="flex items-center gap-3" onSubmit={handleSubmit}>
-            <div className="relative flex-1">
-              <input
-                ref={realInputRef}
-                disabled={loading}
-                className="
+          <div className="flex items-center justify-between px-4 py-3">
+            {/* Left: Back Button */}
+            <button
+              onClick={() => {
+                sessionStorage.setItem('isReturningToHome', 'true');
+                navigate('/');
+              }}
+              className="flex items-center justify-center w-8 h-8 text-blue-500 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Go Back to Home"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 12H5"></path>
+                <path d="M12 19l-7-7 7-7"></path>
+              </svg>
+            </button>
+
+            {/* Center: Meal Title */}
+            <div className="flex items-center gap-2">
+              <span className="text-xl" role="img" aria-label={`${meal} emoji`}>
+                {meal === 'breakfast' ? '🍳' : meal === 'lunch' ? '🫐' : '🍜'}
+              </span>
+              <div
+                className="text-lg font-semibold text-gray-900"
+                style={{
+                  fontFamily: SYSTEM_FONT,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {meal ? meal.charAt(0).toUpperCase() + meal.slice(1) : 'Chat'}
+              </div>
+            </div>
+
+            {/* Right: Menu/Options (placeholder for now) */}
+            <div className="w-8 h-8" />
+          </div>
+        </header>
+
+        {/* Chat Messages - Adjust Height for Keyboard */}
+        <div
+          ref={chatBodyRef}
+          className="w-full px-4 py-4 flex flex-col justify-start overflow-y-auto"
+          style={{
+            position: 'absolute',
+            top: 'calc(env(safe-area-inset-top) + 56px)',
+            left: 0,
+            right: 0,
+            bottom: isKeyboardOpen ? '350px' : '100px', // CHANGE HEIGHT for available space
+            WebkitOverflowScrolling: 'touch',
+            background: 'rgba(255, 255, 255, 0.08)', // ✅ Subtle glass effect
+            backdropFilter: 'saturate(180%) blur(20px)',
+            WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+            borderRadius: '20px 20px 0 0',
+            border: '0.5px solid rgba(255, 255, 255, 0.15)',
+            overscrollBehavior: 'contain',
+            touchAction: 'pan-y',
+            scrollBehavior: 'auto',
+            minHeight: 0,
+            WebkitTransform: 'translateZ(0)',
+            transform: 'translateZ(0)',
+            paddingBottom: '100px', // Increased space for input bar
+            transition: 'bottom 0.3s ease', // SMOOTH height transition
+          }}
+          role="log"
+          aria-live="polite"
+          aria-label="Chat conversation"
+          onTouchMove={(e) => {
+            e.stopPropagation();
+          }}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            const isAtBottom =
+              el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
+            console.log('Scroll position:', {
+              scrollTop: el.scrollTop,
+              scrollHeight: el.scrollHeight,
+              clientHeight: el.clientHeight,
+              isAtBottom,
+            });
+          }}
+        >
+          <AnimatePresence initial={false}>
+            {messages.map(renderMessage)}
+            {loading && renderTypingIndicator()}
+          </AnimatePresence>
+        </div>
+
+        {/* Input Bar - Only This Moves Up */}
+        {!chatEnded && (
+          <div
+            className="w-full px-4 py-4"
+            style={{
+              position: 'absolute',
+              bottom: '0px', // Always at bottom
+              left: 0,
+              right: 0,
+              background: 'transparent',
+              paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
+              transform: isKeyboardOpen
+                ? 'translateY(-350px)'
+                : 'translateY(0px)', // ONLY INPUT BAR MOVES
+              transition: 'transform 0.3s ease', // Smooth animation
+              zIndex: 40,
+            }}
+          >
+            <form className="flex items-center gap-3" onSubmit={handleSubmit}>
+              <div className="relative flex-1">
+                <input
+                  ref={realInputRef}
+                  disabled={loading}
+                  className="
                w-full px-5 py-3 text-black placeholder-gray-500 outline-none transition-all duration-200
                disabled:opacity-60
              "
-                style={{
-                  fontFamily: SYSTEM_FONT,
-                  fontSize: '17px',
-                  lineHeight: '22px',
-                  letterSpacing: '-0.41px',
-                  borderRadius: '24px',
-                  background: 'rgba(255, 255, 255, 0.25)', // ✅ Enhanced glass effect
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  boxShadow: `
+                  style={{
+                    fontFamily: SYSTEM_FONT,
+                    fontSize: '17px',
+                    lineHeight: '22px',
+                    letterSpacing: '-0.41px',
+                    borderRadius: '24px',
+                    background: 'rgba(255, 255, 255, 0.25)', // ✅ Enhanced glass effect
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    boxShadow: `
                     0 4px 16px rgba(0, 0, 0, 0.08),
                     0 2px 8px rgba(0, 0, 0, 0.04),
                     inset 0 1px 0 rgba(255, 255, 255, 0.4)
                   `,
-                  backdropFilter: 'saturate(180%) blur(30px)',
-                  WebkitBackdropFilter: 'saturate(180%) blur(30px)',
-                  paddingRight: '52px',
-                }}
-                type="text"
-                placeholder={loading ? 'Wait for my reply…' : 'Message'}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                autoFocus={
-                  typeof window !== 'undefined' && window.innerWidth > 768
-                } // Only autofocus on desktop
-                autoComplete="off"
-                inputMode="text"
-                aria-label="Type your message"
-              />
+                    backdropFilter: 'saturate(180%) blur(30px)',
+                    WebkitBackdropFilter: 'saturate(180%) blur(30px)',
+                    paddingRight: '52px',
+                  }}
+                  type="text"
+                  placeholder={loading ? 'Wait for my reply…' : 'Message'}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  autoFocus={
+                    typeof window !== 'undefined' && window.innerWidth > 768
+                  } // Only autofocus on desktop
+                  autoComplete="off"
+                  inputMode="text"
+                  aria-label="Type your message"
+                />
 
-              <button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="
+                <button
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  className="
                absolute right-1.5 top-1/2 -translate-y-1/2
                flex items-center justify-center w-8 h-8 transition-all duration-200
                disabled:opacity-40 disabled:scale-95
                hover:scale-105 active:scale-95
              "
-                style={{
-                  borderRadius: '20px',
-                  background:
-                    input.trim() && !loading
-                      ? 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)'
-                      : 'rgba(142, 142, 147, 0.6)',
-                  boxShadow:
-                    input.trim() && !loading
-                      ? '0 2px 8px rgba(232, 164, 201, 0.25), 0 1px 3px rgba(232, 164, 201, 0.15)'
-                      : '0 1px 3px rgba(0, 0, 0, 0.1)',
-                }}
-                aria-label="Send message"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  className="text-white"
-                  aria-hidden="true"
+                  style={{
+                    borderRadius: '20px',
+                    background:
+                      input.trim() && !loading
+                        ? 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)'
+                        : 'rgba(142, 142, 147, 0.6)',
+                    boxShadow:
+                      input.trim() && !loading
+                        ? '0 2px 8px rgba(232, 164, 201, 0.25), 0 1px 3px rgba(232, 164, 201, 0.15)'
+                        : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  }}
+                  aria-label="Send message"
                 >
-                  <path
-                    d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+                  <svg
+                    width="16"
+                    height="16"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    className="text-white"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
-      {/* Chat Complete Overlay */}
-      <AnimatePresence>
-        {chatEnded && renderCompletionOverlay()}
-      </AnimatePresence>
-    </div>
+        {/* Chat Complete Overlay */}
+        <AnimatePresence>
+          {chatEnded && renderCompletionOverlay()}
+        </AnimatePresence>
+      </div>
+    </>
   );
 }
