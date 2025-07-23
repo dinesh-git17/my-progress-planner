@@ -1,8 +1,42 @@
+// src/app/api/gpt/quote/route.ts
+import { shouldUseMockGPT } from '@/utils/environment';
+import { addMockDelay, getMockMotivationalQuote } from '@/utils/mockGptService';
 import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const name = searchParams.get('name') || 'my love';
+
+  // Check if we should use mock responses
+  if (shouldUseMockGPT()) {
+    console.log('🎭 Using mock GPT response for motivational quote');
+
+    // Add realistic delay to simulate API call
+    await addMockDelay(400, 800);
+
+    const mockQuote = getMockMotivationalQuote(name);
+
+    return new NextResponse(
+      JSON.stringify({
+        quote: mockQuote,
+        _mock: true, // Flag to indicate this is a mock response
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control':
+            'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+          'Surrogate-Control': 'no-store',
+        },
+      },
+    );
+  }
+
+  // Production: Use real OpenAI API
+  console.log('🚀 Using real OpenAI API for motivational quote');
 
   const randomizer = Math.random().toString(36).slice(2, 10);
   const prompt = `
@@ -45,7 +79,7 @@ Do not use any dashes or special characters in the quote.
 
     // Remove the randomizer and any bad chars
     quote = quote
-      .replace(/["”“]/g, '')
+      .replace(/["""]/g, '')
       .replace(new RegExp(randomizer, 'g'), '')
       .trim();
 
@@ -66,9 +100,14 @@ Do not use any dashes or special characters in the quote.
     });
   } catch (err) {
     console.error('API Route Error:', err);
-    return NextResponse.json(
-      { quote: `You're doing amazing, ${name}. One step at a time.` },
-      { status: 200 },
-    );
+
+    // Fallback to mock response on error
+    console.log('🎭 Falling back to mock response due to error');
+    const fallbackQuote = getMockMotivationalQuote(name);
+
+    return NextResponse.json({
+      quote: fallbackQuote,
+      _fallback: true,
+    });
   }
 }

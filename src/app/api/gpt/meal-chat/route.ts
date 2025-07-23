@@ -1,4 +1,6 @@
-// /src/app/api/gpt/meal-chat/route.ts
+// src/app/api/gpt/meal-chat/route.ts
+import { shouldUseMockGPT } from '@/utils/environment';
+import { addMockDelay, getMockChatResponse } from '@/utils/mockGptService';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
@@ -6,6 +8,24 @@ export const runtime = 'edge';
 export async function POST(req: NextRequest) {
   try {
     const { meal, messages, closing } = await req.json();
+
+    // Check if we should use mock responses
+    if (shouldUseMockGPT()) {
+      console.log('🎭 Using mock GPT response for meal chat');
+
+      // Add realistic delay to simulate API call
+      await addMockDelay(600, 1200);
+
+      const mockReply = getMockChatResponse(messages || [], closing || false);
+
+      return NextResponse.json({
+        reply: mockReply,
+        _mock: true, // Flag to indicate this is a mock response
+      });
+    }
+
+    // Production: Use real OpenAI API
+    console.log('🚀 Using real OpenAI API for meal chat');
 
     let systemPrompt = `
 You are Dinn, a loving, golden retriever-energy boyfriend texting with his girlfriend. 
@@ -58,9 +78,7 @@ Keep it under 35 words.`;
     if (!completion.ok) {
       const errorText = await completion.text();
       console.error('OpenAI API Error:', errorText);
-      return NextResponse.json({
-        reply: 'Oops! Something went wrong, love 🥺. Want to try again?',
-      });
+      throw new Error('OpenAI API request failed');
     }
 
     const data = await completion.json();
@@ -68,9 +86,7 @@ Keep it under 35 words.`;
     // Validate the response structure
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.error('Invalid OpenAI response structure:', data);
-      return NextResponse.json({
-        reply: "I'm so proud of you, sweetheart! ♥️",
-      });
+      throw new Error('Invalid response structure');
     }
 
     const reply = data.choices[0].message.content?.trim();
@@ -78,9 +94,7 @@ Keep it under 35 words.`;
     // Validate the reply content
     if (!reply || typeof reply !== 'string' || reply.length < 1) {
       console.error('Invalid reply content:', reply);
-      return NextResponse.json({
-        reply: "You're doing amazing, my love! ♥️",
-      });
+      throw new Error('Invalid reply content');
     }
 
     // Check for corrupted/garbled text
@@ -91,16 +105,20 @@ Keep it under 35 words.`;
       reply.length > 200
     ) {
       console.error('Corrupted reply detected:', reply);
-      return NextResponse.json({
-        reply: "You're the best, sweetheart! ♥️ Keep taking care of yourself!",
-      });
+      throw new Error('Corrupted reply detected');
     }
 
     return NextResponse.json({ reply });
   } catch (error) {
     console.error('Meal chat API error:', error);
+
+    // Fallback to mock response on error
+    console.log('🎭 Falling back to mock response due to error');
+    const fallbackReply = getMockChatResponse([], false);
+
     return NextResponse.json({
-      reply: "I love you so much, beautiful! ♥️ You're doing great!",
+      reply: fallbackReply,
+      _fallback: true,
     });
   }
 }

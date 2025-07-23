@@ -1,4 +1,6 @@
 // src/app/api/meals/list/route.ts
+import { shouldUseMockGPT } from '@/utils/environment';
+import { addMockDelay, getMockMealSummary } from '@/utils/mockGptService';
 import supabase from '@/utils/supabaseAdmin';
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
@@ -201,13 +203,26 @@ export async function GET(req: Request) {
 }
 
 /**
- * Generate GPT summary for a meal
+ * Generate GPT summary for a meal with mock support
  */
 async function generateMealSummary(
   mealType: string,
   mealData: any,
 ): Promise<string | null> {
   try {
+    // Check if we should use mock responses
+    if (shouldUseMockGPT()) {
+      console.log(`🎭 Using mock GPT response for ${mealType} summary`);
+
+      // Add realistic delay to simulate API call
+      await addMockDelay(800, 1500);
+
+      return getMockMealSummary(mealType);
+    }
+
+    // Production: Use real OpenAI API
+    console.log(`🚀 Using real OpenAI API for ${mealType} summary`);
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       temperature: 0.3,
@@ -255,7 +270,12 @@ Guidelines:
     return completion.choices[0].message.content?.trim() || null;
   } catch (error) {
     console.error(`GPT error for ${mealType}:`, error);
-    throw error;
+
+    // Fallback to mock on error
+    console.log(
+      `🎭 Falling back to mock response for ${mealType} due to error`,
+    );
+    return getMockMealSummary(mealType);
   }
 }
 
