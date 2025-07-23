@@ -1,3 +1,6 @@
+// src/app/api/gpt/summary/route.ts
+import { shouldUseMockGPT } from '@/utils/environment';
+import { addMockDelay, getMockMealSummary } from '@/utils/mockGptService';
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 
@@ -16,6 +19,24 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+
+    // Check if we should use mock responses
+    if (shouldUseMockGPT()) {
+      console.log('🎭 Using mock GPT response for summary generation');
+
+      // Add realistic delay to simulate API call
+      await addMockDelay(500, 1200);
+
+      const mockSummary = getMockMealSummary(meal);
+
+      return NextResponse.json({
+        summary: mockSummary,
+        _mock: true, // Flag to indicate this is a mock response
+      });
+    }
+
+    // Production: Use real OpenAI API
+    console.log('🚀 Using real OpenAI API for summary generation');
 
     // Build the prompt
     let prompt = '';
@@ -38,7 +59,7 @@ You're a sweet, supportive GPT assistant helping Dinn's girlfriend build healthy
 Summarize what ${name} ate for ${meal} in a warm, fun, and positive tone.
 Include praise, encouragement, and maybe a fun emoji or two.
 
-Here’s what she told us:
+Here's what she told us:
 
 ${answers.map((a: string) => `- ${a}`).join('\n')}
 
@@ -71,6 +92,19 @@ Now, write a cute and kind summary for her. make it 100 words or less, and keep 
     return NextResponse.json({ summary });
   } catch (err: any) {
     console.error('[GPT Summary Error]', err);
+
+    // Fallback to mock response on error (only if we're not already using mocks)
+    if (!shouldUseMockGPT()) {
+      console.log('🎭 Falling back to mock response due to error');
+
+      // Use 'breakfast' as fallback since we can't access the parsed body here
+      const fallbackSummary = getMockMealSummary('breakfast');
+      return NextResponse.json({
+        summary: fallbackSummary,
+        _fallback: true,
+      });
+    }
+
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 },
