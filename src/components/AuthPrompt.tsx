@@ -72,21 +72,28 @@ function WaveHeader() {
         />
       </svg>
 
-      {/* App title overlay - positioned like summaries page */}
+      {/* App title overlay - manually adjusted for perfect vertical centering */}
       <div
-        className="absolute top-0 left-0 w-full h-full flex items-center justify-center"
+        className="absolute inset-0 flex items-center justify-center"
         style={{
-          paddingTop: `calc(${UI_CONSTANTS.BANNER_TOP_PADDING}px + env(safe-area-inset-top))`,
-          paddingBottom: `${UI_CONSTANTS.BANNER_BOTTOM_PADDING}px`,
+          top: `calc(env(safe-area-inset-top) + 20px)`,
+          height: `${BANNER_TOTAL_HEIGHT - 100}px`,
         }}
       >
-        <div className="flex items-center justify-center gap-3">
-          <h1
-            className={`text-white text-4xl font-bold tracking-wide ${dancingScript.className}`}
+        <div className="flex flex-col items-center justify-center text-center">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <h1
+              className={`text-white text-4xl font-bold tracking-wide ${dancingScript.className}`}
+            >
+              Sweethearty
+            </h1>
+            <FaHeartbeat className="text-white text-3xl animate-pulse" />
+          </div>
+          <p
+            className={`text-white/90 text-base font-medium tracking-wide ${dmSans.className}`}
           >
-            Sweethearty
-          </h1>
-          <FaHeartbeat className="text-white text-3xl animate-pulse" />
+            Your loving meal companion
+          </p>
         </div>
       </div>
     </header>
