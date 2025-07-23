@@ -51,6 +51,7 @@
     "react": "^18",
     "react-confetti": "^6.4.0",
     "react-dom": "^18",
+    "react-icons": "^5.5.0",
     "react-onesignal": "^3.2.3",
     "web-push": "^3.6.7"
   },
