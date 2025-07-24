@@ -2311,7 +2311,6 @@ export default function Home() {
                       onChange={(e) => setTempName(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
                       aria-label="Enter your name"
-                      autoFocus
                     />
 
                     {/* Save button */}
