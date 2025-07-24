@@ -84,34 +84,6 @@ export default function MealChat({
   // ============================================================================
 
   /**
-   * Single smooth auto-scroll - no overlay for regular messages
-   */
-  useEffect(() => {
-    if (!chatBodyRef.current) return;
-
-    const scrollToBottom = () => {
-      const el = chatBodyRef.current;
-      if (!el) return;
-
-      // Check if user is near bottom before auto-scrolling
-      const isNearBottom =
-        el.scrollHeight - el.scrollTop <= el.clientHeight + 150;
-
-      if (isNearBottom) {
-        el.scrollTo({
-          top: el.scrollHeight,
-          behavior: 'smooth',
-        });
-      }
-    };
-
-    // Only scroll for new messages, with delay for DOM updates
-    const timeoutId = setTimeout(scrollToBottom, 150);
-
-    return () => clearTimeout(timeoutId);
-  }, [messages]);
-
-  /**
    * Simple viewport-based keyboard detection with scroll prevention
    */
   useEffect(() => {
@@ -169,13 +141,6 @@ export default function MealChat({
         window.scrollTo(0, 0);
         document.body.scrollTop = 0;
         document.documentElement.scrollTop = 0;
-
-        // Auto-scroll chat to bottom
-        setTimeout(() => {
-          if (chatBodyRef.current) {
-            chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
-          }
-        }, 100);
       } else {
         // Restore normal page behavior when keyboard closes
         document.body.style.position = '';
@@ -244,6 +209,7 @@ export default function MealChat({
       // Then start the chat after loading completes
       setTimeout(() => {
         setMessages([{ sender: 'bot', text: FIRST_PROMPT[meal] }]);
+        setTimeout(() => scrollToBottom(), 100);
       }, 300);
     }, 2000);
 
@@ -286,6 +252,23 @@ export default function MealChat({
       clearInterval(interval);
     };
   }, [offlineMode]);
+
+  /**
+   * Scroll to bottom after keyboard state changes
+   */
+  useEffect(() => {
+    if (!chatBodyRef.current) return;
+
+    // Only scroll if we have messages and keyboard state has stabilized
+    if (messages.length > 0) {
+      // Wait for keyboard transition to complete (300ms) + buffer
+      const timeoutId = setTimeout(() => {
+        scrollToBottom();
+      }, 400); // Slightly longer than container transition
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isKeyboardOpen, messages]); // Trigger when keyboard state OR messages change
 
   // ============================================================================
   // CHAT HANDLERS
@@ -440,22 +423,6 @@ export default function MealChat({
         text: "I'm having trouble right now, but I'm sure your meal was wonderful! 💕",
       };
       setMessages((msgs) => [...msgs, fallbackMessage]);
-
-      // Regular fallback scroll - no overlay
-      setTimeout(() => {
-        if (chatBodyRef.current) {
-          const el = chatBodyRef.current;
-          const isNearBottom =
-            el.scrollHeight - el.scrollTop <= el.clientHeight + 150;
-
-          if (isNearBottom) {
-            el.scrollTo({
-              top: el.scrollHeight,
-              behavior: 'smooth',
-            });
-          }
-        }
-      }, 200);
     }
   };
 
@@ -469,6 +436,37 @@ export default function MealChat({
     }
   };
 
+  const scrollToBottom = () => {
+    if (!chatBodyRef.current) return;
+
+    const el = chatBodyRef.current;
+
+    console.log('🔍 Before scroll check:', {
+      scrollHeight: el.scrollHeight,
+      scrollTop: el.scrollTop,
+      clientHeight: el.clientHeight,
+      isKeyboardOpen: isKeyboardOpen,
+    });
+
+    const isNearBottom =
+      el.scrollHeight - el.scrollTop <= el.clientHeight + 150;
+
+    console.log('📝 Should scroll?', isNearBottom);
+
+    if (isNearBottom) {
+      // Force layout recalculation
+      el.offsetHeight;
+
+      const targetScroll = el.scrollHeight - el.clientHeight;
+
+      console.log('🎯 Scrolling to:', targetScroll);
+
+      // Immediate scroll (no delays here - the effect handles timing)
+      el.scrollTop = targetScroll;
+
+      console.log('✅ Scroll applied. Current scrollTop:', el.scrollTop);
+    }
+  };
   // ============================================================================
   // RENDER HELPERS
   // ============================================================================
@@ -980,12 +978,12 @@ export default function MealChat({
             border: '0.5px solid rgba(255, 255, 255, 0.15)',
             overscrollBehavior: 'contain',
             touchAction: 'pan-y',
-            scrollBehavior: 'auto',
+            scrollBehavior: 'smooth',
             minHeight: 0,
             WebkitTransform: 'translateZ(0)',
             transform: 'translateZ(0)',
             paddingBottom: '100px',
-            transition: 'bottom 0.3s ease', // SMOOTH height transition
+            transition: 'bottom 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
           }}
           role="log"
           aria-live="polite"
