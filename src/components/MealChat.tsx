@@ -6,6 +6,8 @@ import { getPendingSyncCount, logMealWithFallback } from '@/utils/sw-utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Dancing_Script } from 'next/font/google';
 import React, { useEffect, useRef, useState } from 'react';
+import { FaHome } from 'react-icons/fa';
+import { GiSparkles } from 'react-icons/gi';
 
 const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' });
 
@@ -636,116 +638,239 @@ export default function MealChat({
   );
 
   /**
-   * Renders completion overlay
+   * Renders completion overlay - Modern transparent glassmorphism design covering entire screen
+   * Note: Import FaHome from 'react-icons/fa' and GiSparkles from 'react-icons/gi' at the top of your file
    */
   const renderCompletionOverlay = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Full-screen transparent glassmorphism background - covers header too */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(135deg, rgba(236, 72, 153, 0.02) 0%, rgba(168, 85, 247, 0.015) 50%, rgba(244, 114, 182, 0.02) 100%)',
+          backdropFilter: 'saturate(110%) blur(100px)',
+          WebkitBackdropFilter: 'saturate(110%) blur(15px)',
+        }}
+      />
+
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        initial={{ opacity: 0, scale: 0.92, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{
-          duration: 0.4,
+          duration: 0.5,
           type: 'spring',
-          stiffness: 300,
-          damping: 25,
+          stiffness: 280,
+          damping: 20,
         }}
-        className="mx-4 max-w-sm w-full px-8 py-10 flex flex-col items-center text-center"
+        className="relative z-10 mx-6 w-full max-w-sm flex flex-col items-center text-center"
         style={{
-          background: 'rgba(255, 255, 255, 0.18)',
-          backdropFilter: 'saturate(180%) blur(40px)',
-          WebkitBackdropFilter: 'saturate(180%) blur(40px)',
-          borderRadius: '20px',
+          background: 'rgba(255, 255, 255, 0.12)',
+          backdropFilter: 'saturate(160%) blur(30px)',
+          WebkitBackdropFilter: 'saturate(160%) blur(30px)',
+          borderRadius: '28px',
           boxShadow: `
-           0 32px 64px rgba(0, 0, 0, 0.08),
-           0 16px 32px rgba(0, 0, 0, 0.04),
-           inset 0 1px 0 rgba(255, 255, 255, 0.4),
-           inset 0 -1px 0 rgba(0, 0, 0, 0.02)
-         `,
-          border: '0.5px solid rgba(255, 255, 255, 0.25)',
-          fontFamily: SYSTEM_FONT,
+        0 32px 80px rgba(0, 0, 0, 0.08),
+        0 16px 40px rgba(0, 0, 0, 0.04),
+        0 8px 20px rgba(0, 0, 0, 0.02),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.03)
+      `,
+          border: '1px solid rgba(255, 255, 255, 0.25)',
+          padding: '48px 32px',
         }}
       >
-        <div
-          className="mb-8 text-gray-700"
+        {/* Main Message */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+          className="mb-10"
           style={{
-            fontSize: '18px',
-            lineHeight: '23px',
-            letterSpacing: '-0.24px',
-            fontWeight: '500',
-            textShadow: '0 0.5px 1px rgba(255, 255, 255, 0.9)',
+            fontFamily:
+              '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif',
           }}
         >
-          {meal === 'dinner'
-            ? 'All done for today! You did amazing 💖'
-            : `Yay! Ready for ${meal === 'breakfast' ? 'lunch' : 'dinner'}?`}
-        </div>
-
-        <div className="flex flex-col gap-4 w-full">
-          {showNextMeal && nextMealHref && (
-            <button
-              onClick={() => onComplete()}
-              className="w-full py-3.5 text-white font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
+          {/* Primary Message - sparkles style */}
+          <h2
+            className="text-gray-800 font-bold text-center"
+            style={{
+              fontSize: 'clamp(18px, 5vw, 24px)',
+              lineHeight: '1.2',
+              letterSpacing: '-0.4px',
+              fontWeight: '800',
+              fontFamily:
+                '"Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
+              textShadow: '0 1px 2px rgba(255, 255, 255, 0.7)',
+              marginBottom: '24px',
+            }}
+          >
+            {meal === 'dinner'
+              ? 'What a complete, perfect day   '
+              : meal === 'breakfast'
+                ? 'What a perfect start to your day   '
+                : "You're powering through perfectly   "}
+            <GiSparkles
+              className="text-pink-500 inline ml-1"
               style={{
-                background: 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)',
-                borderRadius: '14px',
-                fontSize: '16px',
-                fontWeight: '500',
-                letterSpacing: '-0.24px',
-                boxShadow: `
-                 0 4px 20px rgba(232, 164, 201, 0.25),
-                 0 2px 8px rgba(232, 164, 201, 0.15),
-                 inset 0 1px 0 rgba(255, 255, 255, 0.2)
-               `,
-                border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                fontSize: '1rem',
+                verticalAlign: 'baseline',
               }}
-              aria-label={`Continue to ${nextMealLabel}`}
-            >
-              <span className="relative z-10">{nextMealLabel}</span>
-              <div
-                className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
-                style={{
-                  background:
-                    'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
-                  borderRadius: '16px',
-                }}
-              />
-            </button>
-          )}
+            />
+          </h2>
+          {/* Secondary Message */}
+          <p
+            className="text-gray-600 font-medium text-center"
+            style={{
+              fontSize: '15px',
+              lineHeight: '20px',
+              letterSpacing: '-0.1px',
+              fontWeight: '600',
+              fontFamily:
+                '"Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
+              textShadow: '0 0.5px 1px rgba(255, 255, 255, 0.5)',
+            }}
+          >
+            {meal === 'dinner'
+              ? 'You should be so proud, sweetheart 💖'
+              : meal === 'breakfast'
+                ? 'Ready to keep this energy going?'
+                : 'Dinner time is going to be special!'}
+          </p>
+        </motion.div>
 
-          <button
+        {/* Button Container */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          className="space-y-4 w-full"
+        >
+          {/* Primary CTA - Home Button (AuthPrompt style) */}
+          <motion.button
             onClick={() => {
               sessionStorage.setItem('isReturningToHome', 'true');
               navigate('/');
             }}
-            className="w-full py-3.5 text-gray-600 font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
+            whileHover={{ scale: 1.01, y: -1 }}
+            whileTap={{ scale: 0.99 }}
+            className="
+          group w-full rounded-xl font-semibold
+          transition-all duration-300
+          flex items-center justify-center gap-3
+          text-white
+        "
             style={{
-              background: 'rgba(120, 120, 128, 0.12)',
-              borderRadius: '14px',
-              fontSize: '16px',
-              fontWeight: '500',
-              letterSpacing: '-0.24px',
-              boxShadow: `
-               0 2px 10px rgba(0, 0, 0, 0.04),
-               0 1px 4px rgba(0, 0, 0, 0.02),
-               inset 0 1px 0 rgba(255, 255, 255, 0.4),
-               inset 0 -0.5px 0 rgba(0, 0, 0, 0.04)
-             `,
-              border: '0.5px solid rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'saturate(180%) blur(20px)',
-              WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+              background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+              boxShadow: '0 4px 14px 0 rgba(236, 72, 153, 0.25)',
+              minHeight: 'max(48px, 12vw)',
+              maxHeight: '56px',
+              padding: 'clamp(0.75rem, 3vw, 1rem) 1.5rem',
+              fontSize: 'clamp(1rem, 4vw, 1.125rem)',
+              fontFamily:
+                '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background =
+                'linear-gradient(135deg, #db2777 0%, #ec4899 100%)';
+              e.currentTarget.style.boxShadow =
+                '0 8px 25px 0 rgba(236, 72, 153, 0.35)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background =
+                'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)';
+              e.currentTarget.style.boxShadow =
+                '0 4px 14px 0 rgba(236, 72, 153, 0.25)';
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.outline = '3px solid #ec4899';
+              e.currentTarget.style.outlineOffset = '2px';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.outline = 'none';
             }}
             aria-label="Return to home page"
           >
-            <span className="relative z-10">Home</span>
-            <div
-              className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '16px',
-              }}
+            <span>Home</span>
+            <FaHome
+              className="transition-transform group-hover:scale-110"
+              style={{ fontSize: 'clamp(0.875rem, 3vw, 1rem)' }}
             />
-          </button>
-        </div>
+          </motion.button>
+
+          {/* Secondary CTA - Go to Next Meal (AuthPrompt guest style) */}
+          {showNextMeal && nextMealHref && (
+            <>
+              {/* Subtle separator */}
+              <div className="relative py-2">
+                <div
+                  className="absolute inset-0 flex items-center"
+                  aria-hidden="true"
+                >
+                  <div
+                    className="w-full border-t"
+                    style={{ borderColor: 'rgba(209, 213, 219, 0.4)' }}
+                  />
+                </div>
+                <div className="relative flex justify-center">
+                  <span
+                    className="px-4 font-medium"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      color: '#6B7280',
+                      fontSize: 'clamp(0.75rem, 3vw, 0.875rem)',
+                      fontFamily:
+                        '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif',
+                    }}
+                  >
+                    or
+                  </span>
+                </div>
+              </div>
+
+              <motion.button
+                onClick={() => onComplete()}
+                whileHover={{ scale: 1.01, y: -1 }}
+                whileTap={{ scale: 0.99 }}
+                className="
+              group w-full rounded-xl font-medium
+              border-2 transition-all duration-300
+              flex items-center justify-center gap-2
+            "
+                style={{
+                  borderColor: 'rgba(209, 213, 219, 0.5)',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: '#ec4899',
+                  minHeight: 'max(44px, 10vw)',
+                  maxHeight: '52px',
+                  padding: 'clamp(0.625rem, 2.5vw, 0.875rem) 1.25rem',
+                  fontSize: 'clamp(0.875rem, 3.5vw, 1rem)',
+                  fontFamily:
+                    '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#ec4899';
+                  e.currentTarget.style.background = 'rgba(236, 72, 153, 0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor =
+                    'rgba(209, 213, 219, 0.5)';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = '2px solid #ec4899';
+                  e.currentTarget.style.outlineOffset = '2px';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.outline = 'none';
+                }}
+                aria-label={`Continue to ${nextMealLabel}`}
+              >
+                <span>{nextMealLabel}</span>
+              </motion.button>
+            </>
+          )}
+        </motion.div>
       </motion.div>
     </div>
   );
