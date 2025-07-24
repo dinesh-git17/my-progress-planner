@@ -2204,11 +2204,19 @@ export default function Home() {
             {/* AUTHENTICATION FLOW */}
             {/* ================================================================ */}
 
-            {/* Show auth prompt if no user ID and login modal is closed */}
-            {!userId && !showLoginModal && (
+            {/* Show auth prompt if no user ID (keep it visible even when modal is open) */}
+            {!userId && (
               <AuthPrompt
                 onContinueAsGuest={handleContinueAsGuest}
                 onLogin={handleLogin}
+              />
+            )}
+
+            {/* Login Modal - overlays on top of AuthPrompt when showLoginModal is true */}
+            {!userId && (
+              <LoginModal
+                isOpen={showLoginModal}
+                onClose={() => setShowLoginModal(false)}
               />
             )}
 
