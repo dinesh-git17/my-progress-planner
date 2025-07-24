@@ -649,8 +649,8 @@ export default function MealChat({
         style={{
           background:
             'linear-gradient(135deg, rgba(236, 72, 153, 0.02) 0%, rgba(168, 85, 247, 0.015) 50%, rgba(244, 114, 182, 0.02) 100%)',
-          backdropFilter: 'saturate(110%) blur(100px)',
-          WebkitBackdropFilter: 'saturate(110%) blur(15px)',
+          backdropFilter: 'saturate(110%) blur(40px)',
+          WebkitBackdropFilter: 'saturate(110%) blur(40px)',
         }}
       />
 
@@ -706,14 +706,14 @@ export default function MealChat({
             }}
           >
             {meal === 'dinner'
-              ? 'What a complete, perfect day   '
+              ? 'What a complete, perfect day '
               : meal === 'breakfast'
-                ? 'What a perfect start to your day   '
-                : "You're powering through perfectly   "}
+                ? 'What a perfect start to your day '
+                : "You're powering through perfectly "}
             <GiSparkles
               className="text-pink-500 inline ml-1"
               style={{
-                fontSize: '1rem',
+                fontSize: '0.9em',
                 verticalAlign: 'baseline',
               }}
             />
@@ -798,7 +798,7 @@ export default function MealChat({
             />
           </motion.button>
 
-          {/* Secondary CTA - Go to Next Meal (AuthPrompt guest style) */}
+          {/* Secondary CTA - Go to Next Meal or Finish Day */}
           {showNextMeal && nextMealHref && (
             <>
               {/* Subtle separator */}
@@ -829,13 +829,36 @@ export default function MealChat({
               </div>
 
               <motion.button
-                onClick={() => onComplete()}
+                onClick={async () => {
+                  // Special handling for "Finish Day" (dinner completion)
+                  if (nextMealLabel === 'Finish Day') {
+                    try {
+                      // First, complete the dinner chat (save the meal data)
+                      await finishChat();
+
+                      // Then navigate to the done page
+                      console.log(
+                        '🎉 Dinner completed, navigating to done page',
+                      );
+                      navigate('/done');
+                    } catch (error) {
+                      console.error('Error completing dinner:', error);
+                      // Fallback to regular onComplete if there's an error
+                      onComplete();
+                    }
+                  } else {
+                    // Regular meal completion flow
+                    onComplete();
+                  }
+                }}
                 whileHover={{ scale: 1.01, y: -1 }}
                 whileTap={{ scale: 0.99 }}
+                disabled={loading}
                 className="
               group w-full rounded-xl font-medium
               border-2 transition-all duration-300
               flex items-center justify-center gap-2
+              disabled:opacity-50 disabled:cursor-not-allowed
             "
                 style={{
                   borderColor: 'rgba(209, 213, 219, 0.5)',
@@ -849,13 +872,19 @@ export default function MealChat({
                     '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#ec4899';
-                  e.currentTarget.style.background = 'rgba(236, 72, 153, 0.05)';
+                  if (!loading) {
+                    e.currentTarget.style.borderColor = '#ec4899';
+                    e.currentTarget.style.background =
+                      'rgba(236, 72, 153, 0.05)';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor =
-                    'rgba(209, 213, 219, 0.5)';
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  if (!loading) {
+                    e.currentTarget.style.borderColor =
+                      'rgba(209, 213, 219, 0.5)';
+                    e.currentTarget.style.background =
+                      'rgba(255, 255, 255, 0.1)';
+                  }
                 }}
                 onFocus={(e) => {
                   e.currentTarget.style.outline = '2px solid #ec4899';
@@ -866,7 +895,14 @@ export default function MealChat({
                 }}
                 aria-label={`Continue to ${nextMealLabel}`}
               >
-                <span>{nextMealLabel}</span>
+                {nextMealLabel === 'Finish Day' && loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-pink-500/30 border-t-pink-500 rounded-full animate-spin" />
+                    <span>Finishing...</span>
+                  </div>
+                ) : (
+                  <span>{nextMealLabel}</span>
+                )}
               </motion.button>
             </>
           )}
