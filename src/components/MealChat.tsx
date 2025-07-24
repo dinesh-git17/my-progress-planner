@@ -1,5 +1,6 @@
 'use client';
 
+import DoneModal from '@/components/DoneModal';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { upsertMealLog } from '@/utils/mealLog';
 import { getPendingSyncCount, logMealWithFallback } from '@/utils/sw-utils';
@@ -64,6 +65,7 @@ export default function MealChat({
   const [offlineMode, setOfflineMode] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
+  const [showDoneModal, setShowDoneModal] = useState(false);
 
   // Refs for data persistence during chat
   const answers = useRef<string[]>([]);
@@ -349,8 +351,16 @@ export default function MealChat({
       }
 
       setTimeout(() => {
-        setChatEnded(true);
-        setLoading(false);
+        // Special handling for dinner completion
+        if (meal === 'dinner') {
+          // For dinner, show DoneModal directly instead of chatEnded
+          setShowDoneModal(true);
+          setLoading(false);
+        } else {
+          // For other meals, use regular completion flow
+          setChatEnded(true);
+          setLoading(false);
+        }
       }, 1500);
     } catch (error) {
       console.error('Error in finishChat:', error);
@@ -638,8 +648,25 @@ export default function MealChat({
   );
 
   /**
+   * Handles done day modal
+   */
+  const handleFinishDay = async () => {
+    try {
+      // First, complete the dinner chat (save the meal data)
+      await finishChat();
+
+      // Show the done modal instead of navigating
+      console.log('🎉 Dinner completed, showing done modal');
+      setShowDoneModal(true);
+    } catch (error) {
+      console.error('Error completing dinner:', error);
+      // Fallback to regular onComplete if there's an error
+      onComplete();
+    }
+  };
+
+  /**
    * Renders completion overlay - Modern transparent glassmorphism design covering entire screen
-   * Note: Import FaHome from 'react-icons/fa' and GiSparkles from 'react-icons/gi' at the top of your file
    */
   const renderCompletionOverlay = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -833,14 +860,7 @@ export default function MealChat({
                   // Special handling for "Finish Day" (dinner completion)
                   if (nextMealLabel === 'Finish Day') {
                     try {
-                      // First, complete the dinner chat (save the meal data)
-                      await finishChat();
-
-                      // Then navigate to the done page
-                      console.log(
-                        '🎉 Dinner completed, navigating to done page',
-                      );
-                      navigate('/done');
+                      await handleFinishDay();
                     } catch (error) {
                       console.error('Error completing dinner:', error);
                       // Fallback to regular onComplete if there's an error
@@ -1309,10 +1329,19 @@ export default function MealChat({
           </div>
         )}
 
-        {/* Chat Complete Overlay */}
+        {/* Chat Complete Overlay - Only show for non-dinner meals or when DoneModal isn't shown */}
         <AnimatePresence>
-          {chatEnded && renderCompletionOverlay()}
+          {chatEnded && !showDoneModal && renderCompletionOverlay()}
         </AnimatePresence>
+
+        <DoneModal
+          isOpen={showDoneModal}
+          onClose={() => setShowDoneModal(false)}
+          onNavigateHome={() => {
+            setShowDoneModal(false);
+            navigate('/');
+          }}
+        />
       </div>
     </>
   );

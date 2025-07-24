@@ -1,9 +1,10 @@
+// src/components/DoneModal.tsx
 'use client';
 
 import { useNavigation } from '@/contexts/NavigationContext';
 import { getOrCreateUserId } from '@/utils/mealLog';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FaHeart, FaHome, FaStar } from 'react-icons/fa';
 import { GiSparkles } from 'react-icons/gi';
 import { IoCheckmarkCircle } from 'react-icons/io5';
@@ -11,6 +12,12 @@ import { IoCheckmarkCircle } from 'react-icons/io5';
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
+
+interface DoneModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onNavigateHome?: () => void;
+}
 
 interface StreakData {
   currentStreak: number;
@@ -21,67 +28,101 @@ interface StreakData {
 // MAIN COMPONENT
 // ============================================================================
 
-/**
- * Done page component - modal overlay that slides over meal chat
- * Features glassmorphism design, React Icons, and streak display
- */
-export default function DonePage() {
+export default function DoneModal({
+  isOpen,
+  onClose,
+  onNavigateHome,
+}: DoneModalProps) {
+  // ========================================================================
+  // STATE MANAGEMENT
+  // ========================================================================
+
   const { navigate } = useNavigation();
-  const [isVisible, setIsVisible] = useState(false);
   const [streakData, setStreakData] = useState<StreakData>({
     currentStreak: 0,
     lastLogDate: null,
   });
   const [isLoadingStreak, setIsLoadingStreak] = useState(true);
 
-  // Show modal with slight delay for smooth transition
+  // ========================================================================
+  // UTILITY FUNCTIONS
+  // ========================================================================
+
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const handleNavigateHome = useCallback(() => {
+    sessionStorage.setItem('isReturningToHome', 'true');
+    if (onNavigateHome) {
+      onNavigateHome();
+    } else {
+      navigate('/');
+    }
+    handleClose();
+  }, [navigate, onNavigateHome, handleClose]);
+
+  // Close on escape key and prevent body scroll
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 300);
-
-    // Fetch streak data
-    const fetchStreakData = async () => {
-      try {
-        const userId = getOrCreateUserId();
-        const response = await fetch(
-          `/api/streak?user_id=${userId}&t=${Date.now()}`,
-        );
-        const data = await response.json();
-
-        if (data.dates) {
-          // Calculate streak from dates array
-          const streak = calculateStreak(data.dates);
-          setStreakData({
-            currentStreak: streak,
-            lastLogDate: data.dates[0] || null,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching streak data:', error);
-      } finally {
-        setIsLoadingStreak(false);
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
       }
     };
 
-    fetchStreakData();
-
-    // Prevent body scroll when modal is open
-    document.body.style.overflow = 'hidden';
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
 
     return () => {
-      clearTimeout(timer);
+      document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
     };
-  }, []);
+  }, [isOpen, handleClose]);
 
-  // Handle back button navigation
-  const handleReturnHome = () => {
-    sessionStorage.setItem('isReturningToHome', 'true');
-    navigate('/');
+  // Fetch streak data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchStreakData();
+    }
+  }, [isOpen]);
+
+  // ========================================================================
+  // DATA HANDLERS
+  // ========================================================================
+
+  /**
+   * Fetch streak data from API
+   */
+  const fetchStreakData = async () => {
+    try {
+      setIsLoadingStreak(true);
+      const userId = getOrCreateUserId();
+      const response = await fetch(
+        `/api/streak?user_id=${userId}&t=${Date.now()}`,
+      );
+      const data = await response.json();
+
+      if (data.dates) {
+        // Calculate streak from dates array
+        const streak = calculateStreak(data.dates);
+        setStreakData({
+          currentStreak: streak,
+          lastLogDate: data.dates[0] || null,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching streak data:', error);
+    } finally {
+      setIsLoadingStreak(false);
+    }
   };
 
-  // Calculate streak from dates array (similar to streaks page logic)
+  /**
+   * Calculate streak from dates array (similar to streaks page logic)
+   */
   const calculateStreak = (dates: string[]): number => {
     if (!dates.length) return 0;
 
@@ -126,7 +167,9 @@ export default function DonePage() {
     return streak;
   };
 
-  // Generate motivational message based on streak
+  /**
+   * Generate motivational message based on streak
+   */
   const getMotivationalMessage = (streak: number): string => {
     if (streak === 1)
       return "You're starting something amazing! Keep it going!";
@@ -139,7 +182,10 @@ export default function DonePage() {
     return "You're a true champion! Your consistency is beautiful!";
   };
 
-  // Animation variants - matching LoginModal pattern
+  // ========================================================================
+  // ANIMATION VARIANTS
+  // ========================================================================
+
   const backdropVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
@@ -170,9 +216,13 @@ export default function DonePage() {
     },
   };
 
+  // ========================================================================
+  // RENDER
+  // ========================================================================
+
   return (
     <AnimatePresence mode="wait">
-      {isVisible && (
+      {isOpen && (
         <>
           {/* Backdrop */}
           <motion.div
@@ -181,11 +231,11 @@ export default function DonePage() {
             initial="hidden"
             animate="visible"
             exit="hidden"
+            onClick={handleClose}
             style={{
-              background:
-                'linear-gradient(135deg, rgba(253, 242, 248, 0.95) 0%, rgba(252, 231, 243, 0.95) 25%, rgba(243, 232, 255, 0.95) 50%, rgba(237, 233, 254, 0.95) 75%, rgba(253, 242, 248, 0.95) 100%)',
-              backdropFilter: 'saturate(180%) blur(20px)',
-              WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+              background: 'rgba(0, 0, 0, 0.1)', // Very light overlay
+              backdropFilter: 'saturate(120%) blur(12px)',
+              WebkitBackdropFilter: 'saturate(120%) blur(12px)',
             }}
             aria-hidden="true"
           />
@@ -198,9 +248,13 @@ export default function DonePage() {
               initial="hidden"
               animate="visible"
               exit="exit"
+              onClick={(e) => e.stopPropagation()}
               style={{
                 paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
               }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="done-modal-title"
             >
               {/* Main Content Card with Glassmorphism */}
               <div className="mx-4 mb-4">
@@ -270,6 +324,7 @@ export default function DonePage() {
 
                   {/* Main Title */}
                   <motion.h1
+                    id="done-modal-title"
                     key="main-title"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -364,7 +419,7 @@ export default function DonePage() {
                     className="w-full overflow-hidden"
                   >
                     <button
-                      onClick={handleReturnHome}
+                      onClick={handleNavigateHome}
                       className="w-full py-4 px-6 rounded-2xl text-white font-semibold text-lg flex items-center justify-center gap-3 transition-all duration-300 hover:scale-105 active:scale-95"
                       style={{
                         background:
