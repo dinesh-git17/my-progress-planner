@@ -176,7 +176,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#f5ede6',
+  themeColor: '#ec4899',
 };
 
 // ============================================================================
