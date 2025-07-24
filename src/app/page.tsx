@@ -19,6 +19,7 @@ import {
 } from '@/utils/userNameCache';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Sparkles, TrendingUp, Users, Utensils } from 'lucide-react';
+import Image from 'next/image';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useUserInitialization } from '../../hooks/useUserInitialization';
 
@@ -2220,33 +2221,90 @@ export default function Home() {
               />
             )}
 
-            {/* Name input flow for new users */}
+            {/* Name input flow for new users - MODERNIZED GLASSMORPHIC VERSION */}
             {askName && !showNameSaved && userId && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="absolute inset-0 z-50 flex items-center justify-center safe-x"
+                className="absolute inset-0 z-50 flex items-center justify-center"
+                style={{
+                  padding:
+                    'max(40px, env(safe-area-inset-top) + 20px) max(40px, env(safe-area-inset-right) + 20px) max(40px, env(safe-area-inset-bottom) + 20px) max(40px, env(safe-area-inset-left) + 20px)',
+                }}
               >
                 <div className="w-full max-w-md">
+                  {/* Header section with heart icon and text */}
                   <div className="flex flex-col items-center mb-8">
-                    <div className="mb-4 text-6xl">👩‍❤️‍💋‍👨</div>
-                    <h1 className="text-center text-2xl font-bold text-pink-600 mb-3 tracking-tight">
-                      Hi love 🥺 What's your name?
+                    {/* Animated Heart Icon */}
+                    <div className="mb-6 heart-icon-container">
+                      <Image
+                        src="/icons/heart-icon.png"
+                        alt="Sweethearty heart"
+                        width={128}
+                        height={128}
+                        className="heart-icon"
+                        priority
+                      />
+                    </div>
+                    <h1
+                      className="text-center font-bold text-pink-600 mb-3 tracking-tight"
+                      style={{
+                        fontSize: '28px',
+                        lineHeight: '1.2',
+                        color: '#222222',
+                      }}
+                    >
+                      Hi love 🥺
+                      <br />
+                      What's your name?
                     </h1>
-                    <p className="text-center text-lg text-gray-600 mb-0.5">
+                    <p
+                      className="text-center text-gray-600"
+                      style={{
+                        fontSize: '16px',
+                        lineHeight: '1.5',
+                        color: '#666666',
+                      }}
+                    >
                       I'll remember it for your daily progress!
                     </p>
                   </div>
 
-                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/40">
+                  {/* Glassmorphic card container */}
+                  <div
+                    className="rounded-3xl border shadow-lg"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.25)',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.18)',
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.04)',
+                      padding: '32px',
+                    }}
+                  >
+                    {/* Name input field */}
                     <input
-                      className="
-                        w-full px-6 py-4 mb-6 rounded-2xl border-none shadow-inner
-                        bg-white/90 text-gray-800 text-xl
-                        focus:ring-2 focus:ring-pink-300/40 outline-none transition
-                        placeholder:text-gray-400
-                      "
+                      className="w-full rounded-2xl border transition-all outline-none"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.4)',
+                        border: '1px solid rgba(0, 0, 0, 0.1)',
+                        padding: '16px 20px',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        lineHeight: '1.5',
+                        color: '#222222',
+                        marginBottom: '24px',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#ec4899';
+                        e.target.style.boxShadow =
+                          '0 0 0 2px rgba(236, 72, 153, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'rgba(0, 0, 0, 0.1)';
+                        e.target.style.boxShadow = 'none';
+                      }}
                       placeholder="Your sweet name…"
                       value={tempName}
                       maxLength={32}
@@ -2255,39 +2313,86 @@ export default function Home() {
                       aria-label="Enter your name"
                       autoFocus
                     />
+
+                    {/* Save button */}
                     <button
                       onClick={handleSaveName}
                       disabled={!tempName.trim()}
-                      className="
-                        w-full py-4 mb-4 rounded-2xl bg-gradient-to-r from-pink-400 via-pink-500 to-yellow-400
-                        text-white text-xl font-bold shadow-lg transition 
-                        hover:scale-[1.02] active:scale-[0.98]
-                        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
-                        tracking-wide focus:outline-none focus:ring-2 focus:ring-pink-300/40
-                      "
+                      className="w-full rounded-3xl font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      style={{
+                        background:
+                          'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                        boxShadow: tempName.trim()
+                          ? '0 4px 16px rgba(236, 72, 153, 0.24)'
+                          : '0 4px 16px rgba(236, 72, 153, 0.12)',
+                        minHeight: '56px',
+                        fontSize: '17px',
+                        fontWeight: '600',
+                        marginBottom: '16px',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (tempName.trim()) {
+                          e.currentTarget.style.boxShadow =
+                            '0 8px 25px rgba(236, 72, 153, 0.35)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (tempName.trim()) {
+                          e.currentTarget.style.boxShadow =
+                            '0 4px 16px rgba(236, 72, 153, 0.24)';
+                        }
+                      }}
                       type="button"
                     >
-                      Save My Name 💌
+                      Save My Name ✉️
                     </button>
 
                     {/* Data recovery option for authenticated users */}
                     {isUserAuthenticated && (
                       <div className="text-center">
-                        <div className="mb-3 text-xs text-gray-500">or</div>
+                        <div
+                          className="mb-3 text-gray-500"
+                          style={{
+                            fontSize: '14px',
+                            color: '#6B7280',
+                          }}
+                        >
+                          or
+                        </div>
                         <button
                           onClick={handleRecoverData}
-                          className="
-                            w-full py-3 rounded-xl bg-white/70 backdrop-blur-sm
-                            text-gray-700 text-sm font-medium border border-gray-200
-                            hover:bg-white/90 hover:shadow-md transition-all
-                            focus:outline-none focus:ring-2 focus:ring-blue-300/40
-                          "
+                          className="w-full rounded-xl border font-medium transition-all hover:scale-[1.01] active:scale-[0.99]"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.6)',
+                            border: '1px solid rgba(0, 0, 0, 0.1)',
+                            color: '#374151',
+                            padding: '12px 16px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background =
+                              'rgba(255, 255, 255, 0.8)';
+                            e.currentTarget.style.boxShadow =
+                              '0 2px 8px rgba(0, 0, 0, 0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background =
+                              'rgba(255, 255, 255, 0.6)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                           type="button"
                         >
                           <i className="fas fa-download mr-2 text-blue-500"></i>
                           Recover My Previous Data
                         </button>
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p
+                          className="text-gray-500 mt-2"
+                          style={{
+                            fontSize: '12px',
+                            color: '#6B7280',
+                          }}
+                        >
                           Have data from before? Use your old User ID to recover
                           it.
                         </p>
@@ -2298,20 +2403,38 @@ export default function Home() {
               </motion.div>
             )}
 
-            {/* Name saved confirmation */}
+            {/* Name saved confirmation - MODERNIZED VERSION */}
             {askName && showNameSaved && userId && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6 }}
-                className="absolute inset-0 z-50 flex items-center justify-center safe-x"
+                className="absolute inset-0 z-50 flex items-center justify-center"
+                style={{
+                  padding:
+                    'max(40px, env(safe-area-inset-top) + 20px) max(40px, env(safe-area-inset-right) + 20px) max(40px, env(safe-area-inset-bottom) + 20px) max(40px, env(safe-area-inset-left) + 20px)',
+                }}
               >
                 <div className="text-center">
                   <div className="mb-6 text-6xl">💖</div>
-                  <h1 className="text-3xl font-bold text-pink-500 mb-4">
+                  <h1
+                    className="font-bold text-pink-500 mb-4"
+                    style={{
+                      fontSize: '28px',
+                      lineHeight: '1.2',
+                      color: '#ec4899',
+                    }}
+                  >
                     Yay! Your name is saved, my love
                   </h1>
-                  <p className="text-xl text-gray-600">
+                  <p
+                    className="text-gray-600"
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '1.5',
+                      color: '#666666',
+                    }}
+                  >
                     Let's crush your goals together!
                   </p>
                 </div>
