@@ -1,14 +1,14 @@
 'use client';
 
+import BreakfastModal from '@/components/BreakfastModal';
 import DoneModal from '@/components/DoneModal';
+import LunchModal from '@/components/LunchModal';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { upsertMealLog } from '@/utils/mealLog';
 import { getPendingSyncCount, logMealWithFallback } from '@/utils/sw-utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Dancing_Script } from 'next/font/google';
 import React, { useEffect, useRef, useState } from 'react';
-import { FaHome } from 'react-icons/fa';
-import { GiSparkles } from 'react-icons/gi';
 
 const dancingScript = Dancing_Script({ subsets: ['latin'], weight: '700' });
 
@@ -66,6 +66,8 @@ export default function MealChat({
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const [showDoneModal, setShowDoneModal] = useState(false);
+  const [showBreakfastModal, setShowBreakfastModal] = useState(false);
+  const [showLunchModal, setShowLunchModal] = useState(false);
 
   // Refs for data persistence during chat
   const answers = useRef<string[]>([]);
@@ -281,6 +283,9 @@ export default function MealChat({
   /**
    * Completes the chat session and saves meal log
    */
+  /**
+   * Completes the chat session and saves meal log
+   */
   const finishChat = async () => {
     setLoading(true);
 
@@ -351,15 +356,23 @@ export default function MealChat({
       }
 
       setTimeout(() => {
-        // Special handling for dinner completion
-        if (meal === 'dinner') {
-          // For dinner, show DoneModal directly instead of chatEnded
+        setLoading(false);
+
+        // 🔥 HERE'S THE FIX: Show appropriate modal based on meal type
+        if (meal === 'breakfast') {
+          console.log('🍳 Showing breakfast modal');
+          setShowBreakfastModal(true);
+        } else if (meal === 'lunch') {
+          console.log('🥪 Showing lunch modal');
+          setShowLunchModal(true);
+        } else if (meal === 'dinner') {
+          console.log('🍽️ Showing done modal');
           setShowDoneModal(true);
-          setLoading(false);
-        } else {
-          // For other meals, use regular completion flow
+        }
+
+        // Set chat ended for non-dinner meals (optional, for state consistency)
+        if (meal !== 'dinner') {
           setChatEnded(true);
-          setLoading(false);
         }
       }, 1500);
     } catch (error) {
@@ -645,290 +658,6 @@ export default function MealChat({
         ))}
       </div>
     </motion.div>
-  );
-
-  /**
-   * Handles done day modal
-   */
-  const handleFinishDay = async () => {
-    try {
-      // First, complete the dinner chat (save the meal data)
-      await finishChat();
-
-      // Show the done modal instead of navigating
-      console.log('🎉 Dinner completed, showing done modal');
-      setShowDoneModal(true);
-    } catch (error) {
-      console.error('Error completing dinner:', error);
-      // Fallback to regular onComplete if there's an error
-      onComplete();
-    }
-  };
-
-  /**
-   * Renders completion overlay - Modern transparent glassmorphism design covering entire screen
-   */
-  const renderCompletionOverlay = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Full-screen transparent glassmorphism background - covers header too */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(135deg, rgba(236, 72, 153, 0.02) 0%, rgba(168, 85, 247, 0.015) 50%, rgba(244, 114, 182, 0.02) 100%)',
-          backdropFilter: 'saturate(110%) blur(40px)',
-          WebkitBackdropFilter: 'saturate(110%) blur(40px)',
-        }}
-      />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{
-          duration: 0.5,
-          type: 'spring',
-          stiffness: 280,
-          damping: 20,
-        }}
-        className="relative z-10 mx-6 w-full max-w-sm flex flex-col items-center text-center"
-        style={{
-          background: 'rgba(255, 255, 255, 0.12)',
-          backdropFilter: 'saturate(160%) blur(30px)',
-          WebkitBackdropFilter: 'saturate(160%) blur(30px)',
-          borderRadius: '28px',
-          boxShadow: `
-        0 32px 80px rgba(0, 0, 0, 0.08),
-        0 16px 40px rgba(0, 0, 0, 0.04),
-        0 8px 20px rgba(0, 0, 0, 0.02),
-        inset 0 1px 0 rgba(255, 255, 255, 0.4),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.03)
-      `,
-          border: '1px solid rgba(255, 255, 255, 0.25)',
-          padding: '48px 32px',
-        }}
-      >
-        {/* Main Message */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-          className="mb-10"
-          style={{
-            fontFamily:
-              '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif',
-          }}
-        >
-          {/* Primary Message - sparkles style */}
-          <h2
-            className="text-gray-800 font-bold text-center"
-            style={{
-              fontSize: 'clamp(18px, 5vw, 24px)',
-              lineHeight: '1.2',
-              letterSpacing: '-0.4px',
-              fontWeight: '800',
-              fontFamily:
-                '"Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
-              textShadow: '0 1px 2px rgba(255, 255, 255, 0.7)',
-              marginBottom: '24px',
-            }}
-          >
-            {meal === 'dinner'
-              ? 'What a complete, perfect day '
-              : meal === 'breakfast'
-                ? 'What a perfect start to your day '
-                : "You're powering through perfectly "}
-            <GiSparkles
-              className="text-pink-500 inline ml-1"
-              style={{
-                fontSize: '0.9em',
-                verticalAlign: 'baseline',
-              }}
-            />
-          </h2>
-          {/* Secondary Message */}
-          <p
-            className="text-gray-600 font-medium text-center"
-            style={{
-              fontSize: '15px',
-              lineHeight: '20px',
-              letterSpacing: '-0.1px',
-              fontWeight: '600',
-              fontFamily:
-                '"Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
-              textShadow: '0 0.5px 1px rgba(255, 255, 255, 0.5)',
-            }}
-          >
-            {meal === 'dinner'
-              ? 'You should be so proud, sweetheart 💖'
-              : meal === 'breakfast'
-                ? 'Ready to keep this energy going?'
-                : 'Dinner time is going to be special!'}
-          </p>
-        </motion.div>
-
-        {/* Button Container */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-          className="space-y-4 w-full"
-        >
-          {/* Primary CTA - Home Button (AuthPrompt style) */}
-          <motion.button
-            onClick={() => {
-              sessionStorage.setItem('isReturningToHome', 'true');
-              navigate('/');
-            }}
-            whileHover={{ scale: 1.01, y: -1 }}
-            whileTap={{ scale: 0.99 }}
-            className="
-          group w-full rounded-xl font-semibold
-          transition-all duration-300
-          flex items-center justify-center gap-3
-          text-white
-        "
-            style={{
-              background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-              boxShadow: '0 4px 14px 0 rgba(236, 72, 153, 0.25)',
-              minHeight: 'max(48px, 12vw)',
-              maxHeight: '56px',
-              padding: 'clamp(0.75rem, 3vw, 1rem) 1.5rem',
-              fontSize: 'clamp(1rem, 4vw, 1.125rem)',
-              fontFamily:
-                '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background =
-                'linear-gradient(135deg, #db2777 0%, #ec4899 100%)';
-              e.currentTarget.style.boxShadow =
-                '0 8px 25px 0 rgba(236, 72, 153, 0.35)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background =
-                'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)';
-              e.currentTarget.style.boxShadow =
-                '0 4px 14px 0 rgba(236, 72, 153, 0.25)';
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.outline = '3px solid #ec4899';
-              e.currentTarget.style.outlineOffset = '2px';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.outline = 'none';
-            }}
-            aria-label="Return to home page"
-          >
-            <span>Home</span>
-            <FaHome
-              className="transition-transform group-hover:scale-110"
-              style={{ fontSize: 'clamp(0.875rem, 3vw, 1rem)' }}
-            />
-          </motion.button>
-
-          {/* Secondary CTA - Go to Next Meal or Finish Day */}
-          {showNextMeal && nextMealHref && (
-            <>
-              {/* Subtle separator */}
-              <div className="relative py-2">
-                <div
-                  className="absolute inset-0 flex items-center"
-                  aria-hidden="true"
-                >
-                  <div
-                    className="w-full border-t"
-                    style={{ borderColor: 'rgba(209, 213, 219, 0.4)' }}
-                  />
-                </div>
-                <div className="relative flex justify-center">
-                  <span
-                    className="px-4 font-medium"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.15)',
-                      color: '#6B7280',
-                      fontSize: 'clamp(0.75rem, 3vw, 0.875rem)',
-                      fontFamily:
-                        '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif',
-                    }}
-                  >
-                    or
-                  </span>
-                </div>
-              </div>
-
-              <motion.button
-                onClick={async () => {
-                  // Special handling for "Finish Day" (dinner completion)
-                  if (nextMealLabel === 'Finish Day') {
-                    try {
-                      await handleFinishDay();
-                    } catch (error) {
-                      console.error('Error completing dinner:', error);
-                      // Fallback to regular onComplete if there's an error
-                      onComplete();
-                    }
-                  } else {
-                    // Regular meal completion flow
-                    onComplete();
-                  }
-                }}
-                whileHover={{ scale: 1.01, y: -1 }}
-                whileTap={{ scale: 0.99 }}
-                disabled={loading}
-                className="
-              group w-full rounded-xl font-medium
-              border-2 transition-all duration-300
-              flex items-center justify-center gap-2
-              disabled:opacity-50 disabled:cursor-not-allowed
-            "
-                style={{
-                  borderColor: 'rgba(209, 213, 219, 0.5)',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: '#ec4899',
-                  minHeight: 'max(44px, 10vw)',
-                  maxHeight: '52px',
-                  padding: 'clamp(0.625rem, 2.5vw, 0.875rem) 1.25rem',
-                  fontSize: 'clamp(0.875rem, 3.5vw, 1rem)',
-                  fontFamily:
-                    '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif',
-                }}
-                onMouseEnter={(e) => {
-                  if (!loading) {
-                    e.currentTarget.style.borderColor = '#ec4899';
-                    e.currentTarget.style.background =
-                      'rgba(236, 72, 153, 0.05)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!loading) {
-                    e.currentTarget.style.borderColor =
-                      'rgba(209, 213, 219, 0.5)';
-                    e.currentTarget.style.background =
-                      'rgba(255, 255, 255, 0.1)';
-                  }
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.outline = '2px solid #ec4899';
-                  e.currentTarget.style.outlineOffset = '2px';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.outline = 'none';
-                }}
-                aria-label={`Continue to ${nextMealLabel}`}
-              >
-                {nextMealLabel === 'Finish Day' && loading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-pink-500/30 border-t-pink-500 rounded-full animate-spin" />
-                    <span>Finishing...</span>
-                  </div>
-                ) : (
-                  <span>{nextMealLabel}</span>
-                )}
-              </motion.button>
-            </>
-          )}
-        </motion.div>
-      </motion.div>
-    </div>
   );
 
   const renderOfflineIndicator = () => {
@@ -1330,9 +1059,24 @@ export default function MealChat({
         )}
 
         {/* Chat Complete Overlay - Only show for non-dinner meals or when DoneModal isn't shown */}
-        <AnimatePresence>
-          {chatEnded && !showDoneModal && renderCompletionOverlay()}
-        </AnimatePresence>
+
+        <BreakfastModal
+          isOpen={showBreakfastModal}
+          onClose={() => setShowBreakfastModal(false)}
+          onNavigateToLunch={() => {
+            setShowBreakfastModal(false);
+            navigate('/lunch');
+          }}
+        />
+
+        <LunchModal
+          isOpen={showLunchModal}
+          onClose={() => setShowLunchModal(false)}
+          onNavigateToDinner={() => {
+            setShowLunchModal(false);
+            navigate('/dinner');
+          }}
+        />
 
         <DoneModal
           isOpen={showDoneModal}
