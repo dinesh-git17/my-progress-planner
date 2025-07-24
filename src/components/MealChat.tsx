@@ -415,12 +415,15 @@ export default function MealChat({
       const data = await response.json();
       const botMessage: Message = { sender: 'bot', text: data.reply };
 
-      setLoading(false);
-
-      // Small delay, then add the message smoothly
       setTimeout(() => {
-        setMessages((msgs) => [...msgs, botMessage]);
-        gptReplies.current.push(data.reply);
+        // 1. Stop showing the typing indicator first
+        setLoading(false);
+
+        // 2. THEN wait for its exit animation to finish (e.g. 300ms)
+        setTimeout(() => {
+          setMessages((msgs) => [...msgs, botMessage]);
+          gptReplies.current.push(data.reply);
+        }, 300);
       }, 250);
 
       // Finish chat if this was the last turn
@@ -484,8 +487,8 @@ export default function MealChat({
       }}
       data-message={`${msg.sender}-${index}`}
     >
-      {/* Bot Avatar */}
-      {msg.sender === 'bot' && (
+      {/* Bot Avatar - Only show for bot messages and not for the most recent one if loading */}
+      {msg.sender === 'bot' && !(loading && index === messages.length - 1) && (
         <div className="flex-shrink-0 mr-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-md text-lg">
             🤖
@@ -607,48 +610,31 @@ export default function MealChat({
    * Renders typing indicator
    */
   const renderTypingIndicator = () => (
-    <div className="flex justify-start mb-3">
-      {/* Bot Avatar */}
-      <div className="flex-shrink-0 mr-2">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-md text-lg">
-          🤖
-        </div>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 5 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.9, y: 0 }}
+      transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="px-4 py-2.5 rounded-[20px] rounded-tl-[4px] max-w-[75%]"
+      style={{
+        background: 'rgba(255,255,255,0.15)',
+        backdropFilter: 'saturate(180%) blur(25px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(25px)',
+        boxShadow:
+          '0 8px 32px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.4)',
+        border: '1px solid rgba(255,255,255,0.4)',
+      }}
+    >
+      <div className="flex gap-1">
+        {[0, 150, 300].map((delay, i) => (
+          <div
+            key={i}
+            className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
+            style={{ animationDelay: `${delay}ms` }}
+          />
+        ))}
       </div>
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 5 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: -5 }}
-        transition={{
-          duration: 0.2,
-          ease: [0.25, 0.46, 0.45, 0.94],
-        }}
-        className="px-4 py-2.5 rounded-[20px] rounded-tl-[4px] max-w-[75%]"
-        style={{
-          background: 'rgba(255, 255, 255, 0.15)', // ✅ Same 35% opacity as header
-          backdropFilter: 'saturate(180%) blur(25px)', // ✅ Same blur as header
-          WebkitBackdropFilter: 'saturate(180%) blur(25px)',
-          boxShadow: `
-    0 8px 32px rgba(0, 0, 0, 0.06),
-    0 4px 16px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4)
-  `,
-          border: '1px solid rgba(255, 255, 255, 0.4)',
-        }}
-      >
-        <div className="flex items-center gap-1">
-          <div className="flex gap-1">
-            {[0, 150, 300].map((delay, i) => (
-              <div
-                key={i}
-                className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
-                style={{ animationDelay: `${delay}ms` }}
-              />
-            ))}
-          </div>
-        </div>
-      </motion.div>
-    </div>
+    </motion.div>
   );
 
   /**
@@ -985,7 +971,7 @@ export default function MealChat({
             top: 'calc(env(safe-area-inset-top) + 56px)',
             left: 0,
             right: 0,
-            bottom: isKeyboardOpen ? '350px' : '100px', // CHANGE HEIGHT for available space
+            bottom: '100px', // CHANGE HEIGHT for available space
             WebkitOverflowScrolling: 'touch',
             background: 'rgba(255, 255, 255, 0.08)', // ✅ Subtle glass effect
             backdropFilter: 'saturate(180%) blur(20px)',
@@ -1019,9 +1005,51 @@ export default function MealChat({
             });
           }}
         >
+          {messages.map(renderMessage)}
           <AnimatePresence initial={false}>
-            {messages.map(renderMessage)}
-            {loading && renderTypingIndicator()}
+            {loading && (
+              <motion.div
+                key="typing-indicator"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="flex items-center mb-3"
+                style={{
+                  minHeight: '48px',
+                }}
+              >
+                {/* Bot Avatar for typing indicator */}
+                <div className="flex-shrink-0 mr-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-md text-lg">
+                    🤖
+                  </div>
+                </div>
+
+                {/* Typing Dots */}
+                <div
+                  className="px-4 py-2.5 rounded-[20px] rounded-tl-[4px] max-w-[75%]"
+                  style={{
+                    background: 'rgba(255,255,255,0.15)',
+                    backdropFilter: 'saturate(180%) blur(25px)',
+                    WebkitBackdropFilter: 'saturate(180%) blur(25px)',
+                    boxShadow:
+                      '0 8px 32px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.4)',
+                    border: '1px solid rgba(255,255,255,0.4)',
+                  }}
+                >
+                  <div className="flex gap-1">
+                    {[0, 150, 300].map((delay, i) => (
+                      <div
+                        key={i}
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
+                        style={{ animationDelay: `${delay}ms` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
