@@ -558,11 +558,11 @@ export default function MealChat({
               position: 'absolute',
               bottom: '-22px',
               right: '0px',
-              width: '100%',
+              minWidth: '1020px',
               height: '20px',
               opacity: index < messages.length - 1 ? 1 : 0,
               transition: 'opacity 0.3s ease',
-              overflow: 'hidden',
+              overflow: 'visible',
               pointerEvents: 'none',
             }}
           >
