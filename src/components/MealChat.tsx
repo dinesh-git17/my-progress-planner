@@ -885,7 +885,7 @@ export default function MealChat({
           background:
             'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f3e8ff 100%)',
           height: '100vh',
-          position: 'fixed', // Critical for iOS PWA
+          position: 'absolute', // Critical for iOS PWA
           top: 0,
           left: '50%',
           transform: 'translateX(-50%)',
@@ -971,9 +971,9 @@ export default function MealChat({
             top: 'calc(env(safe-area-inset-top) + 56px)',
             left: 0,
             right: 0,
-            bottom: '100px', // CHANGE HEIGHT for available space
+            bottom: isKeyboardOpen ? '350px' : '100px',
             WebkitOverflowScrolling: 'touch',
-            background: 'rgba(255, 255, 255, 0.08)', // ✅ Subtle glass effect
+            background: 'rgba(255, 255, 255, 0.08)',
             backdropFilter: 'saturate(180%) blur(20px)',
             WebkitBackdropFilter: 'saturate(180%) blur(20px)',
             borderRadius: '20px 20px 0 0',
@@ -984,7 +984,7 @@ export default function MealChat({
             minHeight: 0,
             WebkitTransform: 'translateZ(0)',
             transform: 'translateZ(0)',
-            paddingBottom: '100px', // Increased space for input bar
+            paddingBottom: '100px',
             transition: 'bottom 0.3s ease', // SMOOTH height transition
           }}
           role="log"
