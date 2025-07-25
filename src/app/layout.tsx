@@ -1,5 +1,4 @@
 // src/app/layout.tsx - Updated with Mobile Install Prompt
-import DebugControls from '@/components/DebugControls';
 import MobileInstallPrompt from '@/components/MobileInstallPrompt';
 import { NotificationNavigationHandler } from '@/components/NotificationNavigationHandler';
 import UpdateNotification from '@/components/UpdateNotification';
@@ -277,12 +276,11 @@ export default function RootLayout({
         <NavigationProvider>
           <NotificationNavigationHandler />
           {children}
-          {/* Mobile Install Prompt - Only shows on mobile touch devices */}
           <MobileInstallPrompt />
         </NavigationProvider>
         <UpdateNotification />
         <Analytics />
-        <DebugControls />
+        {/* <DebugControls /> Enable this when to control update notifications card */}
       </body>
     </html>
   );

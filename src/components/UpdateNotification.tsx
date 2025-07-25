@@ -92,11 +92,32 @@ export default function UpdateNotification() {
 
   useEffect(() => {
     if (isUpdateAvailable && !loadingContent) {
-      // Small delay to ensure app is fully loaded before showing notification
-      const timer = setTimeout(() => {
-        setShowNotification(true);
-      }, 1000);
-      return () => clearTimeout(timer);
+      // Check if MobileInstallPrompt is currently showing
+      const isMobileInstallShowing =
+        sessionStorage.getItem('mobile_install_showing') === 'true';
+
+      if (isMobileInstallShowing) {
+        // Wait for MobileInstallPrompt to be dismissed, then show update notification
+        const checkInterval = setInterval(() => {
+          const stillShowing =
+            sessionStorage.getItem('mobile_install_showing') === 'true';
+          if (!stillShowing) {
+            clearInterval(checkInterval);
+            // Small delay to ensure smooth transition
+            setTimeout(() => {
+              setShowNotification(true);
+            }, 1000);
+          }
+        }, 100);
+
+        return () => clearInterval(checkInterval);
+      } else {
+        // Small delay to ensure app is fully loaded before showing notification
+        const timer = setTimeout(() => {
+          setShowNotification(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [isUpdateAvailable, loadingContent]);
 
