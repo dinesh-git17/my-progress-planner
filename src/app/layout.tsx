@@ -1,7 +1,10 @@
 // src/app/layout.tsx - Updated with Mobile Install Prompt
+import DebugControls from '@/components/DebugControls';
 import MobileInstallPrompt from '@/components/MobileInstallPrompt';
 import { NotificationNavigationHandler } from '@/components/NotificationNavigationHandler';
+import UpdateNotification from '@/components/UpdateNotification';
 import { NavigationProvider } from '@/contexts/NavigationContext';
+import { Analytics } from '@vercel/analytics/next';
 import type { Metadata, Viewport } from 'next';
 import { DM_Sans } from 'next/font/google';
 import React from 'react';
@@ -277,6 +280,9 @@ export default function RootLayout({
           {/* Mobile Install Prompt - Only shows on mobile touch devices */}
           <MobileInstallPrompt />
         </NavigationProvider>
+        <UpdateNotification />
+        <Analytics />
+        <DebugControls />
       </body>
     </html>
   );
