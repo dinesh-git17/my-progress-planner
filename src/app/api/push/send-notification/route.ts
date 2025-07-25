@@ -5,12 +5,8 @@
  * POST /api/push/send-notification
  * - Sends push notifications to users
  * - Supports targeting specific users or all users
- * - NOW WITH ENTERPRISE-LEVEL SECURITY
- *
- * @route POST /api/push/send-notification
- * @body { title: string, message: string, targetUserId?: string, adminPassword?: string }
- * @headers Authorization: Bearer <jwt-token> OR X-Admin-Password: <admin-password>
- * @returns JSON response with notification send results
+ * - Environment-aware logging (dev only)
+ * - NOW WITH PRODUCTION-SAFE LOGGING ✅
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -28,6 +24,102 @@ webpush.setVapidDetails(
   process.env.VAPID_PUBLIC_KEY!,
   process.env.VAPID_PRIVATE_KEY!,
 );
+
+// ============================================================================
+// LOGGING UTILITIES
+// ============================================================================
+
+/**
+ * Development-only logging helper
+ */
+function devLog(message: string, data?: any) {
+  if (process.env.NODE_ENV === 'development') {
+    if (data) {
+      console.log(message, data);
+    } else {
+      console.log(message);
+    }
+  }
+}
+
+/**
+ * Production-safe error logging (only critical errors)
+ */
+function errorLog(message: string, data?: any) {
+  if (data) {
+    console.error(message, data);
+  } else {
+    console.error(message);
+  }
+}
+
+/**
+ * Production-safe warning logging (only critical warnings)
+ */
+function warnLog(message: string, data?: any) {
+  if (data) {
+    console.warn(message, data);
+  } else {
+    console.warn(message);
+  }
+}
+
+/**
+ * Sanitizes user ID for logging (shows only first 8 chars)
+ */
+function sanitizeUserId(userId: string): string {
+  if (!userId || userId.length < 8) return 'invalid-id';
+  return `${userId.slice(0, 8)}...`;
+}
+
+/**
+ * Sanitizes message content for logging (shows only length)
+ */
+function sanitizeMessage(title: string, message: string) {
+  return {
+    titleLength: title?.length || 0,
+    messageLength: message?.length || 0,
+    hasContent: !!(title && message),
+  };
+}
+
+/**
+ * Creates secure audit log without sensitive data
+ */
+function createSecureAuditLog(action: string, data: any) {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  // Base audit log (always safe to log)
+  const auditLog = {
+    action,
+    timestamp: new Date().toISOString(),
+    ip: data.ip || 'unknown',
+  };
+
+  // Add non-sensitive data based on action
+  if (action === 'PUSH_NOTIFICATION_SENT') {
+    return {
+      ...auditLog,
+      authMethod: data.authMethod || 'unknown',
+      results: {
+        successful: data.successful || 0,
+        failed: data.failed || 0,
+        removed: data.removed || 0,
+        total: data.total || 0,
+      },
+      // Only log sanitized data in development
+      targetUserId:
+        isDevelopment && data.targetUserId
+          ? sanitizeUserId(data.targetUserId)
+          : 'hidden',
+      messageInfo: isDevelopment
+        ? sanitizeMessage(data.title, data.message)
+        : 'hidden',
+    };
+  }
+
+  return auditLog;
+}
 
 // ============================================================================
 // SECURITY MIDDLEWARE FUNCTIONS
@@ -98,7 +190,7 @@ async function validateUserAuth(
     } = await userSupabase.auth.getUser(token);
 
     if (error || !user) {
-      console.error('❌ Invalid JWT token:', error);
+      devLog('❌ Invalid JWT token:', error);
       return { valid: false };
     }
 
@@ -108,7 +200,7 @@ async function validateUserAuth(
 
     return { valid: true, userId: user.id };
   } catch (error) {
-    console.error('❌ Error validating user auth:', error);
+    devLog('❌ Error validating user auth:', error);
     return { valid: false };
   }
 }
@@ -155,7 +247,7 @@ export async function POST(req: NextRequest) {
       : req.headers.get('x-real-ip') || 'unknown';
 
     if (!checkRateLimit(ip)) {
-      console.warn('🚫 Rate limit exceeded for IP:', ip);
+      warnLog('🚫 Rate limit exceeded for push notification API', { ip });
       return NextResponse.json(
         { error: 'Too many notification requests. Please try again later.' },
         { status: 429 },
@@ -166,12 +258,12 @@ export async function POST(req: NextRequest) {
     const requestBody = await req.json();
     const { title, message, targetUserId, adminPassword } = requestBody;
 
-    console.log('📤 Secure push notification request:', {
-      title: title?.slice(0, 30) + '...',
-      message: message?.slice(0, 50) + '...',
-      targetUserId: targetUserId || 'all users',
-      ip,
-    });
+    devLog('📤 Processing push notification request');
+    devLog('📝 Message info:', sanitizeMessage(title, message));
+    devLog(
+      '🎯 Target:',
+      targetUserId ? sanitizeUserId(targetUserId) : 'broadcast',
+    );
 
     // Basic input validation
     if (!title || !message) {
@@ -195,10 +287,7 @@ export async function POST(req: NextRequest) {
       : { valid: false };
 
     if (!isAdminAuthenticated && !userAuth.valid) {
-      console.warn('🚫 Unauthorized push notification attempt:', {
-        ip,
-        title: title?.slice(0, 20),
-      });
+      warnLog('🚫 Unauthorized push notification attempt', { ip });
       return NextResponse.json(
         {
           error:
@@ -208,7 +297,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(
+    devLog(
       '✅ Authentication successful:',
       isAdminAuthenticated ? 'Admin' : 'User',
     );
@@ -219,10 +308,7 @@ export async function POST(req: NextRequest) {
       targetUserId &&
       targetUserId !== userAuth.userId
     ) {
-      console.warn('🚫 User trying to send to other user:', {
-        authenticatedUser: userAuth.userId,
-        targetUser: targetUserId,
-      });
+      warnLog('🚫 User attempted to send notification to other user', { ip });
       return NextResponse.json(
         { error: 'You can only send notifications to yourself.' },
         { status: 403 },
@@ -253,7 +339,8 @@ export async function POST(req: NextRequest) {
     const { data: subscriptions, error } = await query;
 
     if (error) {
-      console.error('❌ Error fetching subscriptions:', error);
+      errorLog('❌ Error fetching subscriptions');
+      devLog('❌ Subscription fetch error details:', error);
       return NextResponse.json(
         { error: 'Failed to fetch subscriptions' },
         { status: 500 },
@@ -261,7 +348,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      console.log('📭 No subscriptions found for target');
+      devLog('📭 No subscriptions found for target');
       return NextResponse.json({
         success: true,
         message: 'No subscriptions found for target',
@@ -272,7 +359,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log(`📱 Found ${subscriptions.length} subscription(s)`);
+    devLog(`📱 Found ${subscriptions.length} subscription(s)`);
 
     // Prepare notification payload
     const notificationPayload = {
@@ -306,14 +393,11 @@ export async function POST(req: NextRequest) {
         );
         return { success: true, subscription: sub };
       } catch (err: any) {
-        console.error(
-          `❌ Failed to send notification to ${sub.endpoint.slice(-20)}:`,
-          err.message,
-        );
+        devLog(`❌ Failed to send notification to subscription:`, err.message);
 
         // Handle expired subscriptions
         if (err.statusCode === 410 || err.statusCode === 404) {
-          console.log(`🗑️ Removing expired subscription: ${sub.id}`);
+          devLog('🗑️ Removing expired subscription');
           await supabase.from('push_subscriptions').delete().eq('id', sub.id);
           return {
             success: false,
@@ -348,20 +432,21 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Security Layer 5: Audit logging
-    console.log('📋 AUDIT LOG - PUSH NOTIFICATION:', {
-      action: 'PUSH_NOTIFICATION_SENT',
-      timestamp: new Date().toISOString(),
+    // Security Layer 5: Secure Audit logging (dev only)
+    const auditData = createSecureAuditLog('PUSH_NOTIFICATION_SENT', {
       ip,
       authMethod: isAdminAuthenticated ? 'ADMIN' : 'USER_JWT',
-      authenticatedUser: userAuth.userId || 'admin',
       targetUserId: finalTargetUserId,
-      title: title.slice(0, 50),
-      message: message.slice(0, 100),
-      results: { successful, failed, removed, total: subscriptions.length },
+      title,
+      message,
+      successful,
+      failed,
+      removed,
+      total: subscriptions.length,
     });
+    devLog('📋 AUDIT LOG:', auditData);
 
-    console.log(
+    devLog(
       `✅ Notification summary: ${successful} successful, ${failed} failed, ${removed} expired/removed`,
     );
 
@@ -376,7 +461,8 @@ export async function POST(req: NextRequest) {
       authMethod: isAdminAuthenticated ? 'admin' : 'user',
     });
   } catch (error: any) {
-    console.error('💥 Send notification API error:', error);
+    errorLog('💥 Send notification API error');
+    devLog('💥 Send notification error details:', error);
 
     // Security: Don't expose internal error details in production
     const isDevelopment = process.env.NODE_ENV === 'development';
