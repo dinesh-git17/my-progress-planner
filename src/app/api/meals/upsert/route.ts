@@ -2,8 +2,10 @@
 // API endpoint for syncing offline meal data
 // Matches your existing upsertMealLog architecture
 
-import supabase from '@/utils/supabaseAdmin';
+import { supabaseServer } from '@/utils/supabaseServer';
 import { NextRequest, NextResponse } from 'next/server';
+
+const supabase = supabaseServer;
 
 export async function POST(req: NextRequest) {
   try {
