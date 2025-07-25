@@ -1,4 +1,14 @@
 // src/app/api/merge-user-data/route.ts
+/**
+ * SECURED Merge User Data API Endpoint
+ *
+ * POST /api/merge-user-data
+ * - Merges guest user data into authenticated user account
+ * - Multi-layer authentication and rate limiting
+ * - Environment-aware logging (dev only)
+ * - NOW WITH PRODUCTION-SAFE LOGGING ✅
+ */
+
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -6,6 +16,88 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!, // Use service role for admin operations
 );
+
+// ============================================================================
+// LOGGING UTILITIES
+// ============================================================================
+
+/**
+ * Development-only logging helper
+ */
+function devLog(message: string, data?: any) {
+  if (process.env.NODE_ENV === 'development') {
+    if (data) {
+      console.log(message, data);
+    } else {
+      console.log(message);
+    }
+  }
+}
+
+/**
+ * Production-safe error logging (only critical errors)
+ */
+function errorLog(message: string, data?: any) {
+  if (data) {
+    console.error(message, data);
+  } else {
+    console.error(message);
+  }
+}
+
+/**
+ * Production-safe warning logging (only critical warnings)
+ */
+function warnLog(message: string, data?: any) {
+  if (data) {
+    console.warn(message, data);
+  } else {
+    console.warn(message);
+  }
+}
+
+/**
+ * Sanitizes user ID for logging (dev only, shows first 8 chars)
+ */
+function sanitizeUserId(userId: string): string {
+  if (!userId || userId.length < 8) return 'invalid-id';
+  return `${userId.slice(0, 8)}...`;
+}
+
+/**
+ * Creates secure audit log without sensitive data
+ */
+function createSecureAuditLog(action: string, data: any) {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  // Base audit log (always safe to log)
+  const auditLog = {
+    action,
+    timestamp: new Date().toISOString(),
+    ip: data.ip || 'unknown',
+  };
+
+  // Add non-sensitive data based on action
+  if (action === 'USER_DATA_MERGE') {
+    return {
+      ...auditLog,
+      authMethod: data.authMethod || 'unknown',
+      mealLogsTransferred: data.mealLogsTransferred || 0,
+      userNamesTransferred: data.userNamesTransferred || 0,
+      // Only log sanitized user IDs in development
+      guestUserId:
+        isDevelopment && data.guestUserId
+          ? sanitizeUserId(data.guestUserId)
+          : 'hidden',
+      authUserId:
+        isDevelopment && data.authUserId
+          ? sanitizeUserId(data.authUserId)
+          : 'hidden',
+    };
+  }
+
+  return auditLog;
+}
 
 // ============================================================================
 // SECURITY MIDDLEWARE FUNCTIONS
@@ -78,13 +170,13 @@ async function validateUserOwnership(
     } = await userSupabase.auth.getUser(token);
 
     if (error || !user) {
-      console.error('❌ Invalid JWT token:', error);
+      devLog('❌ Invalid JWT token:', error);
       return false;
     }
 
     // Verify that the authUserId matches the authenticated user
     if (user.id !== authUserId) {
-      console.error('❌ Auth user ID mismatch:', {
+      devLog('❌ Auth user ID mismatch:', {
         tokenUserId: user.id,
         requestedUserId: authUserId,
       });
@@ -93,7 +185,7 @@ async function validateUserOwnership(
 
     return true;
   } catch (error) {
-    console.error('❌ Error validating user ownership:', error);
+    devLog('❌ Error validating user ownership:', error);
     return false;
   }
 }
@@ -140,7 +232,7 @@ export async function POST(req: NextRequest) {
       : req.headers.get('x-real-ip') || 'unknown';
 
     if (!checkRateLimit(ip)) {
-      console.warn('🚫 Rate limit exceeded for IP:', ip);
+      warnLog('🚫 Rate limit exceeded for merge API:', { ip });
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 },
@@ -151,10 +243,9 @@ export async function POST(req: NextRequest) {
     const requestBody = await req.json();
     const { guestUserId, authUserId, adminPassword } = requestBody;
 
-    console.log('🔄 API: Starting data merge...');
-    console.log('📝 Guest ID:', guestUserId);
-    console.log('🔐 Auth ID:', authUserId);
-    console.log('🔍 IP Address:', ip);
+    devLog('🔄 Starting secure data merge operation');
+    devLog('📝 Guest ID:', guestUserId ? sanitizeUserId(guestUserId) : 'none');
+    devLog('🔐 Auth ID:', authUserId ? sanitizeUserId(authUserId) : 'none');
 
     // Basic validation
     if (!guestUserId || !authUserId) {
@@ -165,7 +256,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (guestUserId === authUserId) {
-      console.log('ℹ️ Guest and auth IDs are the same, no merge needed');
+      devLog('ℹ️ Guest and auth IDs are identical, no merge needed');
       return NextResponse.json({
         success: true,
         message: 'No merge needed - IDs are identical',
@@ -181,18 +272,14 @@ export async function POST(req: NextRequest) {
       : false;
 
     if (!isAdminAuthenticated && !isUserAuthenticated) {
-      console.warn('🚫 Unauthorized merge attempt:', {
-        ip,
-        guestUserId,
-        authUserId,
-      });
+      warnLog('🚫 Unauthorized merge attempt detected', { ip });
       return NextResponse.json(
         { error: 'Unauthorized. Invalid credentials or token.' },
         { status: 401 },
       );
     }
 
-    console.log(
+    devLog(
       '✅ Authentication successful:',
       isAdminAuthenticated ? 'Admin' : 'User',
     );
@@ -215,7 +302,7 @@ export async function POST(req: NextRequest) {
 
         // Prevent merging very old guest data (security measure)
         if (daysSinceLastActivity > 30) {
-          console.warn('🚫 Guest data too old for merge:', {
+          warnLog('🚫 Attempted merge of stale guest data', {
             daysSinceLastActivity,
           });
           return NextResponse.json(
@@ -227,43 +314,44 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 1: Update meal logs
-    console.log('🍽️ Updating meal logs...');
+    devLog('🍽️ Updating meal logs...');
     const { data: mealUpdateData, error: mealUpdateError } = await supabase
       .from('meal_logs')
       .update({ user_id: authUserId })
       .eq('user_id', guestUserId);
 
     if (mealUpdateError) {
-      console.error('❌ Error updating meal logs:', mealUpdateError);
+      errorLog('❌ Error updating meal logs');
+      devLog('❌ Meal logs error details:', mealUpdateError);
       throw mealUpdateError;
     }
 
-    console.log('✅ Meal logs updated successfully');
+    devLog('✅ Meal logs updated successfully');
 
     // Step 2: Update user names table
-    console.log('👤 Updating user names...');
+    devLog('👤 Updating user names...');
     const { data: nameUpdateData, error: nameUpdateError } = await supabase
       .from('user_names')
       .update({ user_id: authUserId })
       .eq('user_id', guestUserId);
 
     if (nameUpdateError) {
-      console.error('❌ Error updating user names:', nameUpdateError);
+      devLog('❌ Error updating user names:', nameUpdateError);
       // Don't throw - this table might not exist or have data
-      console.log('ℹ️ Continuing despite user_names error...');
+      devLog('ℹ️ Continuing despite user_names error...');
     }
 
     // Step 3: Update any push notification subscriptions
-    console.log('🔔 Updating push subscriptions...');
+    devLog('🔔 Updating push subscriptions...');
     const { data: pushUpdateData, error: pushUpdateError } = await supabase
       .from('push_subscriptions')
       .update({ user_id: authUserId })
       .eq('user_id', guestUserId);
 
     if (pushUpdateError) {
-      console.error('❌ Error updating push subscriptions:', pushUpdateError);
+      devLog('❌ Error updating push subscriptions:', pushUpdateError);
       // Don't throw - this table might not exist or have data
-      console.log('ℹ️ Continuing despite push_subscriptions error...');
+      devLog('ℹ️ Continuing despite push_subscriptions error...');
     }
 
     // Step 4: Check what data was actually moved
@@ -277,10 +365,8 @@ export async function POST(req: NextRequest) {
       .select('*')
       .eq('user_id', authUserId);
 
-    // Security Layer 4: Audit logging
-    console.log('📋 AUDIT LOG:', {
-      action: 'USER_DATA_MERGE',
-      timestamp: new Date().toISOString(),
+    // Security Layer 4: Secure Audit logging (dev only)
+    const auditData = createSecureAuditLog('USER_DATA_MERGE', {
       ip,
       authMethod: isAdminAuthenticated ? 'ADMIN' : 'USER_JWT',
       guestUserId,
@@ -288,10 +374,11 @@ export async function POST(req: NextRequest) {
       mealLogsTransferred: finalMealCheck?.length || 0,
       userNamesTransferred: finalNameCheck?.length || 0,
     });
+    devLog('📋 AUDIT LOG:', auditData);
 
-    console.log('✅ Data merge completed successfully');
-    console.log('📊 Final meal logs count:', finalMealCheck?.length || 0);
-    console.log('📊 Final name records count:', finalNameCheck?.length || 0);
+    devLog('✅ Data merge completed successfully');
+    devLog('📊 Final meal logs count:', finalMealCheck?.length || 0);
+    devLog('📊 Final name records count:', finalNameCheck?.length || 0);
 
     return NextResponse.json({
       success: true,
@@ -305,7 +392,8 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('💥 API Error merging user data:', error);
+    errorLog('💥 API Error merging user data');
+    devLog('💥 Merge error details:', error);
 
     // Security: Don't expose internal error details in production
     const isDevelopment = process.env.NODE_ENV === 'development';
