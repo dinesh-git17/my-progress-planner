@@ -1,5 +1,8 @@
 'use client';
 
+import BreakfastModal from '@/components/BreakfastModal';
+import DoneModal from '@/components/DoneModal';
+import LunchModal from '@/components/LunchModal';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { upsertMealLog } from '@/utils/mealLog';
 import { getPendingSyncCount, logMealWithFallback } from '@/utils/sw-utils';
@@ -58,10 +61,15 @@ export default function MealChat({
   const [chatEnded, setChatEnded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showClosing, setShowClosing] = useState(false);
+  const [processingComplete, setProcessingComplete] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
+  const [showDoneModal, setShowDoneModal] = useState(false);
+  const [showBreakfastModal, setShowBreakfastModal] = useState(false);
+  const [showLunchModal, setShowLunchModal] = useState(false);
+  const [chatCompleted, setChatCompleted] = useState(false);
 
   // Refs for data persistence during chat
   const answers = useRef<string[]>([]);
@@ -277,8 +285,12 @@ export default function MealChat({
   /**
    * Completes the chat session and saves meal log
    */
+  /**
+   * Completes the chat session and saves meal log
+   */
   const finishChat = async () => {
-    setLoading(true);
+    setProcessingComplete(true);
+    setChatCompleted(true);
 
     try {
       const today = new Date()
@@ -347,8 +359,24 @@ export default function MealChat({
       }
 
       setTimeout(() => {
-        setChatEnded(true);
         setLoading(false);
+
+        // 🔥 HERE'S THE FIX: Show appropriate modal based on meal type
+        if (meal === 'breakfast') {
+          console.log('🍳 Showing breakfast modal');
+          setShowBreakfastModal(true);
+        } else if (meal === 'lunch') {
+          console.log('🥪 Showing lunch modal');
+          setShowLunchModal(true);
+        } else if (meal === 'dinner') {
+          console.log('🍽️ Showing done modal');
+          setShowDoneModal(true);
+        }
+
+        // Set chat ended for non-dinner meals (optional, for state consistency)
+        if (meal !== 'dinner') {
+          setChatEnded(true);
+        }
       }, 1500);
     } catch (error) {
       console.error('Error in finishChat:', error);
@@ -406,13 +434,13 @@ export default function MealChat({
         setTimeout(() => {
           setMessages((msgs) => [...msgs, botMessage]);
           gptReplies.current.push(data.reply);
+
+          // Finish chat AFTER the final bot message is displayed
+          if (isLastTurn) {
+            setTimeout(() => finishChat(), 1000);
+          }
         }, 300);
       }, 250);
-
-      // Finish chat if this was the last turn
-      if (isLastTurn) {
-        setTimeout(() => finishChat(), 1400);
-      }
     } catch (error) {
       console.error('Error getting AI response:', error);
       setLoading(false);
@@ -431,7 +459,13 @@ export default function MealChat({
    */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loading && !chatEnded && !showClosing && input.trim()) {
+    if (
+      !loading &&
+      !chatEnded &&
+      !showClosing &&
+      !processingComplete &&
+      input.trim()
+    ) {
       handleSend();
     }
   };
@@ -485,8 +519,8 @@ export default function MealChat({
       }}
       data-message={`${msg.sender}-${index}`}
     >
-      {/* Bot Avatar - Only show for bot messages and not for the most recent one if loading */}
-      {msg.sender === 'bot' && !(loading && index === messages.length - 1) && (
+      {/* Bot Avatar - Always show for bot messages */}
+      {msg.sender === 'bot' && (
         <div className="flex-shrink-0 mr-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-md text-lg">
             🤖
@@ -633,121 +667,6 @@ export default function MealChat({
         ))}
       </div>
     </motion.div>
-  );
-
-  /**
-   * Renders completion overlay
-   */
-  const renderCompletionOverlay = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-md">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{
-          duration: 0.4,
-          type: 'spring',
-          stiffness: 300,
-          damping: 25,
-        }}
-        className="mx-4 max-w-sm w-full px-8 py-10 flex flex-col items-center text-center"
-        style={{
-          background: 'rgba(255, 255, 255, 0.18)',
-          backdropFilter: 'saturate(180%) blur(40px)',
-          WebkitBackdropFilter: 'saturate(180%) blur(40px)',
-          borderRadius: '20px',
-          boxShadow: `
-           0 32px 64px rgba(0, 0, 0, 0.08),
-           0 16px 32px rgba(0, 0, 0, 0.04),
-           inset 0 1px 0 rgba(255, 255, 255, 0.4),
-           inset 0 -1px 0 rgba(0, 0, 0, 0.02)
-         `,
-          border: '0.5px solid rgba(255, 255, 255, 0.25)',
-          fontFamily: SYSTEM_FONT,
-        }}
-      >
-        <div
-          className="mb-8 text-gray-700"
-          style={{
-            fontSize: '18px',
-            lineHeight: '23px',
-            letterSpacing: '-0.24px',
-            fontWeight: '500',
-            textShadow: '0 0.5px 1px rgba(255, 255, 255, 0.9)',
-          }}
-        >
-          {meal === 'dinner'
-            ? 'All done for today! You did amazing 💖'
-            : `Yay! Ready for ${meal === 'breakfast' ? 'lunch' : 'dinner'}?`}
-        </div>
-
-        <div className="flex flex-col gap-4 w-full">
-          {showNextMeal && nextMealHref && (
-            <button
-              onClick={() => onComplete()}
-              className="w-full py-3.5 text-white font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, #E8A4C9 0%, #D4A5D6 100%)',
-                borderRadius: '14px',
-                fontSize: '16px',
-                fontWeight: '500',
-                letterSpacing: '-0.24px',
-                boxShadow: `
-                 0 4px 20px rgba(232, 164, 201, 0.25),
-                 0 2px 8px rgba(232, 164, 201, 0.15),
-                 inset 0 1px 0 rgba(255, 255, 255, 0.2)
-               `,
-                border: '0.5px solid rgba(255, 255, 255, 0.1)',
-              }}
-              aria-label={`Continue to ${nextMealLabel}`}
-            >
-              <span className="relative z-10">{nextMealLabel}</span>
-              <div
-                className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
-                style={{
-                  background:
-                    'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
-                  borderRadius: '16px',
-                }}
-              />
-            </button>
-          )}
-
-          <button
-            onClick={() => {
-              sessionStorage.setItem('isReturningToHome', 'true');
-              navigate('/');
-            }}
-            className="w-full py-3.5 text-gray-600 font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
-            style={{
-              background: 'rgba(120, 120, 128, 0.12)',
-              borderRadius: '14px',
-              fontSize: '16px',
-              fontWeight: '500',
-              letterSpacing: '-0.24px',
-              boxShadow: `
-               0 2px 10px rgba(0, 0, 0, 0.04),
-               0 1px 4px rgba(0, 0, 0, 0.02),
-               inset 0 1px 0 rgba(255, 255, 255, 0.4),
-               inset 0 -0.5px 0 rgba(0, 0, 0, 0.04)
-             `,
-              border: '0.5px solid rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'saturate(180%) blur(20px)',
-              WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-            }}
-            aria-label="Return to home page"
-          >
-            <span className="relative z-10">Home</span>
-            <div
-              className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '16px',
-              }}
-            />
-          </button>
-        </div>
-      </motion.div>
-    </div>
   );
 
   const renderOfflineIndicator = () => {
@@ -959,17 +878,17 @@ export default function MealChat({
             <div className="w-8 h-8" />
           </div>
         </header>
-
         {/* Chat Messages - Adjust Height for Keyboard */}
         <div
           ref={chatBodyRef}
-          className="w-full px-4 py-4 flex flex-col justify-start overflow-y-auto"
+          className="relative flex-1 flex flex-col transition-all duration-500"
           style={{
             position: 'absolute',
             top: 'calc(env(safe-area-inset-top) + 56px)',
             left: 0,
             right: 0,
             bottom: isKeyboardOpen ? '350px' : '100px',
+            padding: '20px 16px 100px 16px',
             WebkitOverflowScrolling: 'touch',
             background: 'rgba(255, 255, 255, 0.08)',
             backdropFilter: 'saturate(180%) blur(20px)',
@@ -1050,11 +969,12 @@ export default function MealChat({
             )}
           </AnimatePresence>
         </div>
-
         {/* Input Bar - Only This Moves Up */}
         {!chatEnded && (
           <div
-            className="w-full px-4 py-4"
+            className={`w-full px-4 py-4 transition-all duration-500 ${
+              chatCompleted ? 'blur-sm opacity-50' : ''
+            }`}
             style={{
               position: 'absolute',
               bottom: '0px', // Always at bottom
@@ -1067,6 +987,7 @@ export default function MealChat({
                 : 'translateY(0px)', // ONLY INPUT BAR MOVES
               transition: 'transform 0.3s ease', // Smooth animation
               zIndex: 40,
+              pointerEvents: chatCompleted ? 'none' : 'auto',
             }}
           >
             <form className="flex items-center gap-3" onSubmit={handleSubmit}>
@@ -1096,7 +1017,13 @@ export default function MealChat({
                     paddingRight: '52px',
                   }}
                   type="text"
-                  placeholder={loading ? 'Wait for my reply…' : 'Message'}
+                  placeholder={
+                    processingComplete
+                      ? 'Saving your meal data...'
+                      : loading || chatEnded || showClosing
+                        ? 'Wait for my reply…'
+                        : 'Message'
+                  }
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   autoFocus={
@@ -1147,11 +1074,88 @@ export default function MealChat({
             </form>
           </div>
         )}
+        {/* Chat Complete Overlay - Only show for non-dinner meals or when DoneModal isn't shown */}
 
-        {/* Chat Complete Overlay */}
         <AnimatePresence>
-          {chatEnded && renderCompletionOverlay()}
+          {chatCompleted && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="fixed inset-0 z-50 flex items-center justify-center"
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+              }}
+            >
+              {/* Only show text and loading bar if no modals are open */}
+              {!showBreakfastModal && !showLunchModal && !showDoneModal && (
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  transition={{ delay: 0.2, duration: 0.3 }}
+                  className="text-center px-8 py-6"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.25)',
+                    backdropFilter: 'saturate(180%) blur(25px)',
+                    WebkitBackdropFilter: 'saturate(180%) blur(25px)',
+                    borderRadius: '20px',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  <p
+                    className="text-lg font-medium text-gray-800 mb-4"
+                    style={{ fontFamily: SYSTEM_FONT }}
+                  >
+                    Saving your data...
+                  </p>
+
+                  {/* Loading bar */}
+                  <div
+                    className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden"
+                    style={{ background: 'rgba(0, 0, 0, 0.1)' }}
+                  >
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 1.5, ease: 'easeInOut' }}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
         </AnimatePresence>
+
+        <BreakfastModal
+          isOpen={showBreakfastModal}
+          onClose={() => setShowBreakfastModal(false)}
+          onNavigateToLunch={() => {
+            setShowBreakfastModal(false);
+            navigate('/lunch');
+          }}
+        />
+        <LunchModal
+          isOpen={showLunchModal}
+          onClose={() => setShowLunchModal(false)}
+          onNavigateToDinner={() => {
+            setShowLunchModal(false);
+            navigate('/dinner');
+          }}
+        />
+        <DoneModal
+          isOpen={showDoneModal}
+          onClose={() => setShowDoneModal(false)}
+          onNavigateHome={() => {
+            setShowDoneModal(false);
+            navigate('/');
+          }}
+        />
       </div>
     </>
   );
