@@ -1,4 +1,5 @@
 // src/app/layout.tsx - Updated with Mobile Install Prompt
+import AppUpdateManager from '@/components/AppUpdateManager';
 import MobileInstallPrompt from '@/components/MobileInstallPrompt';
 import { NotificationNavigationHandler } from '@/components/NotificationNavigationHandler';
 import { NavigationProvider } from '@/contexts/NavigationContext';
@@ -277,6 +278,7 @@ export default function RootLayout({
           {/* Mobile Install Prompt - Only shows on mobile touch devices */}
           <MobileInstallPrompt />
         </NavigationProvider>
+        <AppUpdateManager />
       </body>
     </html>
   );
