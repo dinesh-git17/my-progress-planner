@@ -107,6 +107,7 @@ export default function MobileInstallPrompt({
     if (shouldShowPrompt()) {
       const timer = setTimeout(() => {
         setShowPrompt(true);
+        sessionStorage.setItem('mobile_install_showing', 'true');
       }, 1000); // Show after 1 second
 
       return () => clearTimeout(timer);
@@ -115,6 +116,7 @@ export default function MobileInstallPrompt({
 
   const handleDismiss = () => {
     setShowPrompt(false);
+    sessionStorage.removeItem('mobile_install_showing');
     onDismiss?.();
   };
 
@@ -124,6 +126,7 @@ export default function MobileInstallPrompt({
       const success = await PWAInstaller.promptInstall();
       if (success) {
         setShowPrompt(false);
+        sessionStorage.removeItem('mobile_install_showing');
         return;
       }
     }
@@ -179,7 +182,7 @@ export default function MobileInstallPrompt({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-5000"
             onClick={handleDismiss}
             style={{ touchAction: 'none' }}
           />

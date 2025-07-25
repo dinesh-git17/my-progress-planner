@@ -277,7 +277,6 @@ export default function RootLayout({
         <NavigationProvider>
           <NotificationNavigationHandler />
           {children}
-          {/* Mobile Install Prompt - Only shows on mobile touch devices */}
           <MobileInstallPrompt />
         </NavigationProvider>
         <UpdateNotification />
