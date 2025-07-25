@@ -881,7 +881,7 @@ export default function MealChat({
         {/* Chat Messages - Adjust Height for Keyboard */}
         <div
           ref={chatBodyRef}
-          className="relative flex-1 flex flex-col transition-all duration-500"
+          className="w-full px-4 py-4 flex flex-col justify-start overflow-y-auto"
           style={{
             position: 'absolute',
             top: 'calc(env(safe-area-inset-top) + 56px)',

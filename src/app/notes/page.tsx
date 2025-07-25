@@ -458,118 +458,114 @@ export default function NotesPage() {
 
       {/* Main Content */}
       <div
-        className="w-full max-w-2xl mx-auto safe-x overflow-hidden"
+        className="px-4 h-full overflow-y-auto"
         style={{
-          marginTop: BANNER_TOTAL_HEIGHT,
-          height: `calc(100vh - ${BANNER_TOTAL_HEIGHT}px)`,
-          paddingTop: '2.5rem',
+          paddingTop: `calc(${BANNER_TOTAL_HEIGHT}px + 2.5rem)`,
           paddingBottom: '2rem',
         }}
       >
-        <div className="px-4 h-full overflow-y-auto">
-          <div className="max-w-md mx-auto">
-            {/* Filter Tabs */}
-            <div className="py-2">
-              <div className="flex bg-white rounded-xl p-1 shadow-sm">
-                <button
-                  onClick={() => setSelectedFilter('all')}
-                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-                    selectedFilter === 'all'
-                      ? 'bg-blue-500 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  All Notes
-                </button>
-                <button
-                  onClick={() => setSelectedFilter('today')}
-                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-                    selectedFilter === 'today'
-                      ? 'bg-blue-500 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  Today
-                </button>
-              </div>
+        <div className="max-w-md mx-auto">
+          {/* Filter Tabs */}
+          <div className="py-2">
+            <div className="flex bg-white rounded-xl p-1 shadow-sm">
+              <button
+                onClick={() => setSelectedFilter('all')}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                  selectedFilter === 'all'
+                    ? 'bg-blue-500 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                All Notes
+              </button>
+              <button
+                onClick={() => setSelectedFilter('today')}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                  selectedFilter === 'today'
+                    ? 'bg-blue-500 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Today
+              </button>
             </div>
-            {/* Main Content */}
-            <main className="pb-20">
-              {loading ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-8"
-                >
-                  <motion.div
-                    animate={{ opacity: [0.3, 0.7, 0.3] }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                    className="flex justify-center space-x-1.5 mb-3"
-                  >
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-                  </motion.div>
-                  <p className="text-sm text-gray-500">Loading your notes...</p>
-                </motion.div>
-              ) : error ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-2xl p-6 shadow-lg text-center"
-                >
-                  <div className="text-red-500 text-4xl mb-4">😕</div>
-                  <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                    Oops!
-                  </h2>
-                  <p className="text-gray-600 mb-4">{error}</p>
-                  <button
-                    onClick={fetchNotes}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    Try Again
-                  </button>
-                </motion.div>
-              ) : notes.length === 0 ? (
-                <EmptyState />
-              ) : (
-                <div className="space-y-6">
-                  {dateKeys.map((dateKey) => (
-                    <motion.section
-                      key={dateKey}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="space-y-3"
-                    >
-                      {/* Date Header */}
-                      <div className="flex items-center space-x-2 px-2">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <h2 className="text-sm font-medium text-gray-600">
-                          {formatDateGroup(dateKey)}
-                        </h2>
-                        <div className="flex-1 h-px bg-gray-200"></div>
-                        <span className="text-xs text-gray-400">
-                          {groupedNotes[dateKey].length} note
-                          {groupedNotes[dateKey].length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-
-                      {/* Notes for this date */}
-                      <div className="space-y-3">
-                        {groupedNotes[dateKey].map((note) => (
-                          <NoteCard key={note.id} note={note} />
-                        ))}
-                      </div>
-                    </motion.section>
-                  ))}
-                </div>
-              )}
-            </main>
           </div>
+          {/* Main Content */}
+          <main className="pb-20">
+            {loading ? (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center py-8"
+              >
+                <motion.div
+                  animate={{ opacity: [0.3, 0.7, 0.3] }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                  className="flex justify-center space-x-1.5 mb-3"
+                >
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                </motion.div>
+                <p className="text-sm text-gray-500">Loading your notes...</p>
+              </motion.div>
+            ) : error ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl p-6 shadow-lg text-center"
+              >
+                <div className="text-red-500 text-4xl mb-4">😕</div>
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                  Oops!
+                </h2>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <button
+                  onClick={fetchNotes}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Try Again
+                </button>
+              </motion.div>
+            ) : notes.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <div className="space-y-6">
+                {dateKeys.map((dateKey) => (
+                  <motion.section
+                    key={dateKey}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-3"
+                  >
+                    {/* Date Header */}
+                    <div className="flex items-center space-x-2 px-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <h2 className="text-sm font-medium text-gray-600">
+                        {formatDateGroup(dateKey)}
+                      </h2>
+                      <div className="flex-1 h-px bg-gray-200"></div>
+                      <span className="text-xs text-gray-400">
+                        {groupedNotes[dateKey].length} note
+                        {groupedNotes[dateKey].length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    {/* Notes for this date */}
+                    <div className="space-y-3">
+                      {groupedNotes[dateKey].map((note) => (
+                        <NoteCard key={note.id} note={note} />
+                      ))}
+                    </div>
+                  </motion.section>
+                ))}
+              </div>
+            )}
+          </main>
         </div>
       </div>
     </div>
