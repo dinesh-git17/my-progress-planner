@@ -61,6 +61,7 @@ export default function MealChat({
   const [chatEnded, setChatEnded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showClosing, setShowClosing] = useState(false);
+  const [processingComplete, setProcessingComplete] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
@@ -68,6 +69,7 @@ export default function MealChat({
   const [showDoneModal, setShowDoneModal] = useState(false);
   const [showBreakfastModal, setShowBreakfastModal] = useState(false);
   const [showLunchModal, setShowLunchModal] = useState(false);
+  const [chatCompleted, setChatCompleted] = useState(false);
 
   // Refs for data persistence during chat
   const answers = useRef<string[]>([]);
@@ -287,7 +289,8 @@ export default function MealChat({
    * Completes the chat session and saves meal log
    */
   const finishChat = async () => {
-    setLoading(true);
+    setProcessingComplete(true);
+    setChatCompleted(true);
 
     try {
       const today = new Date()
@@ -431,13 +434,13 @@ export default function MealChat({
         setTimeout(() => {
           setMessages((msgs) => [...msgs, botMessage]);
           gptReplies.current.push(data.reply);
+
+          // Finish chat AFTER the final bot message is displayed
+          if (isLastTurn) {
+            setTimeout(() => finishChat(), 1000);
+          }
         }, 300);
       }, 250);
-
-      // Finish chat if this was the last turn
-      if (isLastTurn) {
-        setTimeout(() => finishChat(), 1400);
-      }
     } catch (error) {
       console.error('Error getting AI response:', error);
       setLoading(false);
@@ -456,7 +459,13 @@ export default function MealChat({
    */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loading && !chatEnded && !showClosing && input.trim()) {
+    if (
+      !loading &&
+      !chatEnded &&
+      !showClosing &&
+      !processingComplete &&
+      input.trim()
+    ) {
       handleSend();
     }
   };
@@ -510,8 +519,8 @@ export default function MealChat({
       }}
       data-message={`${msg.sender}-${index}`}
     >
-      {/* Bot Avatar - Only show for bot messages and not for the most recent one if loading */}
-      {msg.sender === 'bot' && !(loading && index === messages.length - 1) && (
+      {/* Bot Avatar - Always show for bot messages */}
+      {msg.sender === 'bot' && (
         <div className="flex-shrink-0 mr-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center shadow-md text-lg">
             🤖
@@ -869,17 +878,17 @@ export default function MealChat({
             <div className="w-8 h-8" />
           </div>
         </header>
-
         {/* Chat Messages - Adjust Height for Keyboard */}
         <div
           ref={chatBodyRef}
-          className="w-full px-4 py-4 flex flex-col justify-start overflow-y-auto"
+          className="relative flex-1 flex flex-col transition-all duration-500"
           style={{
             position: 'absolute',
             top: 'calc(env(safe-area-inset-top) + 56px)',
             left: 0,
             right: 0,
             bottom: isKeyboardOpen ? '350px' : '100px',
+            padding: '20px 16px 100px 16px',
             WebkitOverflowScrolling: 'touch',
             background: 'rgba(255, 255, 255, 0.08)',
             backdropFilter: 'saturate(180%) blur(20px)',
@@ -960,11 +969,12 @@ export default function MealChat({
             )}
           </AnimatePresence>
         </div>
-
         {/* Input Bar - Only This Moves Up */}
         {!chatEnded && (
           <div
-            className="w-full px-4 py-4"
+            className={`w-full px-4 py-4 transition-all duration-500 ${
+              chatCompleted ? 'blur-sm opacity-50' : ''
+            }`}
             style={{
               position: 'absolute',
               bottom: '0px', // Always at bottom
@@ -977,6 +987,7 @@ export default function MealChat({
                 : 'translateY(0px)', // ONLY INPUT BAR MOVES
               transition: 'transform 0.3s ease', // Smooth animation
               zIndex: 40,
+              pointerEvents: chatCompleted ? 'none' : 'auto',
             }}
           >
             <form className="flex items-center gap-3" onSubmit={handleSubmit}>
@@ -1006,7 +1017,13 @@ export default function MealChat({
                     paddingRight: '52px',
                   }}
                   type="text"
-                  placeholder={loading ? 'Wait for my reply…' : 'Message'}
+                  placeholder={
+                    processingComplete
+                      ? 'Saving your meal data...'
+                      : loading || chatEnded || showClosing
+                        ? 'Wait for my reply…'
+                        : 'Message'
+                  }
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   autoFocus={
@@ -1057,8 +1074,63 @@ export default function MealChat({
             </form>
           </div>
         )}
-
         {/* Chat Complete Overlay - Only show for non-dinner meals or when DoneModal isn't shown */}
+
+        <AnimatePresence>
+          {chatCompleted && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="fixed inset-0 z-50 flex items-center justify-center"
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+              }}
+            >
+              {/* Only show text and loading bar if no modals are open */}
+              {!showBreakfastModal && !showLunchModal && !showDoneModal && (
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  transition={{ delay: 0.2, duration: 0.3 }}
+                  className="text-center px-8 py-6"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.25)',
+                    backdropFilter: 'saturate(180%) blur(25px)',
+                    WebkitBackdropFilter: 'saturate(180%) blur(25px)',
+                    borderRadius: '20px',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  <p
+                    className="text-lg font-medium text-gray-800 mb-4"
+                    style={{ fontFamily: SYSTEM_FONT }}
+                  >
+                    Saving your data...
+                  </p>
+
+                  {/* Loading bar */}
+                  <div
+                    className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden"
+                    style={{ background: 'rgba(0, 0, 0, 0.1)' }}
+                  >
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 1.5, ease: 'easeInOut' }}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <BreakfastModal
           isOpen={showBreakfastModal}
@@ -1068,7 +1140,6 @@ export default function MealChat({
             navigate('/lunch');
           }}
         />
-
         <LunchModal
           isOpen={showLunchModal}
           onClose={() => setShowLunchModal(false)}
@@ -1077,7 +1148,6 @@ export default function MealChat({
             navigate('/dinner');
           }}
         />
-
         <DoneModal
           isOpen={showDoneModal}
           onClose={() => setShowDoneModal(false)}
