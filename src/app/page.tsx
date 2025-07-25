@@ -17,6 +17,7 @@ import {
   preloadUserName,
   saveUserName,
 } from '@/utils/userNameCache';
+import { createClient } from '@supabase/supabase-js';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Sparkles, TrendingUp, Users, Utensils } from 'lucide-react';
 import Image from 'next/image';
@@ -225,13 +226,6 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
-// ============================================================================
-// TAB TITLE COMPONENT
-// ============================================================================
-
-/**
- * Context-aware tab title component that adapts based on user progress
- */
 // ============================================================================
 // TAB TITLE COMPONENT
 // ============================================================================
@@ -830,75 +824,6 @@ function useUserStreak(user_id?: string, isAfterRecovery = false) {
 
   return { streak, loading, refreshStreak };
 }
-// ============================================================================
-// DATA HANDLING FUNCTIONS
-// ============================================================================
-
-/**
- * Merges guest user data into authenticated user account
- * Handles data migration when user logs in after using as guest
- * @param {string} guestUserId - Temporary guest user ID
- * @param {string} authUserId - Authenticated user ID
- * @returns {Promise<Object>} Merge operation result with success status
- */
-async function mergeGuestDataToAuthUser(
-  guestUserId: string,
-  authUserId: string,
-) {
-  try {
-    // Skip merge if IDs are the same (user was already authenticated)
-    if (guestUserId === authUserId) {
-      return { success: true, skipped: true };
-    }
-
-    // Preserve guest user's name for transfer
-    const guestName = await getUserName(guestUserId);
-
-    // Call backend API to merge meal logs and other data
-    const mergeResponse = await fetch('/api/merge-user-data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        guestUserId,
-        authUserId,
-      }),
-    });
-
-    const mergeResult = await mergeResponse.json();
-
-    if (!mergeResponse.ok) {
-      throw new Error(
-        `API call failed: ${mergeResult.error || 'Unknown error'}`,
-      );
-    }
-
-    // Transfer name to authenticated account if merge was successful
-    if (guestName && !mergeResult.skipped) {
-      const nameTransferSuccess = await saveUserName(authUserId, guestName);
-      if (!nameTransferSuccess) {
-        console.error('Failed to transfer name from guest to auth user');
-      }
-    }
-
-    // Update local storage to use authenticated user ID
-    setLocalUserId(authUserId);
-
-    return {
-      success: true,
-      details: mergeResult.details,
-      nameTransferred: !!guestName,
-    };
-  } catch (error: any) {
-    console.error('Data merge failed:', error);
-    return {
-      success: false,
-      error: error.message,
-      fallback: true,
-    };
-  }
-}
 
 // ============================================================================
 // COMPONENT DEFINITIONS
@@ -1119,6 +1044,15 @@ const activeQuoteRequests = new Map<string, Promise<any>>();
  */
 export default function Home() {
   // ========================================================================
+  // SUPABASE CLIENT MANAGEMENT
+  // ========================================================================
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+
+  // ========================================================================
   // STATE MANAGEMENT
   // ========================================================================
 
@@ -1219,6 +1153,138 @@ export default function Home() {
   useUserInitialization(userId);
 
   const { navigate } = useNavigation();
+
+  // ============================================================================
+  // DATA HANDLING FUNCTIONS
+  // ============================================================================
+
+  /**
+   * Merges guest user data into authenticated user account (SECURE VERSION)
+   * Handles data migration when user logs in after using as guest
+   * @param {string} guestUserId - Temporary guest user ID
+   * @param {string} authUserId - Authenticated user ID
+   * @returns {Promise<Object>} Merge operation result with success status
+   */
+  async function mergeGuestDataToAuthUser(
+    guestUserId: string,
+    authUserId: string,
+  ) {
+    try {
+      // Skip merge if IDs are the same (user was already authenticated)
+      if (guestUserId === authUserId) {
+        return { success: true, skipped: true };
+      }
+
+      // Get the current user's JWT token for authentication
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        console.error('❌ No valid session found for merge operation');
+        throw new Error('Authentication required for data merge');
+      }
+
+      // Preserve guest user's name for transfer
+      const guestName = await getUserName(guestUserId);
+
+      console.log('🔄 Starting secure data merge...');
+      console.log('📝 Guest ID:', guestUserId);
+      console.log('🔐 Auth ID:', authUserId);
+
+      // Call backend API to merge meal logs and other data
+      const mergeResponse = await fetch('/api/merge-user-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Include JWT token for user authentication
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          guestUserId,
+          authUserId,
+        }),
+      });
+
+      const mergeResult = await mergeResponse.json();
+
+      if (!mergeResponse.ok) {
+        // Handle specific error cases
+        if (mergeResponse.status === 401) {
+          throw new Error('Authentication failed - please log in again');
+        } else if (mergeResponse.status === 429) {
+          throw new Error(
+            'Too many requests - please wait a moment and try again',
+          );
+        } else if (
+          mergeResponse.status === 400 &&
+          mergeResult.error?.includes('too old')
+        ) {
+          throw new Error('Guest data is too old to merge safely');
+        }
+
+        throw new Error(
+          `API call failed: ${mergeResult.error || 'Unknown error'}`,
+        );
+      }
+
+      // Transfer name to authenticated account if merge was successful
+      if (guestName && !mergeResult.skipped) {
+        const nameTransferSuccess = await saveUserName(authUserId, guestName);
+        if (!nameTransferSuccess) {
+          console.error('Failed to transfer name from guest to auth user');
+        }
+      }
+
+      // Update local storage to use authenticated user ID
+      setLocalUserId(authUserId);
+
+      console.log('✅ Secure data merge completed successfully');
+
+      return {
+        success: true,
+        details: mergeResult.details,
+        nameTransferred: !!guestName,
+        authMethod: mergeResult.details?.authMethod || 'user',
+      };
+    } catch (error: any) {
+      console.error('💥 Secure merge operation failed:', error);
+
+      // Return structured error for better client-side handling
+      return {
+        success: false,
+        error: error.message,
+        code: error.code || 'MERGE_FAILED',
+      };
+    }
+  }
+
+  /**
+   * Enhanced error handling for merge operations
+   * Show user-friendly messages based on error type
+   */
+  function handleMergeError(
+    error: any,
+    setMergeError: (error: string) => void,
+  ) {
+    if (error.message?.includes('Authentication')) {
+      setMergeError('Please log in again to sync your data');
+    } else if (error.message?.includes('Too many requests')) {
+      setMergeError('Too many attempts - please wait a moment');
+    } else if (error.message?.includes('too old')) {
+      setMergeError('Your guest data is too old to merge automatically');
+    } else if (
+      error.message?.includes('network') ||
+      error.message?.includes('fetch')
+    ) {
+      setMergeError('Network error - please check your connection');
+    } else {
+      setMergeError(
+        'Data sync encountered an issue - some data may not have transferred',
+      );
+    }
+  }
 
   // ========================================================================
   // DATA FETCHING FUNCTIONS
@@ -1904,21 +1970,18 @@ export default function Home() {
                 setShowMergeSuccess(true);
                 setTimeout(() => setShowMergeSuccess(false), 3000);
               } else if (!mergeResult.success) {
-                setMergeError(
-                  'Some data might not have transferred completely',
-                );
+                handleMergeError(mergeResult, setMergeError);
               }
             } catch (mergeError) {
               console.error('Data merge error:', mergeError);
-              setMergeError('Data sync encountered an issue');
+              handleMergeError(mergeError, setMergeError);
             } finally {
               setIsMergingData(false);
             }
           }
 
-          // 🆕 NEW: Load user name with caching and better error handling
           try {
-            const existingName = await getUserName(session.user.id); // Now uses cached version
+            const existingName = await getUserName(session.user.id);
             if (existingName) {
               setName(existingName);
               fetchQuote(existingName);

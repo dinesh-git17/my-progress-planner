@@ -9,12 +9,11 @@ const supabase = createClient(
 );
 
 // Configure web-push with VAPID keys
+// Configure web-push with VAPID keys
 webpush.setVapidDetails(
-  'mailto:dineshddawo@gmail.com', // Replace with your email
-  process.env.VAPID_PUBLIC_KEY ||
-    'BAEWVqKa9ASTlGbc7Oo_BJGAsYBtlYAS1IkI1gKMz5Ot6WnNQuP-WQ2u3sDRDV4Ca5kZQwo8aKOshT3wOrUugxk',
-  process.env.VAPID_PRIVATE_KEY ||
-    'KyheLVyynRbv_9XOZgu0UAdmHbV6-Z7_Wpgtpzi34As',
+  'mailto:dineshddawo@gmail.com',
+  process.env.VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!,
 );
 
 export async function POST(req: NextRequest) {
