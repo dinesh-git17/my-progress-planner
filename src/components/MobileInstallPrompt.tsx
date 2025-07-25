@@ -108,7 +108,7 @@ export default function MobileInstallPrompt({
       const timer = setTimeout(() => {
         setShowPrompt(true);
         sessionStorage.setItem('mobile_install_showing', 'true');
-      }, 1000); // Show after 1 second
+      }, 10); // Show after 1 second
 
       return () => clearTimeout(timer);
     }

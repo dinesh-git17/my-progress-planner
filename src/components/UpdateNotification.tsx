@@ -106,9 +106,9 @@ export default function UpdateNotification() {
             // Small delay to ensure smooth transition
             setTimeout(() => {
               setShowNotification(true);
-            }, 500);
+            }, 1000);
           }
-        }, 1000);
+        }, 100);
 
         return () => clearInterval(checkInterval);
       } else {
