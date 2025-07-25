@@ -1,6 +1,7 @@
 'use client';
 
 import { useNavigation } from '@/contexts/NavigationContext';
+import { createClient } from '@supabase/supabase-js';
 import { motion } from 'framer-motion';
 import { DM_Sans, Dancing_Script } from 'next/font/google';
 import { useEffect, useState } from 'react';
@@ -263,7 +264,7 @@ export default function FriendsPage() {
   // ============================================================================
 
   /**
-   * Handles adding a new friend
+   * Securely handles adding a new friend with JWT authentication
    */
   const handleAddFriend = async () => {
     if (!friendCodeInput.trim() || !userId) return;
@@ -272,9 +273,34 @@ export default function FriendsPage() {
     setMessage(null);
 
     try {
+      // Get the current user's JWT token for authentication
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        setMessage({
+          type: 'error',
+          text: 'Please log in again to add friends',
+        });
+        return;
+      }
+
+      console.log('🔒 Adding friend with authentication...');
+
       const response = await fetch('/api/friends/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Include JWT token for authentication
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           userId,
           friendCode: friendCodeInput.trim().toUpperCase(),
@@ -293,27 +319,119 @@ export default function FriendsPage() {
         // Refresh friends list
         const friendsResponse = await fetch(
           `/api/friends/list?user_id=${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          },
         );
         if (friendsResponse.ok) {
           const friendsData = await friendsResponse.json();
           setFriends(friendsData.friends || []);
         }
       } else {
-        setMessage({
-          type: 'error',
-          text: data.error || 'Failed to add friend',
-        });
+        // Enhanced error handling for security-related errors
+        if (response.status === 401) {
+          setMessage({
+            type: 'error',
+            text: 'Authentication failed - please log in again',
+          });
+        } else if (response.status === 429) {
+          setMessage({
+            type: 'error',
+            text: 'Too many requests - please wait a moment and try again',
+          });
+        } else if (response.status === 404) {
+          setMessage({
+            type: 'error',
+            text: 'Friend code not found - please check and try again',
+          });
+        } else if (response.status === 409) {
+          setMessage({
+            type: 'error',
+            text: data.error || 'Already friends or cannot add yourself',
+          });
+        } else {
+          setMessage({
+            type: 'error',
+            text: data.error || 'Failed to add friend',
+          });
+        }
       }
     } catch (error) {
       console.error('Add friend error:', error);
-      setMessage({
-        type: 'error',
-        text: 'Network error. Please try again.',
-      });
+
+      // Check if it's a network error
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setMessage({
+          type: 'error',
+          text: 'Network error - please check your connection and try again',
+        });
+      } else {
+        setMessage({
+          type: 'error',
+          text: 'An unexpected error occurred. Please try again.',
+        });
+      }
     } finally {
       setAddFriendLoading(false);
     }
   };
+
+  // ============================================================================
+  // ADMIN FUNCTION (for admin panel or support tools)
+  // ============================================================================
+
+  /**
+   * Admin version of add friend function using admin password
+   * Should only be used in admin interfaces or support tools
+   */
+  async function adminAddFriend(
+    userId: string,
+    friendCode: string,
+    adminPassword: string,
+  ) {
+    try {
+      console.log('🔧 Admin adding friend...');
+
+      const response = await fetch('/api/friends/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Use admin password in header (more secure than body)
+          'X-Admin-Password': adminPassword,
+        },
+        body: JSON.stringify({
+          userId,
+          friendCode: friendCode.trim().toUpperCase(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          `Admin add friend failed: ${data.error || 'Unknown error'}`,
+        );
+      }
+
+      console.log('✅ Admin add friend completed successfully');
+
+      return {
+        success: true,
+        friendName: data.friendName,
+        authMethod: 'admin',
+      };
+    } catch (error: any) {
+      console.error('💥 Admin add friend operation failed:', error);
+
+      return {
+        success: false,
+        error: error.message,
+        code: 'ADMIN_ADD_FRIEND_FAILED',
+      };
+    }
+  }
 
   /**
    * Handles copying friend code to clipboard
