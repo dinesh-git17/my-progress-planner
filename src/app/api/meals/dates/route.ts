@@ -1,6 +1,8 @@
 // src/app/api/meals/dates/route.ts
-import supabase from '@/utils/supabaseAdmin';
+import { supabaseServer } from '@/utils/supabaseServer';
 import { NextResponse } from 'next/server';
+
+const supabase = supabaseServer;
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);

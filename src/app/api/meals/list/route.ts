@@ -1,9 +1,11 @@
 // src/app/api/meals/list/route.ts
 import { shouldUseMockGPT } from '@/utils/environment';
 import { addMockDelay, getMockMealSummary } from '@/utils/mockGptService';
-import supabase from '@/utils/supabaseAdmin';
+import { supabaseServer } from '@/utils/supabaseServer';
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
+
+const supabase = supabaseServer;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

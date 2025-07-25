@@ -1,5 +1,7 @@
-import supabase from '@/utils/supabaseAdmin';
+import { supabaseServer } from '@/utils/supabaseServer';
 import { NextResponse } from 'next/server';
+
+const supabase = supabaseServer;
 
 export async function GET(request: Request) {
   try {
