@@ -225,41 +225,75 @@ export default function MealChat({
   }, [meal]);
 
   useEffect(() => {
+    let mounted = true;
+
     const updateOnlineStatus = () => {
+      if (!mounted) return;
       const isOffline = !navigator.onLine;
       setOfflineMode(isOffline);
       console.log(isOffline ? '📴 App went offline' : '🌐 App back online');
     };
 
     const updatePendingCount = async () => {
+      if (!mounted) return;
       try {
+        // Only check for pending sync in production and when service worker is registered
+        if (process.env.NODE_ENV === 'development') {
+          setPendingSyncCount(0);
+          setShowOfflineIndicator(false);
+          return;
+        }
+
+        // Check if service worker is registered before checking sync count
+        const registration = await navigator.serviceWorker?.getRegistration();
+        if (!registration) {
+          setPendingSyncCount(0);
+          setShowOfflineIndicator(false);
+          return;
+        }
+
         const count = await getPendingSyncCount();
         setPendingSyncCount(count);
-        setShowOfflineIndicator(count > 0 || offlineMode);
+
+        // Only show indicator if truly offline OR there are pending items to sync
+        const shouldShow =
+          (count > 0 && navigator.onLine === false) || offlineMode;
+        setShowOfflineIndicator(shouldShow);
       } catch (error) {
         console.error('Error getting pending sync count:', error);
+        if (mounted) {
+          setPendingSyncCount(0);
+          setShowOfflineIndicator(false);
+        }
       }
     };
 
-    // Set initial state
-    updateOnlineStatus();
-    updatePendingCount();
+    // Set initial state with delay to ensure components are mounted
+    const initTimer = setTimeout(() => {
+      updateOnlineStatus();
+      updatePendingCount();
+    }, 100);
 
     // Listen for online/offline events
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
-    window.addEventListener('online', updatePendingCount); // Also update count when back online
+    window.addEventListener('online', updatePendingCount);
 
-    // Update pending count periodically
-    const interval = setInterval(updatePendingCount, 10000); // Every 10 seconds
+    // Update pending count less frequently and only in production
+    const interval =
+      process.env.NODE_ENV === 'production'
+        ? setInterval(updatePendingCount, 30000) // Every 30 seconds in production
+        : null;
 
     return () => {
+      mounted = false;
+      clearTimeout(initTimer);
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
       window.removeEventListener('online', updatePendingCount);
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
     };
-  }, [offlineMode]);
+  }, []);
 
   /**
    * Scroll to bottom after keyboard state changes

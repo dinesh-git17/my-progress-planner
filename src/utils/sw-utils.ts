@@ -105,10 +105,15 @@ export async function triggerMealDataSync(): Promise<boolean> {
  */
 export class OfflineStorage {
   private dbName = 'MealTrackerOfflineDB';
-  private version = 2; // Updated version for new schema
+  private version = 3; // Increment version to trigger upgrade
   private db: IDBDatabase | null = null;
+  private initialized = false;
 
   async init(): Promise<void> {
+    // Prevent multiple initializations
+    if (this.initialized && this.db) {
+      return;
+    }
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.version);
 
@@ -119,6 +124,7 @@ export class OfflineStorage {
 
       request.onsuccess = () => {
         this.db = request.result;
+        this.initialized = true;
         console.log('✅ IndexedDB initialized');
         resolve();
       };
@@ -130,8 +136,11 @@ export class OfflineStorage {
         if (db.objectStoreNames.contains('pendingMealLogs')) {
           db.deleteObjectStore('pendingMealLogs');
         }
+        if (db.objectStoreNames.contains('pendingMealData')) {
+          db.deleteObjectStore('pendingMealData');
+        }
 
-        // Create new store for enhanced meal data
+        // Create fresh store for enhanced meal data
         const mealDataStore = db.createObjectStore('pendingMealData', {
           keyPath: 'id',
           autoIncrement: true,
@@ -140,8 +149,11 @@ export class OfflineStorage {
         mealDataStore.createIndex('timestamp', 'timestamp', { unique: false });
         mealDataStore.createIndex('userId', 'userId', { unique: false });
         mealDataStore.createIndex('meal', 'meal', { unique: false });
+        mealDataStore.createIndex('environment', 'environment', {
+          unique: false,
+        });
 
-        console.log('📦 IndexedDB schema updated');
+        console.log('📦 IndexedDB schema updated with clean slate');
       };
     });
   }
@@ -274,8 +286,18 @@ export class OfflineStorage {
   }
 }
 
-// Global instance
-const offlineStorage = new OfflineStorage();
+/**
+ * Clear all offline data when switching between environments
+ */
+export async function clearOfflineDataOnEnvironmentChange(): Promise<void> {
+  try {
+    await offlineStorage.init();
+    await offlineStorage.clearAllData();
+    console.log('🧹 Cleared offline data for environment change');
+  } catch (error) {
+    console.error('Error clearing offline data:', error);
+  }
+}
 
 /**
  * Enhanced meal logging with fallback to offline storage
@@ -326,15 +348,21 @@ export async function logMealWithFallback(mealData: {
   }
 }
 
+// Global instance with proper initialization
+const offlineStorage = new OfflineStorage();
+
 /**
- * Get pending sync count for UI
+ * Get pending sync count for UI with proper initialization
  */
 export async function getPendingSyncCount(): Promise<number> {
   try {
+    // Ensure IndexedDB is initialized before accessing data
+    await offlineStorage.init();
     const pendingData = await offlineStorage.getPendingMealData();
     return pendingData.length;
   } catch (error) {
     console.error('Error getting pending sync count:', error);
+    // Return 0 instead of throwing to prevent UI errors
     return 0;
   }
 }

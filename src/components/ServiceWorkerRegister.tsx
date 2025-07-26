@@ -23,14 +23,26 @@ export default function ServiceWorkerRegister() {
         '🚫 Development mode: Service worker disabled to prevent caching issues',
       );
 
-      // Unregister any existing service workers in development
+      // Unregister any existing service workers in development AND clear offline data
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then((registrations) => {
-          registrations.forEach((registration) => {
-            registration.unregister();
-            console.log('🗑️ Unregistered existing service worker');
+        navigator.serviceWorker
+          .getRegistrations()
+          .then(async (registrations) => {
+            registrations.forEach((registration) => {
+              registration.unregister();
+              console.log('🗑️ Unregistered existing service worker');
+            });
+
+            // Clear any leftover offline data from development/production switches
+            try {
+              const { clearOfflineDataOnEnvironmentChange } = await import(
+                '@/utils/sw-utils'
+              );
+              await clearOfflineDataOnEnvironmentChange();
+            } catch (error) {
+              console.warn('Could not clear offline data:', error);
+            }
           });
-        });
       }
       return;
     }
