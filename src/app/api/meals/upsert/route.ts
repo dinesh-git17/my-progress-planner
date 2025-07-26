@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // Add GPT responses if provided
     if (gpt_responses && gpt_responses.length > 0) {
-      mealData[`${meal}_gpt_responses`] = gpt_responses;
+      mealData[`${meal}_gpt`] = gpt_responses;
     }
 
     // Upsert meal log (matching your existing upsertMealLog logic)

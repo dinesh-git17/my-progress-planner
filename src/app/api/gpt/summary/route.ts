@@ -4,9 +4,7 @@ import { addMockDelay, getMockMealSummary } from '@/utils/mockGptService';
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// DON'T instantiate OpenAI at module level - move it inside where it's used
 
 export async function POST(req: Request) {
   try {
@@ -37,6 +35,11 @@ export async function POST(req: Request) {
 
     // Production: Use real OpenAI API
     console.log('🚀 Using real OpenAI API for summary generation');
+
+    // Only instantiate OpenAI client when we actually need it
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     // Build the prompt
     let prompt = '';

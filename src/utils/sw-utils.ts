@@ -303,6 +303,7 @@ export async function clearOfflineDataOnEnvironmentChange(): Promise<void> {
  * Enhanced meal logging with fallback to offline storage
  * Works with your actual MealChat architecture
  */
+
 export async function logMealWithFallback(mealData: {
   userId: string;
   userName: string;
@@ -313,13 +314,110 @@ export async function logMealWithFallback(mealData: {
   // Try online first if connected
   if (navigator.onLine) {
     try {
-      // This would need to be adapted to work with your upsertMealLog function
-      // For now, we'll store offline as this requires more integration
-      console.log('🌐 Online but storing offline for manual sync');
+      // Extract data for API call
+      const userAnswers = mealData.chatMessages
+        .filter((m) => m.sender === 'user')
+        .map((m) => m.text);
 
-      // In a full implementation, you'd call your actual meal logging flow here
-      // const success = await callActualMealFlow(mealData);
-      // if (success) return { success: true, offline: false };
+      const gptResponses = mealData.chatMessages
+        .filter((m) => m.sender === 'bot')
+        .map((m) => m.text);
+
+      // Call the upsert API (same as manualSync does)
+      const response = await fetch('/api/meals/upsert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: mealData.userId,
+          name: mealData.userName,
+          meal: mealData.meal,
+          answers: userAnswers,
+          gpt_responses: gptResponses,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API responded with ${response.status}`);
+      }
+
+      console.log('✅ Meal saved online successfully');
+
+      // Generate summary if requested AND save it to database
+      if (mealData.generateSummary && userAnswers.length > 0) {
+        try {
+          const summaryResponse = await fetch('/api/gpt/summary', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: mealData.userName,
+              meal: mealData.meal,
+              answers: userAnswers,
+              gpt_response: gptResponses, // Include bot responses
+            }),
+          });
+
+          if (!summaryResponse.ok) {
+            console.warn(`Summary generation failed for ${mealData.meal}`);
+            // Don't fail the whole operation if summary fails
+          } else {
+            const summaryData = await summaryResponse.json();
+            const summaryText = summaryData?.summary;
+
+            if (summaryText) {
+              console.log(`✅ Summary generated for ${mealData.meal}`);
+
+              // Save summary to database - matching existing upsertMealLog logic
+              const { createClient } = await import('@supabase/supabase-js');
+              const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+              );
+
+              // Get current date in EST timezone
+              const now = new Date();
+              const estDate = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/New_York',
+              }).format(now);
+
+              // Save to daily_summaries table
+              const { error: summaryError } = await supabase
+                .from('daily_summaries')
+                .upsert(
+                  [
+                    {
+                      user_id: mealData.userId,
+                      name: mealData.userName,
+                      date: estDate,
+                      [`${mealData.meal}_summary`]: summaryText, // e.g., breakfast_summary
+                    },
+                  ],
+                  { onConflict: 'user_id,date' },
+                );
+
+              if (summaryError) {
+                console.error(
+                  '❌ Failed to save summary to database:',
+                  summaryError,
+                );
+              } else {
+                console.log(
+                  `💾 Summary saved to database for ${mealData.meal}`,
+                );
+              }
+            }
+          }
+        } catch (summaryError) {
+          console.warn('Summary generation error:', summaryError);
+          // Don't fail the whole operation if summary fails
+        }
+      }
+
+      // Success - return online result
+      return { success: true, offline: false };
     } catch (error) {
       console.warn(
         'Online meal logging failed, falling back to offline:',
