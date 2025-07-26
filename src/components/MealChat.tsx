@@ -4,8 +4,8 @@ import BreakfastModal from '@/components/BreakfastModal';
 import DoneModal from '@/components/DoneModal';
 import LunchModal from '@/components/LunchModal';
 import { useNavigation } from '@/contexts/NavigationContext';
-import { upsertMealLog } from '@/utils/mealLog';
 import { getPendingSyncCount, logMealWithFallback } from '@/utils/sw-utils';
+import { getUserName } from '@/utils/userNameCache';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Dancing_Script } from 'next/font/google';
 import React, { useEffect, useRef, useState } from 'react';
@@ -80,10 +80,6 @@ export default function MealChat({
   // Add overlay state for smooth transitions
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [initialViewportHeight, setInitialViewportHeight] = useState(0);
-
-  const getUserName = async (): Promise<string> => {
-    return localStorage.getItem('mealapp_quote_name') || 'unknown_user';
-  };
 
   const { navigate } = useNavigation();
 
@@ -225,41 +221,75 @@ export default function MealChat({
   }, [meal]);
 
   useEffect(() => {
+    let mounted = true;
+
     const updateOnlineStatus = () => {
+      if (!mounted) return;
       const isOffline = !navigator.onLine;
       setOfflineMode(isOffline);
       console.log(isOffline ? '📴 App went offline' : '🌐 App back online');
     };
 
     const updatePendingCount = async () => {
+      if (!mounted) return;
       try {
+        // Only check for pending sync in production and when service worker is registered
+        if (process.env.NODE_ENV === 'development') {
+          setPendingSyncCount(0);
+          setShowOfflineIndicator(false);
+          return;
+        }
+
+        // Check if service worker is registered before checking sync count
+        const registration = await navigator.serviceWorker?.getRegistration();
+        if (!registration) {
+          setPendingSyncCount(0);
+          setShowOfflineIndicator(false);
+          return;
+        }
+
         const count = await getPendingSyncCount();
         setPendingSyncCount(count);
-        setShowOfflineIndicator(count > 0 || offlineMode);
+
+        // Only show indicator if truly offline OR there are pending items to sync
+        const shouldShow =
+          (count > 0 && navigator.onLine === false) || offlineMode;
+        setShowOfflineIndicator(shouldShow);
       } catch (error) {
         console.error('Error getting pending sync count:', error);
+        if (mounted) {
+          setPendingSyncCount(0);
+          setShowOfflineIndicator(false);
+        }
       }
     };
 
-    // Set initial state
-    updateOnlineStatus();
-    updatePendingCount();
+    // Set initial state with delay to ensure components are mounted
+    const initTimer = setTimeout(() => {
+      updateOnlineStatus();
+      updatePendingCount();
+    }, 100);
 
     // Listen for online/offline events
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
-    window.addEventListener('online', updatePendingCount); // Also update count when back online
+    window.addEventListener('online', updatePendingCount);
 
-    // Update pending count periodically
-    const interval = setInterval(updatePendingCount, 10000); // Every 10 seconds
+    // Update pending count less frequently and only in production
+    const interval =
+      process.env.NODE_ENV === 'production'
+        ? setInterval(updatePendingCount, 30000) // Every 30 seconds in production
+        : null;
 
     return () => {
+      mounted = false;
+      clearTimeout(initTimer);
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
       window.removeEventListener('online', updatePendingCount);
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
     };
-  }, [offlineMode]);
+  }, []);
 
   /**
    * Scroll to bottom after keyboard state changes
@@ -285,83 +315,59 @@ export default function MealChat({
   /**
    * Completes the chat session and saves meal log
    */
-  /**
-   * Completes the chat session and saves meal log
-   */
   const finishChat = async () => {
     setProcessingComplete(true);
     setChatCompleted(true);
 
     try {
-      const today = new Date()
-        .toLocaleString('en-US', { timeZone: 'America/New_York' })
-        .slice(0, 10);
-
-      // Prepare chat messages in the format expected by offline storage
+      // Prepare chat messages in the format expected by the logging system
       const chatMessages = messages.map((msg, index) => ({
         sender: msg.sender,
         text: msg.text,
-        timestamp: Date.now() - (messages.length - index) * 1000, // Approximate timestamps
+        timestamp: Date.now() - (messages.length - index) * 1000,
       }));
 
-      if (navigator.onLine) {
-        // Try your existing online flow first
-        try {
-          await upsertMealLog({
-            user_id: userId,
-            date: today,
-            meal,
-            answers: answers.current,
-            gpt_response: gptReplies.current,
-          });
-
-          console.log('✅ Meal logged successfully online');
-        } catch (error) {
-          console.warn(
-            'Online meal logging failed, falling back to offline:',
-            error,
-          );
-
-          // Fallback to offline storage
-          const userName = await getUserName();
-          const result = await logMealWithFallback({
-            userId,
-            userName,
-            meal,
-            chatMessages,
-            generateSummary: true,
-          });
-
-          if (result.success) {
-            console.log('📱 Meal saved offline, will sync when online');
-            setPendingSyncCount(await getPendingSyncCount());
-          } else {
-            throw new Error('Failed to save meal offline');
-          }
-        }
-      } else {
-        // We're offline, store for later sync
-        const userName = await getUserName();
-        const result = await logMealWithFallback({
-          userId,
-          userName,
-          meal,
-          chatMessages,
-          generateSummary: true,
-        });
-
-        if (result.success) {
-          console.log('📱 Meal logged offline, will sync when online');
-          setPendingSyncCount(await getPendingSyncCount());
+      // Get user name with proper error handling
+      let userName: string;
+      try {
+        const fetchedName = await getUserName(userId);
+        if (!fetchedName) {
+          userName = 'User';
+          console.warn('No user name found, using fallback');
         } else {
-          throw new Error('Failed to save meal offline');
+          userName = fetchedName;
         }
+      } catch (error) {
+        console.error('Error fetching user name:', error);
+        userName = 'User'; // Safe fallback
       }
 
+      // Use the unified logging function that handles both online and offline
+      const result = await logMealWithFallback({
+        userId,
+        userName,
+        meal,
+        chatMessages,
+        generateSummary: true,
+      });
+
+      if (result.success) {
+        if (result.offline) {
+          console.log('📱 Meal saved offline, will sync when online');
+          setPendingSyncCount(await getPendingSyncCount());
+        } else {
+          console.log('✅ Meal saved online successfully');
+        }
+      } else {
+        throw new Error('Failed to save meal data');
+      }
+
+      // Always proceed to show the completion modal after a short delay
       setTimeout(() => {
         setLoading(false);
+        setProcessingComplete(false);
 
-        // 🔥 HERE'S THE FIX: Show appropriate modal based on meal type
+        // Show appropriate modal based on meal type
         if (meal === 'breakfast') {
           console.log('🍳 Showing breakfast modal');
           setShowBreakfastModal(true);
@@ -373,15 +379,32 @@ export default function MealChat({
           setShowDoneModal(true);
         }
 
-        // Set chat ended for non-dinner meals (optional, for state consistency)
+        // Set chat ended for non-dinner meals
         if (meal !== 'dinner') {
           setChatEnded(true);
         }
       }, 1500);
     } catch (error) {
       console.error('Error in finishChat:', error);
+
+      // Always stop the loading state even if there's an error
       setLoading(false);
-      // You might want to show an error message to the user here
+      setProcessingComplete(false);
+
+      // Show error modal or fallback modal
+      setTimeout(() => {
+        if (meal === 'breakfast') {
+          setShowBreakfastModal(true);
+        } else if (meal === 'lunch') {
+          setShowLunchModal(true);
+        } else if (meal === 'dinner') {
+          setShowDoneModal(true);
+        }
+      }, 500);
+
+      console.warn(
+        'Meal may not have been saved properly, but proceeding with completion',
+      );
     }
   };
 
